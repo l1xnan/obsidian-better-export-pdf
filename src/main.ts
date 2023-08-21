@@ -12,6 +12,8 @@ import {
 	MarkdownRenderer,
 } from "obsidian";
 
+import { ipcRenderer } from "electron";
+import { once } from "events";
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
@@ -103,7 +105,7 @@ export default class MyPlugin extends Plugin {
 							await this.exportToPDF(file as TFile);
 						});
 				});
-			})
+			}),
 		);
 	}
 
@@ -124,29 +126,41 @@ export default class MyPlugin extends Plugin {
 		const workspace = this.app.workspace;
 		console.log("workspace:", workspace);
 
-		const leaf = workspace.getLeaf("window");
-		console.log("leaf:", leaf);
-		await leaf.openFile(file, { active: false });
+		// const leaf = workspace.getLeaf("window");
+		// console.log("leaf:", leaf);
+		// await leaf.openFile(file, { active: false });
 
-    const view = leaf.view as MarkdownView;
-		console.log("view:", view);
-		console.log("data:", view.data);
+		// const view = leaf.view as MarkdownView;
+		// console.log("view:", view);
+		// console.log("data:", view.data);
 
+		// // waitUntil(() => leaf != undefined && leaf.view?.previewMode, 2000, 10);
+		// const previewMode = view.previewMode;
 
-		// waitUntil(() => leaf != undefined && leaf.view?.previewMode, 2000, 10);
-		const previewMode = view.previewMode;
+		// console.log("previewMode:", previewMode);
 
-    console.log("previewMode:", previewMode);
+		// previewMode.set("preview", true);
 
-    previewMode.set("preview", true);
+		const elem = document.createElement("div");
 
-    const elem = document.createElement("div")
+		// let content = await MarkdownRenderer.render(this.app, file, elem, file);
 
-    let content = await MarkdownRenderer.render(this.app, file,elem );
+		ipcRenderer.once("print-to-pdf", (e, ...args) => {
+			console.log("======");
+			console.log(e, args);
+			console.log("------");
+		});
 
-
-
-
+		ipcRenderer.send("print-to-pdf", {
+			filepath: "C:\\Users\\Administrator\\Desktop\\Obsidian 配置1.pdf",
+			includeName: true,
+			landscape: false,
+			marginsType: 0,
+			open: true,
+			pageSize: "A4",
+			scale: 1,
+			scaleFactor: 100,
+		});
 	}
 
 	getCurrentMarkdownContent() {
@@ -160,6 +174,64 @@ export default class MyPlugin extends Plugin {
 			}
 		}
 		return "";
+	}
+
+	demo1() {
+		const theme = "obsidian" === this.app.vault?.getConfig("theme");
+		if (theme) {
+			document.body.addClass("theme-light");
+			document.body.removeClass("theme-dark");
+		}
+		document.body.removeClass("theme-dark");
+		const node = document.body.createDiv("print");
+
+		const reset = function () {
+			node.detach();
+			if (theme) {
+				document.body.removeClass("theme-light");
+				document.body.addClass("theme-dark");
+			}
+			// t.hide();
+		};
+		node.addEventListener("click", reset);
+	}
+
+	demo2() {
+		const el = document.body.createDiv("print");
+
+		const el2 = el.createDiv("markdown-preview-view markdown-rendered");
+
+		el2.toggleClass("rtl", this.app.vault.getConfig("rightToLeft"));
+		el2.toggleClass("show-frontmatter", this.app.vault.getConfig("showFrontmatter"));
+
+		el2.createEl("h1", {
+			text: "xxxxx", // a.basename
+		});
+
+		const renderText = ""; // MarkdownRenderer.render();
+
+		// renderText = sanitize(renderText)
+		const node = document.importNode(renderText, true);
+
+		el2.appendChild(node);
+
+		// el2.addClasses(tw(c)),
+
+		wP.postProcess(o, {
+			docId: wt(16),
+			sourcePath: a.path,
+			frontmatter: c,
+			promises: p,
+			addChild: function (e) {
+				return t.addChild(e);
+			},
+			getSectionInfo: function () {
+				return null;
+			},
+			containerEl: i,
+			el: i,
+			displayMode: !0,
+		});
 	}
 }
 
@@ -202,7 +274,7 @@ class SampleSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.mySetting = value;
 						await this.plugin.saveSettings();
-					})
+					}),
 			);
 	}
 }
