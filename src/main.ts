@@ -343,6 +343,44 @@ export default class MyPlugin extends Plugin {
     return cssTexts;
   }
 
+  private static getMediaPath(src: string) {
+    // @ts-ignore
+    let pathString = "";
+    try {
+      // @ts-ignore
+      pathString = this.app.vault.resolveFileUrl(src)?.path ?? "";
+    } catch {
+      pathString = src.replaceAll("app://", "").replaceAll("\\", "/");
+      pathString = pathString.replaceAll(pathString.split("/")[0] + "/", "");
+      pathString = Path.getRelativePathFromVault(new Path(pathString), true).asString;
+    }
+
+    pathString = pathString ?? "";
+
+    return new Path(pathString);
+  }
+
+  private static async inlineMedia(doc: Document, file: TFile) {
+
+    doc.querySelectorAll("img, audio, video").forEach((mediaEl) => {
+      let rawSrc = mediaEl.getAttribute("src") ?? "";
+      if (!rawSrc.startsWith("app:")) continue;
+
+      let filePath = this.getMediaPath(rawSrc);
+
+      let base64 = (await filePath.readFileString("base64")) ?? "";
+      if (base64 === "") return;
+
+      let ext = filePath.extensionName;
+
+      //@ts-ignore
+      let type = app.viewRegistry.typeByExtension[ext] ?? "audio";
+
+      if (ext === "svg") ext += "+xml";
+
+      mediaEl.setAttribute("src", `data:${type}/${ext};base64,${base64}`);
+    });
+  }
   demo1() {
     const theme = "obsidian" === this.app.vault?.getConfig("theme");
     if (theme) {
