@@ -232,7 +232,7 @@ export default class MyPlugin extends Plugin {
     await waitFor(() => completed);
     // const scripts = this.getAllScripts()
     // console.log("scripts:", scripts);
-    const w = document.querySelector("webview") as WebviewTag;
+    const w = document.querySelector("webview:last-child") as WebviewTag;
     console.log("webviewID", w.getWebContentsId());
     // w.openDevTools();
     try {
