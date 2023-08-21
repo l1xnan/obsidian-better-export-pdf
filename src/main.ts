@@ -150,7 +150,7 @@ export default class MyPlugin extends Plugin {
     // @ts-ignore
     await preview.renderer.unfoldAllHeadings();
 
-    let container = preview.containerEl;
+    const container = preview.containerEl;
 
     // let lastRender = preview.renderer.lastRender;
     // preview.renderer.rerender(true);
@@ -170,13 +170,18 @@ export default class MyPlugin extends Plugin {
     const cssTexts = this.getAllStyles();
 
     console.log("cssTexts:", cssTexts);
-    var doc = document.implementation.createHTMLDocument(file.basename);
+    const doc = document.implementation.createHTMLDocument(file.basename);
 
-    const rootPath = "C:\\Users\\Administrator\\Desktop\\test";
+    // @ts-ignore
+    const rootPath = path.join(this.app.vault.adapter.basePath, this.manifest.dir ?? "", "tmp");
+
+    try {
+      fs.mkdirSync(rootPath, { recursive: true });
+    } catch (error) {
+      /* empty */
+    }
     const appCssFIle = path.join(rootPath, "app.css");
     fs.writeFileSync(appCssFIle, cssTexts.join("\n"));
-    // const styleElement = doc.createElement("style");
-    // styleElement.innerHTML = cssTexts.join("\n");
 
     const linkNode = doc.createElement("link");
     linkNode.href = "./app.css";
@@ -201,6 +206,17 @@ export default class MyPlugin extends Plugin {
 
     // 将 <style> 元素追加到 <head> 标签中
     doc.head.appendChild(linkNode);
+
+    const mathjax1 = `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>`;
+    const mathjax2 = `<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>`;
+
+    const script1 = document.createElement("span");
+    script1.innerHTML = mathjax1;
+    doc.head.appendChild(script1);
+
+    const script2 = document.createElement("span");
+    script2.innerHTML = mathjax2;
+    doc.head.appendChild(script2);
 
     const node1 = doc.createElement("div");
     node1.className = "print";
@@ -235,6 +251,7 @@ export default class MyPlugin extends Plugin {
     const w = document.querySelector("webview:last-child") as WebviewTag;
     console.log("webviewID", w.getWebContentsId());
     // w.openDevTools();
+    await sleep(5000);
     try {
       const data = await w.printToPDF({
         pageSize: "A4",
@@ -259,7 +276,7 @@ export default class MyPlugin extends Plugin {
     // transclusions put a div inside a p tag, which is invalid html. Fix it here
     html.querySelectorAll("p:has(div)").forEach((element) => {
       // replace the p tag with a span
-      let span = doc.createElement("span");
+      const span = doc.createElement("span");
       span.innerHTML = element.innerHTML;
       element.replaceWith(span);
     });
@@ -313,72 +330,58 @@ export default class MyPlugin extends Plugin {
     return jsScripts;
   }
   getAllStyles() {
-    let cssTexts = [];
-    for (let sheet of Object.values(document.styleSheets)) {
-      if (sheet?.href?.includes("app.css")) {
-        for (let rule of Object.values(sheet.cssRules)) {
-          if (rule.cssText.startsWith("@font-face")) continue;
-          if (rule.cssText.startsWith(".CodeMirror")) continue;
-          if (rule.cssText.startsWith(".cm-")) continue;
+    const cssTexts = [];
+    // for (const sheet of Object.values(document.styleSheets)) {
+    //   if (sheet?.href?.includes("app.css")) {
+    //     for (const rule of Object.values(sheet.cssRules)) {
+    //       if (rule.cssText.startsWith("@font-face")) continue;
+    //       if (rule.cssText.startsWith(".CodeMirror")) continue;
+    //       if (rule.cssText.startsWith(".cm-")) continue;
 
-          const cssText = rule.cssText
-            .replaceAll("public/", "https://publish.obsidian.md/public/")
-            .replaceAll("lib/", "https://publish.obsidian.md/lib/");
+    //       const cssText = rule.cssText
+    //         .replaceAll("public/", "https://publish.obsidian.md/public/")
+    //         .replaceAll("lib/", "https://publish.obsidian.md/lib/");
 
-          cssTexts.push(cssText);
-        }
-
-        break;
-      }
-    }
-
-    // for (let sheet of Object.values(document.styleSheets)) {
-    //   let style = sheet.cssRules;
-    //   for (let item in style) {
-    //     if (style[item].cssText) {
-    //       cssTexts.push(style[item].cssText);
+    //       cssTexts.push(cssText);
     //     }
+
+    //     break;
     //   }
     // }
+
+    for (const sheet of Object.values(document.styleSheets)) {
+      const style = sheet.cssRules;
+      for (const item in style) {
+        if (style[item].cssText) {
+          cssTexts.push(style[item].cssText);
+        }
+      }
+    }
     return cssTexts;
   }
 
-  private static getMediaPath(src: string) {
-    // @ts-ignore
-    let pathString = "";
-    try {
-      // @ts-ignore
-      pathString = this.app.vault.resolveFileUrl(src)?.path ?? "";
-    } catch {
-      pathString = src.replaceAll("app://", "").replaceAll("\\", "/");
-      pathString = pathString.replaceAll(pathString.split("/")[0] + "/", "");
-      pathString = Path.getRelativePathFromVault(new Path(pathString), true).asString;
-    }
+  async inlineMedia(doc: Document, file: TFile) {
+    doc.querySelectorAll("img, audio, video").forEach(async (elem) => {
+      const src = elem.getAttribute("src");
+      if (!src?.startsWith("app:")) {
+        return;
+      }
 
-    pathString = pathString ?? "";
+      try {
+        //@ts-ignore
+        const filePath = this.app.vault.resolveFileUrl(src);
+        let extension = file.extension;
+        const base64 = fs.readFileSync(filePath, { encoding: "base64" });
 
-    return new Path(pathString);
-  }
+        //@ts-ignore
+        const type = this.app.viewRegistry.typeByExtension[extension] ?? "audio";
 
-  private static async inlineMedia(doc: Document, file: TFile) {
+        if (extension === "svg") extension += "+xml";
 
-    doc.querySelectorAll("img, audio, video").forEach((mediaEl) => {
-      let rawSrc = mediaEl.getAttribute("src") ?? "";
-      if (!rawSrc.startsWith("app:")) continue;
-
-      let filePath = this.getMediaPath(rawSrc);
-
-      let base64 = (await filePath.readFileString("base64")) ?? "";
-      if (base64 === "") return;
-
-      let ext = filePath.extensionName;
-
-      //@ts-ignore
-      let type = app.viewRegistry.typeByExtension[ext] ?? "audio";
-
-      if (ext === "svg") ext += "+xml";
-
-      mediaEl.setAttribute("src", `data:${type}/${ext};base64,${base64}`);
+        elem.setAttribute("src", `data:${type}/${extension};base64,${base64}`);
+      } catch (error) {
+        console.log(error);
+      }
     });
   }
   demo1() {
@@ -484,74 +487,30 @@ class SampleSettingTab extends PluginSettingTab {
   }
 }
 
-function getCurrentMarkdownContent() {
-  const activeFile = this.app.workspace.getActiveFile();
-  if (activeFile) {
-    const markdownContent = getMarkdownSourceForActiveFile(activeFile);
-    return markdownContent;
-  }
-  return "";
-}
-
-function getRenderedHTML(markdownText) {
-  const markdownRenderer = new MarkdownRenderer();
-  const html = markdownRenderer.render(markdownText);
-  return html;
-}
-
-// function getLeaf(navType: PaneType | boolean, splitDirection: SplitDirection = "vertical"): WorkspaceLeaf {
-// 	let leaf = navType === "split" ? app.workspace.getLeaf(navType, splitDirection) : app.workspace.getLeaf(navType);
-// 	return leaf;
-// }
-
-// export async function openFileInNewTab(
-// 	file: TFile,
-// 	navType: PaneType | boolean,
-// 	splitDirection: SplitDirection = "vertical"
-// ): Promise<WorkspaceLeaf> {
-// 	let leaf = getLeaf(navType, splitDirection);
-
-// 	try {
-// 		await leaf.openFile(file, undefined).catch((reason) => {
-// 			console.log(reason);
-// 		});
-// 	} catch (error) {
-// 		console.log(error);
-// 	}
-
-// 	return leaf;
-// }
-
-// export function openNewTab(navType: PaneType | boolean, splitDirection: SplitDirection = "vertical"): WorkspaceLeaf {
-// 	return getLeaf(navType, splitDirection);
-// }
-
-async function waitUntil(condition: () => boolean, timeout = 1000, interval = 100): Promise<boolean> {
+/**
+ * 等待函数，轮询检查条件是否满足，可设置超时时间。
+ * @param cond 条件函数，返回布尔值表示条件是否满足。
+ * @param timeout 超时时间（可选，默认为0，表示没有超时时间限制）。
+ * @returns 返回一个 Promise 对象，当条件满足时解决为 true，超时或发生错误时拒绝。
+ */
+function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
   return new Promise((resolve, reject) => {
-    let timer = 0;
-    const intervalId = setInterval(() => {
-      if (condition()) {
-        clearInterval(intervalId);
+    const startTime = Date.now();
+
+    const poll = () => {
+      if (cond()) {
         resolve(true);
+      } else if (timeout > 0 && Date.now() - startTime >= timeout) {
+        reject(new Error("Timeout exceeded"));
       } else {
-        timer += interval;
-        if (timer >= timeout) {
-          clearInterval(intervalId);
-          resolve(false);
-        }
+        setTimeout(poll, 500);
       }
-    }, interval);
+    };
+
+    poll();
   });
 }
 
-function waitFor(cond: () => boolean) {
-  const poll = (resolve: any) => {
-    if (cond()) {
-      resolve();
-    } else {
-      setTimeout((_: any) => poll(resolve), 400);
-    }
-  };
-
-  return new Promise(poll);
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

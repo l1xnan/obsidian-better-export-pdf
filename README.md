@@ -161,3 +161,10 @@ t.postProcess = function(e, t) {
     return t
 }
 ```
+
+
+## Development
+
+```bash
+set ELECTRON_SKIP_BINARY_DOWNLOAD=1 && pnpm i
+```
