@@ -1,31 +1,21 @@
-import {
-  App,
-  Editor,
-  MarkdownView,
-  Modal,
-  Notice,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  TFile,
-  MarkdownRenderer,
-} from "obsidian";
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
+import { writeFile } from "fs/promises";
 
 import { WebviewTag } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+interface BetterExportPdfPluginSettings {
   mySetting: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   mySetting: "default",
 };
 
-export default class MyPlugin extends Plugin {
-  settings: MyPluginSettings;
+export default class BetterExportPdfPlugin extends Plugin {
+  settings: BetterExportPdfPluginSettings;
 
   async onload() {
     await this.loadSettings();
@@ -169,7 +159,6 @@ export default class MyPlugin extends Plugin {
 
     const cssTexts = this.getAllStyles();
 
-    console.log("cssTexts:", cssTexts);
     const doc = document.implementation.createHTMLDocument(file.basename);
 
     // @ts-ignore
@@ -180,8 +169,16 @@ export default class MyPlugin extends Plugin {
     } catch (error) {
       /* empty */
     }
-    const appCssFIle = path.join(rootPath, "app.css");
-    fs.writeFileSync(appCssFIle, cssTexts.join("\n"));
+    const appCssFile = path.join(rootPath, "app.css");
+
+    const cssContent = cssTexts.join("\n");
+    try {
+      const res = await writeFile(appCssFile, cssContent);
+      console.log("write css:", res);
+    } catch (error) {
+      console.log(error);
+    }
+    // fs.writeFileSync(appCssFile, cssContent);
 
     const linkNode = doc.createElement("link");
     linkNode.href = "./app.css";
@@ -207,16 +204,16 @@ export default class MyPlugin extends Plugin {
     // 将 <style> 元素追加到 <head> 标签中
     doc.head.appendChild(linkNode);
 
-    const mathjax1 = `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>`;
-    const mathjax2 = `<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>`;
+    // const mathjax1 = `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>`;
+    // const mathjax2 = `<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>`;
 
-    const script1 = document.createElement("span");
-    script1.innerHTML = mathjax1;
-    doc.head.appendChild(script1);
+    // const script1 = document.createElement("span");
+    // script1.innerHTML = mathjax1;
+    // doc.head.appendChild(script1);
 
-    const script2 = document.createElement("span");
-    script2.innerHTML = mathjax2;
-    doc.head.appendChild(script2);
+    // const script2 = document.createElement("span");
+    // script2.innerHTML = mathjax2;
+    // doc.head.appendChild(script2);
 
     const node1 = doc.createElement("div");
     node1.className = "print";
@@ -241,7 +238,7 @@ export default class MyPlugin extends Plugin {
     let completed = false;
     document.body.appendChild(webview);
     webview.addEventListener("dom-ready", (e) => {
-      console.log("dom-ready", e);
+      console.log("dom-ready");
       completed = true;
     });
 
@@ -294,20 +291,41 @@ export default class MyPlugin extends Plugin {
       element.textContent = element.value;
     });
   }
-  getStyles() {
-    const styleTags = document.getElementsByTagName("style");
-    const styleContents = [];
-
-    for (let i = 0; i < styleTags.length; i++) {
-      const styleTag = styleTags[i];
-      const styleContent = styleTag.textContent || styleTag.innerHTML;
-      styleContents.push(styleContent);
-    }
-
-    console.log(styleContents);
-    return styleContents;
+  getStyleTags() {
+    return Array.from(document.getElementsByTagName("style")).map((style) => {
+      return style.textContent || style.innerHTML;
+    });
   }
 
+  getAllStyles() {
+    const cssTexts: string[] = [];
+
+    Array.from(document.styleSheets).forEach((sheet) => {
+      // @ts-ignore
+      const id = sheet.ownerNode?.id;
+      // @ts-ignore
+      const href = sheet.ownerNode?.href;
+
+      const division = `/* ----------${id ? `id:${id}` : href ? `href:${href}` : ""}---------- */`;
+      if (id || href) {
+        console.log(division);
+      }
+      cssTexts.push(division);
+
+      Array.from(sheet.cssRules).forEach((rule) => {
+        // if (rule.cssText.startsWith("@font-face")) continue;
+        // if (rule.cssText.startsWith(".CodeMirror")) continue;
+        // if (rule.cssText.startsWith(".cm-")) continue;
+
+        const cssText = rule.cssText
+          .replaceAll(`url("public/`, `url("https://publish.obsidian.md/public/`)
+          .replaceAll(`url("lib/`, `url("https://publish.obsidian.md/lib/`);
+        cssTexts.push(cssText);
+      });
+    });
+
+    return cssTexts;
+  }
   async getAllScripts() {
     const scriptTags = document.scripts;
     const jsScripts = [];
@@ -329,37 +347,6 @@ export default class MyPlugin extends Plugin {
     }
     return jsScripts;
   }
-  getAllStyles() {
-    const cssTexts = [];
-    // for (const sheet of Object.values(document.styleSheets)) {
-    //   if (sheet?.href?.includes("app.css")) {
-    //     for (const rule of Object.values(sheet.cssRules)) {
-    //       if (rule.cssText.startsWith("@font-face")) continue;
-    //       if (rule.cssText.startsWith(".CodeMirror")) continue;
-    //       if (rule.cssText.startsWith(".cm-")) continue;
-
-    //       const cssText = rule.cssText
-    //         .replaceAll("public/", "https://publish.obsidian.md/public/")
-    //         .replaceAll("lib/", "https://publish.obsidian.md/lib/");
-
-    //       cssTexts.push(cssText);
-    //     }
-
-    //     break;
-    //   }
-    // }
-
-    for (const sheet of Object.values(document.styleSheets)) {
-      const style = sheet.cssRules;
-      for (const item in style) {
-        if (style[item].cssText) {
-          cssTexts.push(style[item].cssText);
-        }
-      }
-    }
-    return cssTexts;
-  }
-
   async inlineMedia(doc: Document, file: TFile) {
     doc.querySelectorAll("img, audio, video").forEach(async (elem) => {
       const src = elem.getAttribute("src");
@@ -460,9 +447,9 @@ class SampleModal extends Modal {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-  plugin: MyPlugin;
+  plugin: BetterExportPdfPlugin;
 
-  constructor(app: App, plugin: MyPlugin) {
+  constructor(app: App, plugin: BetterExportPdfPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
