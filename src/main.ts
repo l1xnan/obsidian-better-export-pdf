@@ -15,7 +15,8 @@ import * as path from "path";
 
 import { WebviewTag } from "electron";
 import { getHeadingTree, modifyHeadings } from "./utils";
-import { addBookmarks, getHeadingPosition } from "./pdf";
+import { addBookmarks, generate, getHeadingPosition, setOutline } from "./pdf";
+import { PDFDocument } from "pdf-lib";
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
@@ -183,8 +184,12 @@ export default class BetterExportPdfPlugin extends Plugin {
       const posistions = await getHeadingPosition(data);
       const headings = await getHeadingTree(doc);
 
-      // data = addBookmarks(data, headings, posistions).Stream;
+      const outlines = generate(headings, posistions);
 
+      const pdfDoc = await PDFDocument.load(data);
+      setOutline(pdfDoc, outlines);
+      // data = addBookmarks(data, headings, posistions).Stream;
+      data = await pdfDoc.save();
       const pdfFile = path.join(rootPath, "test.pdf");
       console.log("pdf-data:", pdfFile, data);
       await fs.writeFile(pdfFile, data);
