@@ -52,7 +52,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       id: "open-sample-modal-simple",
       name: "Open sample modal (simple)",
       callback: () => {
-        new ConfigModal(this.app).open();
+        new ExportConfigModal(this.app).open();
       },
     });
     // This adds an editor command that can perform some operation on the current editor instance
@@ -75,7 +75,7 @@ export default class BetterExportPdfPlugin extends Plugin {
           // If checking is true, we're simply "checking" if the command can be run.
           // If checking is false, then we want to actually perform the operation.
           if (!checking) {
-            new ConfigModal(this.app).open();
+            new ExportConfigModal(this.app).open();
           }
 
           // This command will only show up in Command Palette when the check function returns true
@@ -98,25 +98,27 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     // Register the Export As HTML button in the file menu
     this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file) => {
+      this.app.workspace.on("file-menu", (menu, file: TFile) => {
         menu.addItem((item) => {
           item
             .setTitle("Export to PDF")
             .setIcon("download")
             .setSection("export")
             .onClick(async () => {
-              try {
-                await this.exportToPDF(file as TFile);
-              } catch (error) {
-                console.error(error);
-              } finally {
-                document.querySelectorAll("webview").forEach((node) => {
-                  console.log("webview");
-                  if (process.argv[2] === "production") {
-                    node.parentNode?.removeChild(node);
-                  }
-                });
-              }
+              new ExportConfigModal(this.app, async (config: TConfig) => {
+                try {
+                  await this.exportToPDF(file, config);
+                } catch (error) {
+                  console.error(error);
+                } finally {
+                  document.querySelectorAll("webview").forEach((node) => {
+                    console.log("webview");
+                    if (process.argv[2] === "production") {
+                      node.parentNode?.removeChild(node);
+                    }
+                  });
+                }
+              }).open();
             });
         });
       }),
@@ -133,8 +135,21 @@ export default class BetterExportPdfPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  async exportToPDF(file: TFile) {
-    console.log("click better export to pdf");
+  async exportToPDF(file: TFile, config: TConfig) {
+    console.log("export to pdf:", config);
+
+    const printOptions: electron.PrintToPDFOptions = {
+      ...config,
+    };
+
+    if (config.marginType == "3") {
+      printOptions["margins"] = {
+        top: parseInt(config["marginTop"] ?? "0"),
+        bottom: parseInt(config["marginBottom"] ?? "0"),
+        left: parseInt(config["marginLeft"] ?? "0"),
+        right: parseInt(config["marginRight"] ?? "0"),
+      };
+    }
 
     // @ts-ignore
     const result = await electron.remote.dialog.showSaveDialog({
@@ -204,16 +219,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     // w.openDevTools();
     await sleep(5000); // 5s
     try {
-      let data = await w.printToPDF({
-        pageSize: "A4",
-        scale: 1,
-        // margins: {
-        //   top: 0,
-        //   bottom: 0,
-        //   left: 0,
-        //   right: 0,
-        // },
-      });
+      let data = await w.printToPDF(printOptions);
 
       const pdfDoc = await PDFDocument.load(data);
       const posistions = await getHeadingPosition(pdfDoc);
@@ -224,6 +230,11 @@ export default class BetterExportPdfPlugin extends Plugin {
       setOutline(pdfDoc, outlines);
       data = await pdfDoc.save();
       await fs.writeFile(outputFile, data);
+
+      if (config.open) {
+        // @ts-ignore
+        electron.remote.shell.openPath(outputFile);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -563,16 +574,144 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 }
 
-class ConfigModal extends Modal {
-  constructor(app: App) {
+interface TConfig {
+  pageSise: string;
+  marginType: string;
+  open: boolean;
+  landscape: boolean;
+  scale: number;
+
+  marginTop?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  marginRight?: string;
+}
+
+type Callback = (conf: TConfig) => void;
+
+class ExportConfigModal extends Modal {
+  result: TConfig;
+  canceled: boolean;
+  callback: Callback;
+
+  constructor(app: App, callback: Callback) {
     super(app);
+    this.canceled = true;
+    this.result = {
+      pageSise: "A4",
+      marginType: "1",
+      open: true,
+      scale: 1,
+      landscape: false,
+    };
+    this.callback = callback;
   }
 
   onOpen() {
     const { contentEl } = this;
-    contentEl.setText("Woah!");
-  }
 
+    contentEl.empty();
+
+    this.titleEl.setText("Export to PDF");
+
+    const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger"];
+    new Setting(contentEl)
+      .setName("Page Size")
+      // .setHeading()
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
+          .setValue("A4")
+          .onChange(async (value: string) => {
+            this.result["pageSise"] = value;
+          });
+      });
+
+    new Setting(contentEl).setName("Margin").addDropdown((dropdown) => {
+      dropdown
+        .addOption("0", "None")
+        .addOption("1", "Default")
+        .addOption("2", "Small")
+        .addOption("3", "Custom")
+        .setValue("1")
+        .onChange(async (value: string) => {
+          this.result["marginType"] = value;
+          if (value == "3") {
+            topEl.settingEl.hidden = false;
+            btmEl.settingEl.hidden = false;
+          } else {
+            topEl.settingEl.hidden = true;
+            btmEl.settingEl.hidden = true;
+          }
+        });
+    });
+
+    const topEl = new Setting(contentEl)
+      .setName("Top/Bottom")
+      .setHeading()
+      .addText((text) => {
+        text.setPlaceholder("margin top").onChange((value) => {
+          this.result["marginTop"] = value;
+        });
+      })
+      .addText((text) =>
+        text.setPlaceholder("margin bottom").onChange((value) => {
+          this.result["marginBottom"] = value;
+        }),
+      );
+    topEl.settingEl.hidden = true;
+    const btmEl = new Setting(contentEl)
+      .setName("Left/Right")
+      .setHeading()
+      .addText((text) => {
+        text.setPlaceholder("margin left").onChange((value) => {
+          this.result["marginLeft"] = value;
+        });
+      })
+      .addText((text) =>
+        text.setPlaceholder("margin right").onChange((value) => {
+          this.result["marginRight"] = value;
+        }),
+      );
+    btmEl.settingEl.hidden = true;
+
+    new Setting(contentEl).setName("Scale").addSlider((slider) => {
+      slider
+        .setLimits(0, 1, 0.1)
+        .setValue(1)
+        .onChange(async (value) => {
+          this.result["scale"] = value;
+        });
+    });
+    new Setting(contentEl).setName("landscape").addToggle((toggle) =>
+      toggle
+        .setTooltip("landscape")
+        .setValue(false)
+        .onChange(async (value) => {
+          this.result["landscape"] = value;
+        }),
+    );
+    new Setting(contentEl).setName("Open after export").addToggle((toggle) =>
+      toggle
+        .setTooltip("Open the exported file after exporting.")
+        .setValue(true)
+        .onChange(async (value) => {
+          this.result["open"] = value;
+        }),
+    );
+    new Setting(contentEl).setHeading().addButton((button) => {
+      button.setButtonText("Export").onClick(async () => {
+        this.canceled = false;
+        this.close();
+        await this.callback(this.result);
+      });
+
+      button.buttonEl.style.marginRight = "auto";
+      button.buttonEl.style.marginLeft = "auto";
+      button.buttonEl.style.width = "-webkit-fill-available";
+      button.buttonEl.style.marginBottom = "2em";
+    });
+  }
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
