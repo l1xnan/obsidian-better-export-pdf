@@ -1,4 +1,5 @@
 import * as fs from "fs/promises";
+import * as os from "os";
 import {
   App,
   Editor,
@@ -14,8 +15,9 @@ import {
 import * as path from "path";
 
 import { WebviewTag } from "electron";
+import * as electron from "electron";
 import { getHeadingTree, modifyHeadings } from "./utils";
-import { addBookmarks, generate, getHeadingPosition, setOutline } from "./pdf";
+import { generate, getHeadingPosition, setOutline } from "./pdf";
 import { PDFDocument } from "pdf-lib";
 // Remember to rename these classes and interfaces!
 
@@ -134,6 +136,37 @@ export default class BetterExportPdfPlugin extends Plugin {
   async exportToPDF(file: TFile) {
     console.log("click better export to pdf");
 
+    // @ts-ignore
+    const result = await electron.remote.dialog.showSaveDialog({
+      title: "Export to PDF",
+      defaultPath: file.basename + ".pdf",
+      filters: [
+        { name: "All Files", extensions: ["*"] },
+        { name: "PDF", extensions: ["pdf"] },
+      ],
+      properties: ["showOverwriteConfirmation", "createDirectory"],
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const outputFile = result.filePath;
+
+    const tempRoot = path.join(os.tmpdir(), "Obdisian");
+    try {
+      await fs.mkdir(tempRoot, { recursive: true });
+    } catch (error) {
+      /* empty */
+    }
+
+    const tempPath = await fs.mkdtemp(path.join(tempRoot, "export"));
+    try {
+      await fs.mkdir(tempPath, { recursive: true });
+    } catch (error) {
+      /* empty */
+    }
+
     const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
 
     const preview = view.previewMode;
@@ -147,13 +180,14 @@ export default class BetterExportPdfPlugin extends Plugin {
     console.log("container:", container);
     const webview = document.createElement("webview");
 
-    const doc = await this.renderFile(file);
+    const doc = await this.renderFile(file, tempPath);
 
-    const rootPath = path.join(this.app.vault.adapter.basePath, this.manifest.dir ?? "", "tmp");
-    const htmlFile = path.join(rootPath, "test.html");
-    await fs.writeFile(htmlFile, doc.documentElement.innerHTML);
+    console.log(file);
 
-    webview.src = `file:///${htmlFile}`;
+    const tempFile = path.join(tempPath, "index.html");
+    await fs.writeFile(tempFile, doc.documentElement.innerHTML);
+
+    webview.src = `file:///${tempFile}`;
     webview.nodeintegration = true;
 
     let completed = false;
@@ -181,18 +215,15 @@ export default class BetterExportPdfPlugin extends Plugin {
         // },
       });
 
-      const posistions = await getHeadingPosition(data);
+      const pdfDoc = await PDFDocument.load(data);
+      const posistions = await getHeadingPosition(pdfDoc);
       const headings = await getHeadingTree(doc);
 
       const outlines = generate(headings, posistions);
 
-      const pdfDoc = await PDFDocument.load(data);
       setOutline(pdfDoc, outlines);
-      // data = addBookmarks(data, headings, posistions).Stream;
       data = await pdfDoc.save();
-      const pdfFile = path.join(rootPath, "test.pdf");
-      console.log("pdf-data:", pdfFile, data);
-      await fs.writeFile(pdfFile, data);
+      await fs.writeFile(outputFile, data);
     } catch (error) {
       console.log(error);
     }
@@ -284,9 +315,9 @@ export default class BetterExportPdfPlugin extends Plugin {
     modifyHeadings(doc);
   }
 
-  async renderFile(file: TFile) {
+  async renderFile(file: TFile, tempPath: string) {
     const doc = document.implementation.createHTMLDocument(file.basename);
-    await this.createHead(doc);
+    await this.createHead(doc, tempPath);
     await this.createBody(doc, file);
     return doc;
   }
@@ -297,18 +328,10 @@ export default class BetterExportPdfPlugin extends Plugin {
    * @param container
    * @returns
    */
-  async createHead(doc: Document) {
+  async createHead(doc: Document, tempPath: string) {
     const cssTexts = this.getAllStyles();
 
-    // @ts-ignore
-    const rootPath = path.join(this.app.vault.adapter.basePath, this.manifest.dir ?? "", "tmp");
-
-    try {
-      await fs.mkdir(rootPath, { recursive: true });
-    } catch (error) {
-      /* empty */
-    }
-    const appCssFile = path.join(rootPath, "app.css");
+    const appCssFile = path.join(tempPath, "app.css");
 
     await fs.writeFile(appCssFile, cssTexts.join("\n"));
 
