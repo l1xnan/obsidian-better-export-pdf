@@ -259,10 +259,14 @@ export default class BetterExportPdfPlugin extends Plugin {
     renderNode.className = "markdown-preview-view markdown-rendered";
 
     const printNode = document.createElement("div");
-    printNode.className = "print print-preview";
+    printNode.className = "print"; // print-preview
 
     printNode.appendChild(renderNode);
     doc.body.appendChild(printNode);
+
+    Array.from(document.body.attributes).forEach(({ name, value }) => {
+      doc.body.setAttribute(name, value);
+    });
   }
 
   async renderFile(file: TFile) {
