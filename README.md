@@ -168,3 +168,7 @@ t.postProcess = function(e, t) {
 ```bash
 set ELECTRON_SKIP_BINARY_DOWNLOAD=1 && pnpm i
 ```
+
+```
+https://cdn.jsdelivr.net/npm/pagedjs@0.4.3/dist/paged.polyfill.min.js
+```
