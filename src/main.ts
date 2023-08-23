@@ -1,9 +1,19 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
-import { writeFile } from "fs/promises";
+import * as fs from "fs/promises";
+import {
+  App,
+  Editor,
+  MarkdownRenderer,
+  MarkdownView,
+  Modal,
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  TFile,
+} from "obsidian";
+import * as path from "path";
 
 import { WebviewTag } from "electron";
-import * as fs from "fs";
-import * as path from "path";
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
@@ -37,7 +47,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       id: "open-sample-modal-simple",
       name: "Open sample modal (simple)",
       callback: () => {
-        new SampleModal(this.app).open();
+        new ConfigModal(this.app).open();
       },
     });
     // This adds an editor command that can perform some operation on the current editor instance
@@ -60,7 +70,7 @@ export default class BetterExportPdfPlugin extends Plugin {
           // If checking is true, we're simply "checking" if the command can be run.
           // If checking is false, then we want to actually perform the operation.
           if (!checking) {
-            new SampleModal(this.app).open();
+            new ConfigModal(this.app).open();
           }
 
           // This command will only show up in Command Palette when the check function returns true
@@ -70,7 +80,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
 
     // This adds a settings tab so the user can configure various aspects of the plugin
-    this.addSettingTab(new SampleSettingTab(this.app, this));
+    this.addSettingTab(new ConfigSettingTab(this.app, this));
 
     // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
     // Using this function will automatically remove the event listener when this plugin is disabled.
@@ -97,7 +107,9 @@ export default class BetterExportPdfPlugin extends Plugin {
               } finally {
                 document.querySelectorAll("webview").forEach((node) => {
                   console.log("webview");
-                  node.parentNode?.removeChild(node);
+                  if (process.argv[2] === "production") {
+                    node.parentNode?.removeChild(node);
+                  }
                 });
               }
             });
@@ -118,120 +130,26 @@ export default class BetterExportPdfPlugin extends Plugin {
 
   async exportToPDF(file: TFile) {
     console.log("click better export to pdf");
-    // const markdown = getCurrentMarkdownContent();
-
-    const workspace = this.app.workspace;
-    console.log("workspace:", workspace);
 
     const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
-    // const leaf = workspace.getLeaf("window");
-    // console.log("leaf:", leaf);
-    // await leaf.openFile(file, { active: false });
 
-    // const view = leaf.view as MarkdownView;
-    console.log("view:", view);
-    console.log("data:", view.data);
-
-    // // waitUntil(() => leaf != undefined && leaf.view?.previewMode, 2000, 10);
     const preview = view.previewMode;
-    console.log("====preview:", preview);
     // @ts-ignore
     preview.renderer.showAll = true;
     // @ts-ignore
     await preview.renderer.unfoldAllHeadings();
 
     const container = preview.containerEl;
-
-    // let lastRender = preview.renderer.lastRender;
-    // preview.renderer.rerender(true);
-    // let container = preview.containerEl;
-    console.log("container:", container);
-    if (container) {
-      // postProcessHTML(file, container);
-      // AssetHandler.loadMathjaxStyles();
-      // return container.innerHTML;
-    }
     console.log("html:", container.innerHTML);
-
-    // console.log("previewMode:", previewMode);
-
+    console.log("container:", container);
     const webview = document.createElement("webview");
 
-    const cssTexts = this.getAllStyles();
+    const doc = await this.renderFile(file);
 
-    const doc = document.implementation.createHTMLDocument(file.basename);
-
-    // @ts-ignore
     const rootPath = path.join(this.app.vault.adapter.basePath, this.manifest.dir ?? "", "tmp");
-
-    try {
-      fs.mkdirSync(rootPath, { recursive: true });
-    } catch (error) {
-      /* empty */
-    }
-    const appCssFile = path.join(rootPath, "app.css");
-
-    const cssContent = cssTexts.join("\n");
-    try {
-      const res = await writeFile(appCssFile, cssContent);
-      console.log("write css:", res);
-    } catch (error) {
-      console.log(error);
-    }
-    // fs.writeFileSync(appCssFile, cssContent);
-
-    const linkNode = doc.createElement("link");
-    linkNode.href = "./app.css";
-    linkNode.rel = "stylesheet";
-
-    const stylePatch = `
-		@media print {
-			.markdown-reading-view {
-				display: block !important;
-			}
-			.markdown-preview-view {
-				overflow-y: visible !important;
-			}
-		}
-		.markdown-preview-sizer {
-			padding-bottom: 0 !important;
-		}
-		`;
-    const styleElement = doc.createElement("style");
-    styleElement.innerHTML = stylePatch;
-    doc.head.appendChild(styleElement);
-
-    // 将 <style> 元素追加到 <head> 标签中
-    doc.head.appendChild(linkNode);
-
-    // const mathjax1 = `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>`;
-    // const mathjax2 = `<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>`;
-
-    // const script1 = document.createElement("span");
-    // script1.innerHTML = mathjax1;
-    // doc.head.appendChild(script1);
-
-    // const script2 = document.createElement("span");
-    // script2.innerHTML = mathjax2;
-    // doc.head.appendChild(script2);
-
-    const node1 = doc.createElement("div");
-    node1.className = "print";
-
-    const node2 = doc.importNode(container, true);
-    node1.appendChild(node2);
-
-    doc.body.appendChild(node1);
-
-    doc.querySelectorAll(".markdown-preview-sizer").forEach((item: HTMLElement) => {
-      item.style.paddingBottom = "unnest";
-    });
-
-    // ====
-    const fullhtml = doc.documentElement.innerHTML;
-
     const htmlFile = path.join(rootPath, "test.html");
-    fs.writeFileSync(htmlFile, fullhtml);
+    await fs.writeFile(htmlFile, doc.documentElement.innerHTML);
+
     webview.src = `file:///${htmlFile}`;
     webview.nodeintegration = true;
 
@@ -243,12 +161,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
 
     await waitFor(() => completed);
-    // const scripts = this.getAllScripts()
-    // console.log("scripts:", scripts);
+
     const w = document.querySelector("webview:last-child") as WebviewTag;
     console.log("webviewID", w.getWebContentsId());
     // w.openDevTools();
-    await sleep(5000);
+    await sleep(5000); // 5s
     try {
       const data = await w.printToPDF({
         pageSize: "A4",
@@ -262,11 +179,162 @@ export default class BetterExportPdfPlugin extends Plugin {
       });
       const pdfFile = path.join(rootPath, "test.pdf");
       console.log("pdf-data:", pdfFile, data);
-      fs.writeFileSync(pdfFile, data);
+      await fs.writeFile(pdfFile, data);
     } catch (error) {
       console.log(error);
     }
     console.log("finished");
+  }
+
+  async renderMarkdown(file: TFile) {
+    const workspace = this.app.workspace;
+    console.log("workspace:", workspace);
+
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+    const leaf = workspace.getLeaf("window");
+
+    console.log("leaf:", leaf);
+    await leaf.openFile(file, { active: true });
+    // @ts-ignore
+    await waitFor(() => leaf?.view.previewMode, 2000);
+
+    // const view = leaf.view as MarkdownView;
+    console.log("view:", view);
+    console.log("data:", view.data);
+
+    // @ts-ignore
+    await view.setMode(view.modes["preview"]);
+
+    const preview = view.previewMode;
+    console.log("====preview:", preview);
+
+    // @ts-ignore
+    preview.renderer.showAll = true;
+    // @ts-ignore
+    await preview.renderer.unfoldAllHeadings();
+
+    // @ts-ignore
+    let lastRender = preview.renderer.lastRender;
+    // @ts-ignore
+    preview.renderer.rerender(true);
+    let isRendered = false;
+    // @ts-ignore
+    preview.renderer.onRendered(() => {
+      isRendered = true;
+    });
+
+    await waitFor(
+      // @ts-ignore
+      () => preview.renderer.lastRender != lastRender && isRendered,
+      10 * 1000,
+    );
+    // @ts-ignore
+    const container = preview.containerEl;
+    console.log("html:", container.innerHTML);
+
+    // await waitFor(() => {
+    //   // @ts-ignore
+    //   const currRender = preview.renderer.lastRender;
+    //   if (currRender == lastRender) {
+    //     return true;
+    //   }
+    //   lastRender = currRender;
+    //   return false;
+    // });
+
+    console.log("container:", container);
+  }
+  /**
+   * 处理 body 正文内容 <body></body>
+   * @param doc
+   * @param file
+   */
+  async createBody(doc: Document, file: TFile) {
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+    const renderNode = doc.createElement("div");
+    await MarkdownRenderer.render(this.app, view.data, renderNode, file.path, view);
+    Array.from(renderNode.attributes).forEach((attr) => {
+      renderNode.removeAttribute(attr.name);
+    });
+    renderNode.className = "markdown-preview-view markdown-rendered";
+
+    const printNode = document.createElement("div");
+    printNode.className = "print print-preview";
+
+    printNode.appendChild(renderNode);
+    doc.body.appendChild(printNode);
+  }
+
+  async renderFile(file: TFile) {
+    const doc = document.implementation.createHTMLDocument(file.basename);
+    await this.createHead(doc);
+    await this.createBody(doc, file);
+    return doc;
+  }
+
+  /**
+   * 创建 <head></head>
+   * @param title
+   * @param container
+   * @returns
+   */
+  async createHead(doc: Document) {
+    const cssTexts = this.getAllStyles();
+
+    // @ts-ignore
+    const rootPath = path.join(this.app.vault.adapter.basePath, this.manifest.dir ?? "", "tmp");
+
+    try {
+      await fs.mkdir(rootPath, { recursive: true });
+    } catch (error) {
+      /* empty */
+    }
+    const appCssFile = path.join(rootPath, "app.css");
+
+    await fs.writeFile(appCssFile, cssTexts.join("\n"));
+
+    const linkNode = doc.createElement("link");
+    linkNode.href = "./app.css";
+    linkNode.rel = "stylesheet";
+
+    // 样式补丁
+    const stylePatch = `
+    @media print {
+    	.print .markdown-preview-view {
+    		height: auto !important;
+    	}
+    }
+		`;
+    const styleElement = doc.createElement("style");
+    styleElement.innerHTML = stylePatch;
+    doc.head.appendChild(styleElement);
+
+    // 将 <style> 元素追加到 <head> 标签中
+    doc.head.appendChild(linkNode);
+
+    // app://xxx.js 相关内部 js
+    this.getAppScripts().forEach((src) => {
+      const script = doc.createElement("script");
+      script.src = src;
+      script.type = "text/javascript";
+      doc.head.appendChild(script);
+    });
+
+    {
+      // 本地预览html时是加载外部 mathjax 资源
+      const mathjax1 = `<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>`;
+      const mathjax2 = `<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>`;
+
+      const script1 = document.createElement("span");
+      script1.innerHTML = mathjax1;
+      doc.head.appendChild(script1);
+
+      const script2 = document.createElement("span");
+      script2.innerHTML = mathjax2;
+      doc.head.appendChild(script2);
+    }
+
+    return doc;
   }
 
   postProcessHTML(doc: Document, html: HTMLElement) {
@@ -347,6 +415,12 @@ export default class BetterExportPdfPlugin extends Plugin {
     }
     return jsScripts;
   }
+  getAppScripts() {
+    return Array.from(document.scripts)
+      .map((script) => script.src)
+      .filter((src) => src?.startsWith("app://"));
+  }
+
   async inlineMedia(doc: Document, file: TFile) {
     doc.querySelectorAll("img, audio, video").forEach(async (elem) => {
       const src = elem.getAttribute("src");
@@ -358,7 +432,7 @@ export default class BetterExportPdfPlugin extends Plugin {
         //@ts-ignore
         const filePath = this.app.vault.resolveFileUrl(src);
         let extension = file.extension;
-        const base64 = fs.readFileSync(filePath, { encoding: "base64" });
+        const base64 = await fs.readFile(filePath, { encoding: "base64" });
 
         //@ts-ignore
         const type = this.app.viewRegistry.typeByExtension[extension] ?? "audio";
@@ -430,7 +504,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 }
 
-class SampleModal extends Modal {
+class ConfigModal extends Modal {
   constructor(app: App) {
     super(app);
   }
@@ -446,7 +520,7 @@ class SampleModal extends Modal {
   }
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class ConfigSettingTab extends PluginSettingTab {
   plugin: BetterExportPdfPlugin;
 
   constructor(app: App, plugin: BetterExportPdfPlugin) {
