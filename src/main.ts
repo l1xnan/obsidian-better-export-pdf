@@ -14,6 +14,8 @@ import {
 import * as path from "path";
 
 import { WebviewTag } from "electron";
+import { getHeadingTree, modifyHeadings } from "./utils";
+import { addBookmarks, getHeadingPosition } from "./pdf";
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
@@ -167,16 +169,22 @@ export default class BetterExportPdfPlugin extends Plugin {
     // w.openDevTools();
     await sleep(5000); // 5s
     try {
-      const data = await w.printToPDF({
+      let data = await w.printToPDF({
         pageSize: "A4",
         scale: 1,
-        margins: {
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0,
-        },
+        // margins: {
+        //   top: 0,
+        //   bottom: 0,
+        //   left: 0,
+        //   right: 0,
+        // },
       });
+
+      const posistions = await getHeadingPosition(data);
+      const headings = await getHeadingTree(doc);
+
+      // data = addBookmarks(data, headings, posistions).Stream;
+
       const pdfFile = path.join(rootPath, "test.pdf");
       console.log("pdf-data:", pdfFile, data);
       await fs.writeFile(pdfFile, data);
@@ -267,6 +275,8 @@ export default class BetterExportPdfPlugin extends Plugin {
     Array.from(document.body.attributes).forEach(({ name, value }) => {
       doc.body.setAttribute(name, value);
     });
+
+    modifyHeadings(doc);
   }
 
   async renderFile(file: TFile) {
@@ -307,6 +317,23 @@ export default class BetterExportPdfPlugin extends Plugin {
     	.print .markdown-preview-view {
     		height: auto !important;
     	}
+
+			.md-print-anchor {
+				white-space: pre !important;
+				border-left: none !important;
+				border-right: none !important;
+				border-top: none !important;
+				border-bottom: none !important;
+				display: inline-block !important;
+				position: absolute !important;
+				width: 1px !important;
+				height: 1px !important;
+				right: 0 !important;
+				outline: 0 !important;
+				background: 0 0 !important;
+				text-decoration: initial !important;
+				text-shadow: initial !important;
+			}
     }
 		`;
     const styleElement = doc.createElement("style");
