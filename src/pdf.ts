@@ -1,16 +1,13 @@
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString } from "pdf-lib";
 
 import { TreeNode } from "./utils";
-import { TPDFNode, TPDFOutLineMaker, TPDFAnalyst, TPDFPageMode } from "./pdf-designer/pdf-designer";
 
 interface TPosition {
   [key: string]: number[];
 }
 
-export async function getHeadingPosition(buffer: ArrayBuffer | Uint8Array): Promise<TPosition> {
-  const pdfDoc = await PDFDocument.load(buffer);
+export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition> {
   const pages = pdfDoc.getPages();
-  const pageHeight = pages[0].getHeight();
   const links: TPosition = {};
 
   pages.forEach((page, pageIndex) => {
@@ -34,7 +31,6 @@ export async function getHeadingPosition(buffer: ArrayBuffer | Uint8Array): Prom
           if (regexMatch) {
             const rect = (annotation.get(PDFName.of("Rect")) as PDFArray)?.asRectangle();
             const linkUrl = regexMatch[1];
-            // const yPos = pageHeight - rect.height - rect.y;
             const yPos = rect.y;
             links[linkUrl] = [pageIndex, yPos];
           }
@@ -48,43 +44,7 @@ export async function getHeadingPosition(buffer: ArrayBuffer | Uint8Array): Prom
   return links;
 }
 
-export function addBookmarks(buffer: Uint8Array, root: TreeNode, positions: TPosition) {
-  console.log(root, positions);
-  const PDFOutLineMaker = new TPDFOutLineMaker();
-  const PDFAnalyst = new TPDFAnalyst();
-
-  PDFAnalyst.LoadFromStream(buffer);
-  PDFOutLineMaker.View.PageMode = TPDFPageMode.pmUseOutlines;
-
-  const addRoot = (title: string, pageIdx: number, pos: number) => {
-    return PDFOutLineMaker.OutLine.AddRoot(title, pageIdx, pos, "", false, false, null);
-  };
-
-  const generateOutline = (node: TreeNode, outline: TPDFNode) => {
-    for (const item of node.children) {
-      const [pageIdx, pos] = positions[item.key];
-      const child = outline.AddChild(item.title, pageIdx, pos, "", false, false, null);
-      generateOutline(item, child);
-    }
-  };
-
-  for (const item of root.children) {
-    const position = positions[item.key];
-    if (!position) {
-      console.error(`${item.key} not find position`);
-      continue;
-    }
-    const [pageIdx, pos] = position;
-    const child = addRoot(item.title, pageIdx, pos);
-    generateOutline(item, child);
-  }
-
-  const stream = PDFOutLineMaker.Save(PDFAnalyst);
-  return stream;
-}
-
 export function generate(root: TreeNode, positions: TPosition) {
-  console.log(root, positions);
   const _outline = (node: TreeNode) => {
     const [pageIdx, pos] = positions?.[node.key] ?? [0, 0];
     const outline: PDFOutline = {
@@ -106,8 +66,9 @@ export function generate(root: TreeNode, positions: TPosition) {
 
   return _outline(root)?.children ?? [];
 }
-// --- Outline ---
 
+// From: https://github.com/marp-team/marp-cli/blob/d0cee502f2785e1a2f998f3afc831849e3f6efc9/src/utils/pdf.ts
+// --- Outline ---
 type PDFOutlineTo =
   // | string
   number | [pageIndex: number, xPercentage: number, yPercentage: number];
