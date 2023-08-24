@@ -44,7 +44,7 @@ export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition
   return links;
 }
 
-export function generate(root: TreeNode, positions: TPosition) {
+export function generateOutlines(root: TreeNode, positions: TPosition) {
   const _outline = (node: TreeNode) => {
     const [pageIdx, pos] = positions?.[node.key] ?? [0, 0];
     const outline: PDFOutline = {

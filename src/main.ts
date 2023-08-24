@@ -17,7 +17,7 @@ import * as path from "path";
 import { WebviewTag } from "electron";
 import * as electron from "electron";
 import { getHeadingTree, modifyHeadings } from "./utils";
-import { generate, getHeadingPosition, setOutline } from "./pdf";
+import { generateOutlines, getHeadingPosition, setOutline } from "./pdf";
 import { PDFDocument } from "pdf-lib";
 // Remember to rename these classes and interfaces!
 
@@ -192,9 +192,6 @@ export default class BetterExportPdfPlugin extends Plugin {
     // @ts-ignore
     await preview.renderer.unfoldAllHeadings();
 
-    const container = preview.containerEl;
-    console.log("html:", container.innerHTML);
-    console.log("container:", container);
     const webview = document.createElement("webview");
 
     const doc = await this.renderFile(file, tempPath);
@@ -202,6 +199,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     console.log(file);
 
     const tempFile = path.join(tempPath, "index.html");
+    console.log("temp html file:", tempFile);
     await fs.writeFile(tempFile, doc.documentElement.innerHTML);
 
     webview.src = `file:///${tempFile}`;
@@ -227,7 +225,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       const posistions = await getHeadingPosition(pdfDoc);
       const headings = await getHeadingTree(doc);
 
-      const outlines = generate(headings, posistions);
+      const outlines = generateOutlines(headings, posistions);
 
       setOutline(pdfDoc, outlines);
       data = await pdfDoc.save();
