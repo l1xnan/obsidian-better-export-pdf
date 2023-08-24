@@ -140,9 +140,11 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const printOptions: electron.PrintToPDFOptions = {
       ...config,
+      scale: config["scale"] / 100,
     };
 
     if (config.marginType == "3") {
+      // Custom Margin
       printOptions["margins"] = {
         top: parseInt(config["marginTop"] ?? "0"),
         bottom: parseInt(config["marginBottom"] ?? "0"),
@@ -580,6 +582,7 @@ interface TConfig {
   open: boolean;
   landscape: boolean;
   scale: number;
+  showTitle: boolean;
 
   marginTop?: string;
   marginBottom?: string;
@@ -600,9 +603,14 @@ class ExportConfigModal extends Modal {
     this.result = {
       pageSise: "A4",
       marginType: "1",
+      showTitle: true,
       open: true,
       scale: 1,
       landscape: false,
+      marginTop: "0",
+      marginBottom: "0",
+      marginLeft: "0",
+      marginRight: "0",
     };
     this.callback = callback;
   }
@@ -613,19 +621,23 @@ class ExportConfigModal extends Modal {
     contentEl.empty();
 
     this.titleEl.setText("Export to PDF");
-
+    new Setting(contentEl).setName("Add filename as title").addToggle((toggle) =>
+      toggle
+        .setTooltip("Add filename as title")
+        .setValue(true)
+        .onChange(async (value) => {
+          this.result["showTitle"] = value;
+        }),
+    );
     const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger"];
-    new Setting(contentEl)
-      .setName("Page Size")
-      // .setHeading()
-      .addDropdown((dropdown) => {
-        dropdown
-          .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
-          .setValue("A4")
-          .onChange(async (value: string) => {
-            this.result["pageSise"] = value;
-          });
-      });
+    new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
+      dropdown
+        .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
+        .setValue("A4")
+        .onChange(async (value: string) => {
+          this.result["pageSise"] = value;
+        });
+    });
 
     new Setting(contentEl).setName("Margin").addDropdown((dropdown) => {
       dropdown
@@ -648,42 +660,54 @@ class ExportConfigModal extends Modal {
 
     const topEl = new Setting(contentEl)
       .setName("Top/Bottom")
-      .setHeading()
       .addText((text) => {
-        text.setPlaceholder("margin top").onChange((value) => {
-          this.result["marginTop"] = value;
-        });
+        text
+          .setPlaceholder("margin top")
+          .setValue("0")
+          .onChange((value) => {
+            this.result["marginTop"] = value;
+          });
       })
       .addText((text) =>
-        text.setPlaceholder("margin bottom").onChange((value) => {
-          this.result["marginBottom"] = value;
-        }),
+        text
+          .setPlaceholder("margin bottom")
+          .setValue("0")
+          .onChange((value) => {
+            this.result["marginBottom"] = value;
+          }),
       );
     topEl.settingEl.hidden = true;
     const btmEl = new Setting(contentEl)
       .setName("Left/Right")
-      .setHeading()
       .addText((text) => {
-        text.setPlaceholder("margin left").onChange((value) => {
-          this.result["marginLeft"] = value;
-        });
+        text
+          .setPlaceholder("margin left")
+          .setValue("0")
+          .onChange((value) => {
+            this.result["marginLeft"] = value;
+          });
       })
       .addText((text) =>
-        text.setPlaceholder("margin right").onChange((value) => {
-          this.result["marginRight"] = value;
-        }),
+        text
+          .setPlaceholder("margin right")
+          .setValue("0")
+          .onChange((value) => {
+            this.result["marginRight"] = value;
+          }),
       );
     btmEl.settingEl.hidden = true;
 
-    new Setting(contentEl).setName("Scale").addSlider((slider) => {
+    new Setting(contentEl).setName("Downscale precent").addSlider((slider) => {
       slider
-        .setLimits(0, 1, 0.1)
-        .setValue(1)
+        .setLimits(0, 100, 1)
+
+        .setValue(100)
         .onChange(async (value) => {
           this.result["scale"] = value;
+          slider.showTooltip();
         });
     });
-    new Setting(contentEl).setName("landscape").addToggle((toggle) =>
+    new Setting(contentEl).setName("Landscape").addToggle((toggle) =>
       toggle
         .setTooltip("landscape")
         .setValue(false)
