@@ -1,4 +1,4 @@
-import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString } from "pdf-lib";
+import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
 
 import { TreeNode } from "./utils";
 
@@ -213,3 +213,19 @@ export const setOutline = async (doc: PDFDocument, outlines: readonly PDFOutline
 
   doc.catalog.set(doc.context.obj("Outlines"), rootRef);
 };
+
+export async function addPageNumbers(doc: PDFDocument) {
+  const courierBoldFont = await doc.embedFont(StandardFonts.TimesRoman);
+  const pageIndices = doc.getPageIndices();
+
+  for (const pageIndex of pageIndices) {
+    const page = doc.getPage(pageIndex);
+
+    page.drawText(`${pageIndex + 1}`, {
+      x: page.getWidth() / 2,
+      y: 20,
+      font: courierBoldFont,
+      size: 12,
+    });
+  }
+}

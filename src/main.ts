@@ -17,7 +17,7 @@ import * as path from "path";
 import { WebviewTag } from "electron";
 import * as electron from "electron";
 import { getHeadingTree, modifyHeadings } from "./utils";
-import { generateOutlines, getHeadingPosition, setOutline } from "./pdf";
+import { generateOutlines, getHeadingPosition, setOutline, addPageNumbers } from "./pdf";
 import { PDFDocument } from "pdf-lib";
 
 import juice from "juice";
@@ -242,8 +242,8 @@ export default class BetterExportPdfPlugin extends Plugin {
       const headings = await getHeadingTree(doc);
 
       const outlines = generateOutlines(headings, posistions);
-
       setOutline(pdfDoc, outlines);
+      await addPageNumbers(pdfDoc);
       data = await pdfDoc.save();
       await fs.writeFile(outputFile, data);
 
@@ -329,6 +329,10 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
     renderNode.className = "markdown-preview-view markdown-rendered";
 
+    const header = doc.createElement("h1");
+    header.innerHTML = file.basename;
+    renderNode.insertBefore(header, renderNode.firstChild);
+
     const printNode = document.createElement("div");
     printNode.className = "print"; // print-preview
 
@@ -380,6 +384,11 @@ export default class BetterExportPdfPlugin extends Plugin {
 				background: 0 0 !important;
 				text-decoration: initial !important;
 				text-shadow: initial !important;
+			}
+			
+			.markdown-preview-view {
+				text-align: justify;
+				hyphens: auto;
 			}
     }
 		`;
