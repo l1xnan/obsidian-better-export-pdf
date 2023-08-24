@@ -19,6 +19,9 @@ import * as electron from "electron";
 import { getHeadingTree, modifyHeadings } from "./utils";
 import { generateOutlines, getHeadingPosition, setOutline } from "./pdf";
 import { PDFDocument } from "pdf-lib";
+
+import juice from "juice";
+
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
@@ -138,17 +141,28 @@ export default class BetterExportPdfPlugin extends Plugin {
   async exportToPDF(file: TFile, config: TConfig) {
     console.log("export to pdf:", config);
 
-    const printOptions: electron.PrintToPDFOptions = { ...config, scale: config["scale"] / 100 };
+    const printOptions: electron.PrintToPDFOptions = {
+      footerTemplate: '<div><span class="pageNumber"></span></div>',
+      pageSize: config["pageSise"],
+      ...config,
+      scale: config["scale"] / 100,
+      margins: {
+        marginType: "default",
+      },
+    };
 
     if (config.marginType == "3") {
       // Custom Margin
       printOptions["margins"] = {
-        top: parseInt(config["marginTop"] ?? "0"),
-        bottom: parseInt(config["marginBottom"] ?? "0"),
-        left: parseInt(config["marginLeft"] ?? "0"),
-        right: parseInt(config["marginRight"] ?? "0"),
+        marginType: "custom",
+        top: parseFloat(config["marginTop"] ?? "0"),
+        bottom: parseFloat(config["marginBottom"] ?? "0"),
+        left: parseFloat(config["marginLeft"] ?? "0"),
+        right: parseFloat(config["marginRight"] ?? "0"),
       };
     }
+
+    console.log(printOptions);
 
     // @ts-ignore
     const result = await electron.remote.dialog.showSaveDialog({
@@ -197,7 +211,12 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const tempFile = path.join(tempPath, "index.html");
     console.log("temp html file:", tempFile);
-    await fs.writeFile(tempFile, `<html>${doc.documentElement.innerHTML}</html>`);
+
+    const html = `<html>${doc.documentElement.innerHTML}</html>`;
+    await fs.writeFile(tempFile, html);
+
+    const inlineHtml = juice(html);
+    await fs.writeFile(path.join(tempPath, "inline-index.html"), inlineHtml);
 
     webview.src = `file:///${tempFile}`;
     webview.nodeintegration = true;
@@ -373,8 +392,12 @@ export default class BetterExportPdfPlugin extends Plugin {
     linkNode.href = "./app.css";
     linkNode.rel = "stylesheet";
 
+    const styleElement = doc.createElement("style");
+    styleElement.innerHTML = cssTexts.join("\n");
+    doc.head.appendChild(styleElement);
+
     // 将 <style> 元素追加到 <head> 标签中
-    doc.head.appendChild(linkNode);
+    // doc.head.appendChild(linkNode);
 
     // app://xxx.js 相关内部 js
     this.getAppScripts().forEach((src) => {
@@ -450,11 +473,11 @@ export default class BetterExportPdfPlugin extends Plugin {
       cssTexts.push(division);
 
       Array.from(sheet.cssRules).forEach((rule) => {
-        if (/^(@font-face|.CodeMirror|.cm-)/.test(rule.cssText)) {
-          return;
-        }
         // ignore not find css selector
         if (rule instanceof CSSStyleRule) {
+          if (/^(@font-face|.CodeMirror|.cm-)[^,]*$/.test(rule.selectorText)) {
+            return;
+          }
           // mathjax not ignore
           if (id != "MJX-CHTML-styles" && rule?.selectorText && !doc.querySelector(rule?.selectorText)) {
             return;

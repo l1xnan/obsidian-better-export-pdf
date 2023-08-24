@@ -23,6 +23,7 @@
 		"typescript": "5.1.6"
 	},
 	"dependencies": {
+		"juice": "^9.1.0",
 		"pdf-lib": "^1.17.1"
 	}
 }
