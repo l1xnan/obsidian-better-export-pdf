@@ -138,10 +138,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   async exportToPDF(file: TFile, config: TConfig) {
     console.log("export to pdf:", config);
 
-    const printOptions: electron.PrintToPDFOptions = {
-      ...config,
-      scale: config["scale"] / 100,
-    };
+    const printOptions: electron.PrintToPDFOptions = { ...config, scale: config["scale"] / 100 };
 
     if (config.marginType == "3") {
       // Custom Margin
@@ -200,7 +197,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const tempFile = path.join(tempPath, "index.html");
     console.log("temp html file:", tempFile);
-    await fs.writeFile(tempFile, doc.documentElement.innerHTML);
+    await fs.writeFile(tempFile, `<html>${doc.documentElement.innerHTML}</html>`);
 
     webview.src = `file:///${tempFile}`;
     webview.nodeintegration = true;
@@ -328,8 +325,8 @@ export default class BetterExportPdfPlugin extends Plugin {
 
   async renderFile(file: TFile, tempPath: string) {
     const doc = document.implementation.createHTMLDocument(file.basename);
-    await this.createHead(doc, tempPath);
     await this.createBody(doc, file);
+    await this.createHead(doc, tempPath);
     return doc;
   }
 
@@ -340,18 +337,10 @@ export default class BetterExportPdfPlugin extends Plugin {
    * @returns
    */
   async createHead(doc: Document, tempPath: string) {
-    const cssTexts = this.getAllStyles();
-
-    const appCssFile = path.join(tempPath, "app.css");
-
-    await fs.writeFile(appCssFile, cssTexts.join("\n"));
-
-    const linkNode = doc.createElement("link");
-    linkNode.href = "./app.css";
-    linkNode.rel = "stylesheet";
-
+    const cssTexts = this.getAllStyles(doc);
     // 样式补丁
     const stylePatch = `
+		/* ---------- css patch ---------- */
     @media print {
     	.print .markdown-preview-view {
     		height: auto !important;
@@ -375,9 +364,14 @@ export default class BetterExportPdfPlugin extends Plugin {
 			}
     }
 		`;
-    const styleElement = doc.createElement("style");
-    styleElement.innerHTML = stylePatch;
-    doc.head.appendChild(styleElement);
+    cssTexts.push(stylePatch);
+    const appCssFile = path.join(tempPath, "app.css");
+
+    await fs.writeFile(appCssFile, cssTexts.join("\n"));
+
+    const linkNode = doc.createElement("link");
+    linkNode.href = "./app.css";
+    linkNode.rel = "stylesheet";
 
     // 将 <style> 元素追加到 <head> 标签中
     doc.head.appendChild(linkNode);
@@ -435,12 +429,17 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
   }
 
-  getAllStyles() {
+  getAllStyles(doc: Document) {
     const cssTexts: string[] = [];
 
     Array.from(document.styleSheets).forEach((sheet) => {
       // @ts-ignore
       const id = sheet.ownerNode?.id;
+
+      // <style id="svelte-xxx" ignore
+      if (id?.startsWith("svelte-")) {
+        return;
+      }
       // @ts-ignore
       const href = sheet.ownerNode?.href;
 
@@ -451,10 +450,16 @@ export default class BetterExportPdfPlugin extends Plugin {
       cssTexts.push(division);
 
       Array.from(sheet.cssRules).forEach((rule) => {
-        // if (rule.cssText.startsWith("@font-face")) continue;
-        // if (rule.cssText.startsWith(".CodeMirror")) continue;
-        // if (rule.cssText.startsWith(".cm-")) continue;
-
+        if (/^(@font-face|.CodeMirror|.cm-)/.test(rule.cssText)) {
+          return;
+        }
+        // ignore not find css selector
+        if (rule instanceof CSSStyleRule) {
+          // mathjax not ignore
+          if (id != "MJX-CHTML-styles" && rule?.selectorText && !doc.querySelector(rule?.selectorText)) {
+            return;
+          }
+        }
         const cssText = rule.cssText
           .replaceAll(`url("public/`, `url("https://publish.obsidian.md/public/`)
           .replaceAll(`url("lib/`, `url("https://publish.obsidian.md/lib/`);
@@ -575,7 +580,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 }
 
 interface TConfig {
-  pageSise: string;
+  pageSise: electron.PrintToPDFOptions["pageSize"];
   marginType: string;
   open: boolean;
   landscape: boolean;
@@ -603,7 +608,7 @@ class ExportConfigModal extends Modal {
       marginType: "1",
       showTitle: true,
       open: true,
-      scale: 1,
+      scale: 100,
       landscape: false,
       marginTop: "0",
       marginBottom: "0",
@@ -633,6 +638,7 @@ class ExportConfigModal extends Modal {
         .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
         .setValue("A4")
         .onChange(async (value: string) => {
+          // @ts-ignore
           this.result["pageSise"] = value;
         });
     });
