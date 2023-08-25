@@ -303,15 +303,15 @@ export default class BetterExportPdfPlugin extends Plugin {
     const container = preview.containerEl;
     console.log("html:", container.innerHTML);
 
-    // await waitFor(() => {
-    //   // @ts-ignore
-    //   const currRender = preview.renderer.lastRender;
-    //   if (currRender == lastRender) {
-    //     return true;
-    //   }
-    //   lastRender = currRender;
-    //   return false;
-    // });
+    await waitFor(() => {
+      // @ts-ignore
+      const currRender = preview.renderer.lastRender;
+      if (currRender == lastRender) {
+        return true;
+      }
+      lastRender = currRender;
+      return false;
+    });
 
     console.log("container:", container);
   }
@@ -433,35 +433,13 @@ export default class BetterExportPdfPlugin extends Plugin {
     return doc;
   }
 
-  postProcessHTML(doc: Document, html: HTMLElement) {
-    // transclusions put a div inside a p tag, which is invalid html. Fix it here
-    html.querySelectorAll("p:has(div)").forEach((element) => {
-      // replace the p tag with a span
-      const span = doc.createElement("span");
-      span.innerHTML = element.innerHTML;
-      element.replaceWith(span);
-    });
-
-    // encode all text input values into attributes
-    html.querySelectorAll("input[type=text]").forEach((element: HTMLElement) => {
-      // @ts-ignore
-      element.setAttribute("value", element.value);
-      // @ts-ignore
-      element.value = "";
-    });
-
-    html.querySelectorAll("textarea").forEach((element: HTMLElement) => {
-      // @ts-ignore
-      element.textContent = element.value;
-    });
-  }
   getStyleTags() {
     return Array.from(document.getElementsByTagName("style")).map((style) => {
       return style.textContent || style.innerHTML;
     });
   }
 
-  getAllStyles(doc: Document) {
+  getAllStyles(doc: Document, clear = false) {
     const cssTexts: string[] = [];
 
     Array.from(document.styleSheets).forEach((sheet) => {
@@ -482,13 +460,17 @@ export default class BetterExportPdfPlugin extends Plugin {
       cssTexts.push(division);
 
       Array.from(sheet.cssRules).forEach((rule) => {
-        // ignore not find css selector
-        if (rule instanceof CSSStyleRule) {
-          if (/^(@font-face|.CodeMirror|.cm-)[^,]*$/.test(rule.selectorText)) {
-            return;
+        if (clear) {
+          if (rule instanceof CSSStyleRule) {
+            if (/^(.CodeMirror|.cm-)[^,]*$/.test(rule.selectorText)) {
+              return;
+            }
+            // ignore not find css selector, mathjax not ignore
+            if (id != "MJX-CHTML-styles" && rule?.selectorText && !doc.querySelector(rule?.selectorText)) {
+              return;
+            }
           }
-          // mathjax not ignore
-          if (id != "MJX-CHTML-styles" && rule?.selectorText && !doc.querySelector(rule?.selectorText)) {
+          if (rule.cssText.startsWith("@font-face")) {
             return;
           }
         }
@@ -503,7 +485,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
   async getAllScripts() {
     const scriptTags = document.scripts;
-    const jsScripts = [];
+    const jsScripts: string[] = [];
 
     for (let i = 0; i < scriptTags.length; i++) {
       const scriptTag = scriptTags[i];
@@ -552,7 +534,8 @@ export default class BetterExportPdfPlugin extends Plugin {
       }
     });
   }
-  demo1() {
+
+  changeConfig() {
     const theme = "obsidian" === this.app.vault?.getConfig("theme");
     if (theme) {
       document.body.addClass("theme-light");
@@ -570,9 +553,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       // t.hide();
     };
     node.addEventListener("click", reset);
-  }
 
-  demo2() {
     const el = document.body.createDiv("print");
 
     const el2 = el.createDiv("markdown-preview-view markdown-rendered");
@@ -582,31 +563,6 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     el2.createEl("h1", {
       text: "xxxxx", // a.basename
-    });
-
-    const renderText = ""; // MarkdownRenderer.render();
-
-    // renderText = sanitize(renderText)
-    const node = document.importNode(renderText, true);
-
-    el2.appendChild(node);
-
-    // el2.addClasses(tw(c)),
-
-    wP.postProcess(o, {
-      docId: wt(16),
-      sourcePath: a.path,
-      frontmatter: c,
-      promises: p,
-      addChild: function (e) {
-        return t.addChild(e);
-      },
-      getSectionInfo: function () {
-        return null;
-      },
-      containerEl: i,
-      el: i,
-      displayMode: !0,
     });
   }
 }
