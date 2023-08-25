@@ -38,6 +38,14 @@ export default class BetterExportPdfPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
+    this.registerIcon();
+    this.registerStstusBar();
+    this.registerCommand();
+    this.registerOther();
+    this.registerEvents();
+  }
+
+  registerIcon() {
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon("dice", "Sample Plugin", (evt: MouseEvent) => {
       // Called when the user clicks the icon.
@@ -45,11 +53,14 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
     // Perform additional things with the ribbon
     ribbonIconEl.addClass("my-plugin-ribbon-class");
-
+  }
+  registerStstusBar() {
     // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
     const statusBarItemEl = this.addStatusBarItem();
     statusBarItemEl.setText("Status Bar Text");
+  }
 
+  registerCommand() {
     // This adds a simple command that can be triggered anywhere
     this.addCommand({
       id: "open-sample-modal-simple",
@@ -60,11 +71,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
     // This adds an editor command that can perform some operation on the current editor instance
     this.addCommand({
-      id: "sample-editor-command",
-      name: "Sample editor command",
+      id: "better-to-pdf",
+      name: "Better to PDF",
       editorCallback: (editor: Editor, view: MarkdownView) => {
         console.log(editor.getSelection());
-        editor.replaceSelection("Sample Editor Command");
+        editor.replaceSelection("Better to PDF");
       },
     });
     // This adds a complex command that can check whether the current state of the app allows execution of the command
@@ -86,7 +97,9 @@ export default class BetterExportPdfPlugin extends Plugin {
         }
       },
     });
+  }
 
+  registerOther() {
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new ConfigSettingTab(this.app, this));
 
@@ -98,15 +111,17 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
     this.registerInterval(window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000));
+  }
 
+  registerEvents() {
     // Register the Export As HTML button in the file menu
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile) => {
         menu.addItem((item) => {
           item
-            .setTitle("Export to PDF")
+            .setTitle("Better to PDF")
             .setIcon("download")
-            .setSection("export")
+            .setSection("action")
             .onClick(async () => {
               new ExportConfigModal(this.app, async (config: TConfig) => {
                 try {
@@ -127,9 +142,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       }),
     );
   }
-
   onunload() {}
-
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
@@ -215,8 +228,9 @@ export default class BetterExportPdfPlugin extends Plugin {
     const html = `<html>${doc.documentElement.innerHTML}</html>`;
     await fs.writeFile(tempFile, html);
 
-    const inlineHtml = juice(html);
-    await fs.writeFile(path.join(tempPath, "inline-index.html"), inlineHtml);
+    // TODO: try inline css in order to debug pagedjs
+    // const inlineHtml = juice(html);
+    // await fs.writeFile(path.join(tempPath, "inline-index.html"), inlineHtml);
 
     webview.src = `file:///${tempFile}`;
     webview.nodeintegration = true;
