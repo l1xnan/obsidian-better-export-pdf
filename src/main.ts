@@ -22,6 +22,8 @@ import { PDFDocument } from "pdf-lib";
 
 import juice from "juice";
 
+const isDev = process.env.NODE_ENV === "development";
+
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
@@ -66,7 +68,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       id: "open-sample-modal-simple",
       name: "Open sample modal (simple)",
       callback: () => {
-        new ExportConfigModal(this.app).open();
+        new ExportConfigModal(this.app, () => {}).open();
       },
     });
     // This adds an editor command that can perform some operation on the current editor instance
@@ -89,7 +91,7 @@ export default class BetterExportPdfPlugin extends Plugin {
           // If checking is true, we're simply "checking" if the command can be run.
           // If checking is false, then we want to actually perform the operation.
           if (!checking) {
-            new ExportConfigModal(this.app).open();
+            new ExportConfigModal(this.app, () => {}).open();
           }
 
           // This command will only show up in Command Palette when the check function returns true
@@ -118,8 +120,12 @@ export default class BetterExportPdfPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile) => {
         menu.addItem((item) => {
+          let title = "Better to PDF";
+          if (isDev) {
+            title = `${title} (dev)`;
+          }
           item
-            .setTitle("Better to PDF")
+            .setTitle(title)
             .setIcon("download")
             .setSection("action")
             .onClick(async () => {
@@ -131,7 +137,7 @@ export default class BetterExportPdfPlugin extends Plugin {
                 } finally {
                   document.querySelectorAll("webview").forEach((node) => {
                     console.log("webview");
-                    if (process.argv[2] === "production") {
+                    if (!isDev) {
                       node.parentNode?.removeChild(node);
                     }
                   });
@@ -550,6 +556,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 
   changeConfig() {
+    // @ts-ignore
     const theme = "obsidian" === this.app.vault?.getConfig("theme");
     if (theme) {
       document.body.addClass("theme-light");
@@ -572,7 +579,9 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const el2 = el.createDiv("markdown-preview-view markdown-rendered");
 
+    // @ts-ignore
     el2.toggleClass("rtl", this.app.vault.getConfig("rightToLeft"));
+    // @ts-ignore
     el2.toggleClass("show-frontmatter", this.app.vault.getConfig("showFrontmatter"));
 
     el2.createEl("h1", {
