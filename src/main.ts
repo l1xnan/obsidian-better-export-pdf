@@ -40,10 +40,10 @@ export default class BetterExportPdfPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.registerIcon();
-    this.registerStstusBar();
+    // this.registerIcon();
+    // this.registerStstusBar();
     this.registerCommand();
-    this.registerOther();
+    // this.registerOther();
     this.registerEvents();
   }
 
@@ -63,40 +63,35 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 
   registerCommand() {
-    // This adds a simple command that can be triggered anywhere
-    this.addCommand({
-      id: "open-sample-modal-simple",
-      name: "Open sample modal (simple)",
-      callback: () => {
-        new ExportConfigModal(this.app, () => {}).open();
-      },
-    });
-    // This adds an editor command that can perform some operation on the current editor instance
-    this.addCommand({
-      id: "better-to-pdf",
-      name: "Better to PDF",
-      editorCallback: (editor: Editor, view: MarkdownView) => {
-        console.log(editor.getSelection());
-        editor.replaceSelection("Better to PDF");
-      },
-    });
     // This adds a complex command that can check whether the current state of the app allows execution of the command
     this.addCommand({
-      id: "open-sample-modal-complex",
-      name: "Open sample modal (complex)",
+      id: "export-current-file-to-pdf",
+      name: "Export Current file to PDF",
       checkCallback: (checking: boolean) => {
-        // Conditions to check
-        const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (markdownView) {
-          // If checking is true, we're simply "checking" if the command can be run.
-          // If checking is false, then we want to actually perform the operation.
-          if (!checking) {
-            new ExportConfigModal(this.app, () => {}).open();
-          }
-
-          // This command will only show up in Command Palette when the check function returns true
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        const file = view?.file;
+        if (!file) {
+          return;
+        }
+        if (checking) {
           return true;
         }
+        new ExportConfigModal(this.app, async (config: TConfig) => {
+          try {
+            await this.exportToPDF(file, config);
+          } catch (error) {
+            console.error(error);
+          } finally {
+            document.querySelectorAll("webview").forEach((node) => {
+              console.log("webview");
+              if (!isDev) {
+                node.parentNode?.removeChild(node);
+              }
+            });
+          }
+        }).open();
+
+        return true;
       },
     });
   }
