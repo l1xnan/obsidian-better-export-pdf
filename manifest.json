@@ -5,7 +5,7 @@
 	"minAppVersion": "0.15.0",
 	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
 	"author": "l1xnan",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://github.com/l1xnan",
+	"fundingUrl": "https://www.buymeacoffee.com/l1xnan",
 	"isDesktopOnly": false
 }
