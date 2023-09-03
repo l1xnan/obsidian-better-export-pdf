@@ -1,4 +1,5 @@
 # Obsidian Better Export PDF
+
 [中文](./README.md)
 
 Better Export PDF is an Obsidian PDF export enhancement plugin that adds the ability to export bookmarks outline and add page numbers to PDF compared to the official PDF export function.
@@ -16,8 +17,15 @@ Compared to the official Export PDF function:
 The current plugin is not published to the official plugin store and needs to be manually installed:
 
 1. Download the .zip file from the Latest Release, or from any other release version.
-1. Unzip into: `{VaultFolder}/.obsidian/plugins/`
-1. Reload Obsidian and enable the plug-in.
+2. Unzip into: `{VaultFolder}/.obsidian/plugins/`
+3. Reload Obsidian and enable the plug-in.
+
+## Usage
+
+Changing the color to a light color in the appearance will then:
+
+1. In the upper right corner of the current Markdown view, click More options and select 'Better to PDF';
+2. Open the command panel and select 'Better Export PDF: Export Current file to PDF'.
 
 ## TODO
 
@@ -26,7 +34,6 @@ The current plugin is not published to the official plugin store and needs to be
 - [ ] Support print preview;
 - [ ] Print multiple Markdown files into one PDF file;
 - [ ] Improves default '@media print' css style;
-
 
 ## Support This Plugin
 

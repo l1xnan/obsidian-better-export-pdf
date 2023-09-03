@@ -18,6 +18,13 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 2. 解压到: `{VaultFolder}/.obsidian/plugins/`
 3. 重启 Obdisian，并再插件管理器中启用插件。
 
+## 使用
+
+在外观中将颜色将切换为浅色，然后：
+
+1. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better to PDF`；
+2. 打开命令慢板，选择 `Better Export PDF: Export Current file to PDF`。
+
 ## TODO
 
 - [ ] 将内部链接内容自动添加到脚注/附录中；
