@@ -1,6 +1,6 @@
 # Obsidian Better Export PDF
 
-[中文](./README.md)
+[中文](./README.zh.md)
 
 Better Export PDF is an Obsidian PDF export enhancement plugin that adds the ability to export bookmarks outline and add page numbers to PDF compared to the official PDF export function.
 
