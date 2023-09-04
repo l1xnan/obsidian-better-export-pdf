@@ -365,6 +365,9 @@ export default class BetterExportPdfPlugin extends Plugin {
       doc.body.setAttribute(name, value);
     });
 
+    doc.body.addClass("theme-light");
+    doc.body.removeClass("theme-dark");
+
     modifyHeadings(doc);
   }
 
