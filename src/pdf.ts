@@ -214,16 +214,24 @@ export const setOutline = async (doc: PDFDocument, outlines: readonly PDFOutline
   doc.catalog.set(doc.context.obj("Outlines"), rootRef);
 };
 
-export async function addPageNumbers(doc: PDFDocument) {
+type PageSetting = {
+  format: string;
+  position: number;
+};
+
+export async function addPageNumbers(doc: PDFDocument, setting: PageSetting) {
   const courierBoldFont = await doc.embedFont(StandardFonts.TimesRoman);
   const pageIndices = doc.getPageIndices();
+
+  const total = pageIndices.length;
 
   for (const pageIndex of pageIndices) {
     const page = doc.getPage(pageIndex);
 
-    page.drawText(`${pageIndex + 1}`, {
+    const content = setting.format.replace("{page}", `${pageIndex + 1}`).replace("{pages}", `${total}`);
+    page.drawText(content, {
       x: page.getWidth() / 2,
-      y: 20,
+      y: setting.position,
       font: courierBoldFont,
       size: 12,
     });

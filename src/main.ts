@@ -27,11 +27,13 @@ const isDev = process.env.NODE_ENV === "development";
 // Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
-  mySetting: string;
+  pageFormat: string;
+  distance: string;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
-  mySetting: "default",
+  pageFormat: "{page}",
+  distance: "20",
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
@@ -43,6 +45,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     // this.registerIcon();
     // this.registerStstusBar();
     this.registerCommand();
+    this.registerSetting();
     // this.registerOther();
     this.registerEvents();
   }
@@ -96,10 +99,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
   }
 
-  registerOther() {
+  registerSetting() {
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new ConfigSettingTab(this.app, this));
-
+  }
+  registerOther() {
     // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
     // Using this function will automatically remove the event listener when this plugin is disabled.
     this.registerDomEvent(document, "click", (evt: MouseEvent) => {
@@ -258,7 +262,10 @@ export default class BetterExportPdfPlugin extends Plugin {
 
       const outlines = generateOutlines(headings, posistions);
       setOutline(pdfDoc, outlines);
-      await addPageNumbers(pdfDoc);
+      await addPageNumbers(pdfDoc, {
+        format: this.settings.pageFormat,
+        position: parseFloat(this.settings.distance) || parseFloat(config["marginBottom"] ?? "30") / 2,
+      });
       data = await pdfDoc.save();
       await fs.writeFile(outputFile, data);
 
@@ -766,17 +773,26 @@ class ConfigSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName("Setting #1")
-      .setDesc("It's a secret")
+      .setName("Page number format")
+      .setDesc("{page}: current page number, {pages}: total page numbers, examples: {page} / {pages}")
       .addText((text) =>
         text
-          .setPlaceholder("Enter your secret")
-          .setValue(this.plugin.settings.mySetting)
+          .setPlaceholder("{page}")
+          .setValue(this.plugin.settings.pageFormat)
           .onChange(async (value) => {
-            this.plugin.settings.mySetting = value;
+            this.plugin.settings.pageFormat = value;
             await this.plugin.saveSettings();
           }),
       );
+    new Setting(containerEl).setName("Footer bottom distance").addText((text) =>
+      text
+        .setPlaceholder("20")
+        .setValue(this.plugin.settings.distance)
+        .onChange(async (value) => {
+          this.plugin.settings.distance = value;
+          await this.plugin.saveSettings();
+        }),
+    );
   }
 }
 
