@@ -25,6 +25,15 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 1. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better to PDF`；
 2. 打开命令慢板，选择 `Better Export PDF: Export Current file to PDF`。
 
+### 设置
+
+可以简单的设置页码格式：
+
+- `{page}`: 代表当前页码；
+- `{pages}`: 代表总页码；
+
+例如: 如果总页码为 5，那么设置 `{page} / {pages}`，表示 `1 / 5`, `2 / 5` ...
+
 ## TODO
 
 - [ ] 将内部链接内容自动添加到脚注/附录中；

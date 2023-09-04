@@ -27,6 +27,15 @@ Changing the color to a light color in the appearance will then:
 1. In the upper right corner of the current Markdown view, click More options and select 'Better to PDF';
 2. Open the command panel and select 'Better Export PDF: Export Current file to PDF'.
 
+### Settings
+
+Page number format can be easily set:
+
+- '{page}' : indicates the current page number.
+- '{pages}' : indicates the total page number;
+
+For example, if the total page number 5, set '{page} / {pages}', which means`1 / 5`, `2 / 5`...
+
 ## TODO
 
 - [ ] Automatically adds internal link content to footnotes/appendices;
