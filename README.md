@@ -6,10 +6,10 @@ Better Export PDF is an Obsidian PDF export enhancement plugin that adds the abi
 
 ## Features
 
-Compared to the official Export PDF function:
+Compared to the official Export PDF feature:
 
 1. Customize the margins
-2. Export the outline containing bookmarks
+2. Export the outline bookmarks
 3. Export the included page numbers
 
 ## Installation
