@@ -31,10 +31,10 @@ If the exported PDF page is abnormal, trying to change the color in the appearan
 
 Page number format can be easily set:
 
-- '{page}' : indicates the current page number.
-- '{pages}' : indicates the total page number;
+- `{page}` : indicates the current page number.
+- `{pages}` : indicates the total page number;
 
-For example, if the total page number 5, set '{page} / {pages}', which means`1 / 5`, `2 / 5`...
+For example, if the total page number 5, set `{page} / {pages}`, which means`1 / 5`, `2 / 5`...
 
 ## TODO
 
