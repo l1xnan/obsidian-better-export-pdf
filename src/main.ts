@@ -223,7 +223,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const webview = document.createElement("webview");
 
-    const doc = await this.renderFile(file, tempPath);
+    const doc = await this.renderFile(file, tempPath, config);
 
     console.log(file);
 
@@ -342,7 +342,7 @@ export default class BetterExportPdfPlugin extends Plugin {
    * @param doc
    * @param file
    */
-  async createBody(doc: Document, file: TFile) {
+  async createBody(doc: Document, file: TFile, config: TConfig) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
     const renderNode = doc.createElement("div");
     await MarkdownRenderer.render(this.app, view.data, renderNode, file.path, view);
@@ -351,9 +351,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     });
     renderNode.className = "markdown-preview-view markdown-rendered";
 
-    const header = doc.createElement("h1");
-    header.innerHTML = file.basename;
-    renderNode.insertBefore(header, renderNode.firstChild);
+    if (config?.["showTitle"]) {
+      const header = doc.createElement("h1");
+      header.innerHTML = file.basename;
+      renderNode.insertBefore(header, renderNode.firstChild);
+    }
 
     const printNode = document.createElement("div");
     printNode.className = "print"; // print-preview
@@ -371,9 +373,9 @@ export default class BetterExportPdfPlugin extends Plugin {
     modifyHeadings(doc);
   }
 
-  async renderFile(file: TFile, tempPath: string) {
+  async renderFile(file: TFile, tempPath: string, config: TConfig) {
     const doc = document.implementation.createHTMLDocument(file.basename);
-    await this.createBody(doc, file);
+    await this.createBody(doc, file, config);
     await this.createHead(doc, tempPath);
     return doc;
   }
