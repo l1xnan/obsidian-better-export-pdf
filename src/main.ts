@@ -21,6 +21,7 @@ import { generateOutlines, getHeadingPosition, setOutline, addPageNumbers } from
 import { PDFDocument } from "pdf-lib";
 
 import juice from "juice";
+import { renderMermaid } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -222,7 +223,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     await preview.renderer.unfoldAllHeadings();
 
     const webview = document.createElement("webview");
-
+    // webview.addClass("print-preview");
     const doc = await this.renderFile(file, tempPath, config);
 
     console.log(file);
@@ -371,6 +372,8 @@ export default class BetterExportPdfPlugin extends Plugin {
     doc.body.removeClass("theme-dark");
 
     modifyHeadings(doc);
+
+    await renderMermaid(doc);
   }
 
   async renderFile(file: TFile, tempPath: string, config: TConfig) {
@@ -435,12 +438,22 @@ export default class BetterExportPdfPlugin extends Plugin {
     // 将 <style> 元素追加到 <head> 标签中
     // doc.head.appendChild(linkNode);
 
+    this.insertScripts(doc);
+
+    return doc;
+  }
+
+  insertScripts(doc: Document) {
     // app://xxx.js 相关内部 js
+
+    const element = doc.body;
+
     this.getAppScripts().forEach((src) => {
+			console.log("src:", src)
       const script = doc.createElement("script");
       script.src = src;
       script.type = "text/javascript";
-      doc.head.appendChild(script);
+      element.appendChild(script);
     });
 
     {
@@ -450,14 +463,12 @@ export default class BetterExportPdfPlugin extends Plugin {
 
       const script1 = document.createElement("span");
       script1.innerHTML = mathjax1;
-      doc.head.appendChild(script1);
+      element.appendChild(script1);
 
       const script2 = document.createElement("span");
       script2.innerHTML = mathjax2;
-      doc.head.appendChild(script2);
+      element.appendChild(script2);
     }
-
-    return doc;
   }
 
   getStyleTags() {
