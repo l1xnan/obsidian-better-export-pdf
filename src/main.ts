@@ -449,8 +449,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     const element = doc.body;
 
     this.getAppScripts().forEach((src) => {
-			console.log("src:", src)
+      console.log("src:", src);
       const script = doc.createElement("script");
+      if (src.includes("mermaid")) {
+        return;
+      }
       script.src = src;
       script.type = "text/javascript";
       element.appendChild(script);
