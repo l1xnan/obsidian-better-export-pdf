@@ -22,8 +22,8 @@ The current plugin is not published to the official plugin store and needs to be
 
 ## Usage
 
-1. In the upper right corner of the current Markdown view, click More options and select 'Better to PDF';
-2. Open the command panel and select 'Better Export PDF: Export Current file to PDF'.
+1. In the upper right corner of the current Markdown view, click More options and select `Better to PDF`;
+2. Open the command panel and select `Better Export PDF: Export Current file to PDF`.
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
 
