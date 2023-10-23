@@ -32,8 +32,8 @@ devDependencies:
     specifier: 0.19.4
     version: 0.19.4
   mermaid:
-    specifier: ^10.4.0
-    version: 10.4.0
+    specifier: ^10.5.1
+    version: 10.5.1
   obsidian:
     specifier: ^1.4.11
     version: 1.4.11(@codemirror/state@6.2.1)(@codemirror/view@6.17.1)
@@ -1956,8 +1956,8 @@ packages:
     engines: {node: '>= 8'}
     dev: true
 
-  /mermaid@10.4.0:
-    resolution: {integrity: sha512-4QCQLp79lvz7UZxow5HUX7uWTPJOaQBVExduo91tliXC7v78i6kssZOPHxLL+Xs30KU72cpPn3g3imw/xm/gaw==}
+  /mermaid@10.5.1:
+    resolution: {integrity: sha512-+4mkGW5PptHDSae4YZ/Jw1pEOf0irrB/aCL6BwZcJPhr5+84UJBrQnHTvyPqCUz67tXkrDvSzWv4B+J2hLO78g==}
     dependencies:
       '@braintree/sanitize-url': 6.0.4
       '@types/d3-scale': 4.0.5
