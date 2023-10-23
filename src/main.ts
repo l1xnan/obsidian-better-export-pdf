@@ -34,7 +34,7 @@ interface BetterExportPdfPluginSettings {
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   pageFormat: "{page}",
-  distance: "20",
+  distance: "15",
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
