@@ -3,9 +3,9 @@
 	"name": "Better Export PDF",
 	"version": "1.0.5",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
+	"description": "Obsidian PDF export enhancement plugin that adds the ability to export bookmarks outline and add page numbers to PDF compared to the official PDF export function.",
 	"author": "l1xnan",
 	"authorUrl": "https://github.com/l1xnan",
 	"fundingUrl": "https://www.buymeacoffee.com/l1xnan",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }

@@ -1,17 +1,6 @@
 import * as fs from "fs/promises";
 import * as os from "os";
-import {
-  App,
-  Editor,
-  MarkdownRenderer,
-  MarkdownView,
-  Modal,
-  Notice,
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  TFile,
-} from "obsidian";
+import { App, MarkdownRenderer, MarkdownView, Modal, Plugin, PluginSettingTab, Setting, TFile } from "obsidian";
 import * as path from "path";
 
 import { WebviewTag } from "electron";
@@ -20,12 +9,9 @@ import { getHeadingTree, modifyHeadings } from "./utils";
 import { generateOutlines, getHeadingPosition, setOutline, addPageNumbers } from "./pdf";
 import { PDFDocument } from "pdf-lib";
 
-import juice from "juice";
 import { renderMermaid } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
-
-// Remember to rename these classes and interfaces!
 
 interface BetterExportPdfPluginSettings {
   pageFormat: string;
@@ -43,27 +29,9 @@ export default class BetterExportPdfPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    // this.registerIcon();
-    // this.registerStstusBar();
     this.registerCommand();
     this.registerSetting();
-    // this.registerOther();
     this.registerEvents();
-  }
-
-  registerIcon() {
-    // This creates an icon in the left ribbon.
-    const ribbonIconEl = this.addRibbonIcon("dice", "Sample Plugin", (evt: MouseEvent) => {
-      // Called when the user clicks the icon.
-      new Notice("This is a notice!");
-    });
-    // Perform additional things with the ribbon
-    ribbonIconEl.addClass("my-plugin-ribbon-class");
-  }
-  registerStstusBar() {
-    // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-    const statusBarItemEl = this.addStatusBarItem();
-    statusBarItemEl.setText("Status Bar Text");
   }
 
   registerCommand() {
@@ -103,16 +71,6 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerSetting() {
     // This adds a settings tab so the user can configure various aspects of the plugin
     this.addSettingTab(new ConfigSettingTab(this.app, this));
-  }
-  registerOther() {
-    // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-    // Using this function will automatically remove the event listener when this plugin is disabled.
-    this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-      console.log("click", evt);
-    });
-
-    // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-    this.registerInterval(window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000));
   }
 
   registerEvents() {
@@ -837,8 +795,4 @@ function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
 
     poll();
   });
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
