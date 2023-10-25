@@ -1,6 +1,6 @@
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
 
-import { TreeNode } from "./utils";
+import { TreeNode, getHeadingTree } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -236,4 +236,24 @@ export async function addPageNumbers(doc: PDFDocument, setting: PageSetting) {
       size: 12,
     });
   }
+}
+
+type PdfOptionn = {
+  format: string;
+  position: number;
+};
+
+export async function editPDF(data: Uint8Array, doc: Document, { format, position }: PdfOptionn): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.load(data);
+  const posistions = await getHeadingPosition(pdfDoc);
+  const headings = await getHeadingTree(doc);
+
+  const outlines = generateOutlines(headings, posistions);
+  setOutline(pdfDoc, outlines);
+  await addPageNumbers(pdfDoc, {
+    format,
+    position,
+  });
+  data = await pdfDoc.save();
+  return data;
 }

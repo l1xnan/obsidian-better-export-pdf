@@ -6,7 +6,7 @@ import * as path from "path";
 import * as electron from "electron";
 import { WebviewTag } from "electron";
 import { PDFDocument } from "pdf-lib";
-import { addPageNumbers, generateOutlines, getHeadingPosition, setOutline } from "./pdf";
+import { addPageNumbers, editPDF, generateOutlines, getHeadingPosition, setOutline } from "./pdf";
 import { getHeadingTree, waitFor } from "./utils";
 
 import { ExportConfigModal, TConfig } from "./modal";
@@ -216,17 +216,11 @@ export default class BetterExportPdfPlugin extends Plugin {
     try {
       let data = await w.printToPDF(printOptions);
 
-      const pdfDoc = await PDFDocument.load(data);
-      const posistions = await getHeadingPosition(pdfDoc);
-      const headings = await getHeadingTree(doc);
-
-      const outlines = generateOutlines(headings, posistions);
-      setOutline(pdfDoc, outlines);
-      await addPageNumbers(pdfDoc, {
+      data = await editPDF(data, doc, {
         format: this.settings.pageFormat,
         position: parseFloat(this.settings.distance) || parseFloat(config["marginBottom"] ?? "30") / 2,
       });
-      data = await pdfDoc.save();
+
       await fs.writeFile(outputFile, data);
 
       if (config.open) {
