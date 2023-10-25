@@ -37,7 +37,6 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 
   registerCommand() {
-    // This adds a complex command that can check whether the current state of the app allows execution of the command
     this.addCommand({
       id: "export-current-file-to-pdf",
       name: "Export Current file to PDF",
