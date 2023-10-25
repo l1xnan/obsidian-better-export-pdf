@@ -1,18 +1,17 @@
 import * as fs from "fs/promises";
-import * as os from "os";
 import { MarkdownRenderer, MarkdownView, Plugin, TFile } from "obsidian";
+import * as os from "os";
 import * as path from "path";
 
-import { WebviewTag } from "electron";
 import * as electron from "electron";
-import { getHeadingTree, modifyHeadings } from "./utils";
-import { generateOutlines, getHeadingPosition, setOutline, addPageNumbers } from "./pdf";
+import { WebviewTag } from "electron";
 import { PDFDocument } from "pdf-lib";
+import { addPageNumbers, generateOutlines, getHeadingPosition, setOutline } from "./pdf";
+import { getHeadingTree, modifyHeadings, waitFor } from "./utils";
 
+import { ExportConfigModal, TConfig } from "./modal";
 import { renderMermaid } from "./render";
 import ConfigSettingTab from "./setting";
-import { ExportConfigModal, TConfig } from "./modal";
-import { waitFor } from "./utils";
 
 const isDev = process.env.NODE_ENV === "development";
 
