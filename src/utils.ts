@@ -57,3 +57,28 @@ export function modifyHeadings(doc: Document) {
     heading.appendChild(link);
   });
 }
+
+/**
+ * 等待函数，轮询检查条件是否满足，可设置超时时间。
+ * @param cond 条件函数，返回布尔值表示条件是否满足。
+ * @param timeout 超时时间（可选，默认为0，表示没有超时时间限制）。
+ * @returns 返回一个 Promise 对象，当条件满足时解决为 true，超时或发生错误时拒绝。
+ */
+
+export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+
+    const poll = () => {
+      if (cond()) {
+        resolve(true);
+      } else if (timeout > 0 && Date.now() - startTime >= timeout) {
+        reject(new Error("Timeout exceeded"));
+      } else {
+        setTimeout(poll, 500);
+      }
+    };
+
+    poll();
+  });
+}
