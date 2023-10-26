@@ -1,5 +1,7 @@
 # Obsidian Better Export PDF
 
+[English](./README.md) | 中文
+
 Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF 导出功能相比，增加了导出书签大纲和给 PDF 添加页码功能。
 
 ## 功能
