@@ -26,8 +26,8 @@ devDependencies:
     specifier: 3.3.0
     version: 3.3.0
   electron:
-    specifier: ^27.0.2
-    version: 27.0.2
+    specifier: ^27.1.2
+    version: 27.1.2
   esbuild:
     specifier: 0.19.4
     version: 0.19.4
@@ -1277,8 +1277,8 @@ packages:
       domhandler: 5.0.3
     dev: false
 
-  /electron@27.0.2:
-    resolution: {integrity: sha512-4fbcHQ40ZDlqhr5Pamm+M5BF7ry2lGqjFTWTJ/mrBwuiPWu6xhV/RWgUhKBaLqKNfAaNl3eMxV3Jc82gv6JauQ==}
+  /electron@27.1.2:
+    resolution: {integrity: sha512-Dy6BUuGLiIJv+zfsXwr78TV2TNppi24rXF4PIIS+OjDblEKdkI9r1iM8JUd3/x3sbGUy5mdLMSPhvmu//IhkgA==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
     requiresBuild: true
