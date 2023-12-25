@@ -5,9 +5,8 @@ import * as path from "path";
 
 import * as electron from "electron";
 import { WebviewTag } from "electron";
-import { PDFDocument } from "pdf-lib";
-import { addPageNumbers, editPDF, generateOutlines, getHeadingPosition, setOutline } from "./pdf";
-import { getHeadingTree, waitFor } from "./utils";
+import { editPDF } from "./pdf";
+import { waitFor } from "./utils";
 
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
