@@ -1,7 +1,10 @@
 import { Modal, App, Setting } from "obsidian";
 import * as electron from "electron";
+
+type PageSizeType = electron.PrintToPDFOptions["pageSize"];
+
 export interface TConfig {
-  pageSise: electron.PrintToPDFOptions["pageSize"];
+  pageSise: PageSizeType;
   marginType: string;
   open: boolean;
   landscape: boolean;
@@ -21,21 +24,23 @@ export class ExportConfigModal extends Modal {
   canceled: boolean;
   callback: Callback;
 
-  constructor(app: App, callback: Callback) {
+  constructor(app: App, callback: Callback, config?: TConfig) {
     super(app);
     this.canceled = true;
-    this.result = {
-      pageSise: "A4",
-      marginType: "1",
-      showTitle: true,
-      open: true,
-      scale: 100,
-      landscape: false,
-      marginTop: "0",
-      marginBottom: "0",
-      marginLeft: "0",
-      marginRight: "0",
-    };
+    this.result =
+      config ??
+      ({
+        pageSise: "A4",
+        marginType: "1",
+        showTitle: true,
+        open: true,
+        scale: 100,
+        landscape: false,
+        marginTop: "0",
+        marginBottom: "0",
+        marginLeft: "0",
+        marginRight: "0",
+      } as TConfig);
     this.callback = callback;
   }
 
@@ -53,14 +58,25 @@ export class ExportConfigModal extends Modal {
           this.result["showTitle"] = value;
         }),
     );
-    const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger"];
+    const pageSizes: PageSizeType[] = [
+      "A0",
+      "A1",
+      "A2",
+      "A3",
+      "A4",
+      "A5",
+      "A6",
+      "Legal",
+      "Letter",
+      "Tabloid",
+      "Ledger",
+    ];
     new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
-        .setValue("A4")
+        .setValue(this.result.pageSise as string)
         .onChange(async (value: string) => {
-          // @ts-ignore
-          this.result["pageSise"] = value;
+          this.result["pageSise"] = value as PageSizeType;
         });
     });
 
@@ -88,7 +104,7 @@ export class ExportConfigModal extends Modal {
       .addText((text) => {
         text
           .setPlaceholder("margin top")
-          .setValue("0")
+          .setValue(this.result["marginTop"] as string)
           .onChange((value) => {
             this.result["marginTop"] = value;
           });
@@ -96,7 +112,7 @@ export class ExportConfigModal extends Modal {
       .addText((text) =>
         text
           .setPlaceholder("margin bottom")
-          .setValue("0")
+          .setValue(this.result["marginBottom"] as string)
           .onChange((value) => {
             this.result["marginBottom"] = value;
           }),
@@ -107,7 +123,7 @@ export class ExportConfigModal extends Modal {
       .addText((text) => {
         text
           .setPlaceholder("margin left")
-          .setValue("0")
+          .setValue(this.result["marginLeft"] as string)
           .onChange((value) => {
             this.result["marginLeft"] = value;
           });
@@ -115,7 +131,7 @@ export class ExportConfigModal extends Modal {
       .addText((text) =>
         text
           .setPlaceholder("margin right")
-          .setValue("0")
+          .setValue(this.result["marginRight"] as string)
           .onChange((value) => {
             this.result["marginRight"] = value;
           }),
@@ -125,8 +141,7 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setName("Downscale precent").addSlider((slider) => {
       slider
         .setLimits(0, 100, 1)
-
-        .setValue(100)
+        .setValue(this.result["scale"] as number)
         .onChange(async (value) => {
           this.result["scale"] = value;
           slider.showTooltip();
@@ -135,7 +150,7 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setName("Landscape").addToggle((toggle) =>
       toggle
         .setTooltip("landscape")
-        .setValue(false)
+        .setValue(this.result["landscape"])
         .onChange(async (value) => {
           this.result["landscape"] = value;
         }),
@@ -143,7 +158,7 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setName("Open after export").addToggle((toggle) =>
       toggle
         .setTooltip("Open the exported file after exporting.")
-        .setValue(true)
+        .setValue(this.result["open"])
         .onChange(async (value) => {
           this.result["open"] = value;
         }),

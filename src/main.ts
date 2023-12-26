@@ -17,6 +17,7 @@ const isDev = process.env.NODE_ENV === "development";
 interface BetterExportPdfPluginSettings {
   pageFormat: string;
   distance: string;
+  prevConfig?: TConfig;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
@@ -48,20 +49,24 @@ export default class BetterExportPdfPlugin extends Plugin {
         if (checking) {
           return true;
         }
-        new ExportConfigModal(this.app, async (config: TConfig) => {
-          try {
-            await this.exportToPDF(file, config);
-          } catch (error) {
-            console.error(error);
-          } finally {
-            document.querySelectorAll("webview").forEach((node) => {
-              console.log("webview");
-              if (!isDev) {
-                node.parentNode?.removeChild(node);
-              }
-            });
-          }
-        }).open();
+        new ExportConfigModal(
+          this.app,
+          async (config: TConfig) => {
+            try {
+              await this.exportToPDF(file, config);
+            } catch (error) {
+              console.error(error);
+            } finally {
+              document.querySelectorAll("webview").forEach((node) => {
+                console.log("webview");
+                if (!isDev) {
+                  node.parentNode?.removeChild(node);
+                }
+              });
+            }
+          },
+          this.settings?.prevConfig,
+        ).open();
 
         return true;
       },
@@ -87,20 +92,26 @@ export default class BetterExportPdfPlugin extends Plugin {
             .setIcon("download")
             .setSection("action")
             .onClick(async () => {
-              new ExportConfigModal(this.app, async (config: TConfig) => {
-                try {
-                  await this.exportToPDF(file, config);
-                } catch (error) {
-                  console.error(error);
-                } finally {
-                  document.querySelectorAll("webview").forEach((node) => {
-                    console.log("webview");
-                    if (!isDev) {
-                      node.parentNode?.removeChild(node);
-                    }
-                  });
-                }
-              }).open();
+              new ExportConfigModal(
+                this.app,
+                async (config: TConfig) => {
+                  try {
+                    this.settings.prevConfig = config;
+                    await this.saveSettings();
+                    await this.exportToPDF(file, config);
+                  } catch (error) {
+                    console.error(error);
+                  } finally {
+                    document.querySelectorAll("webview").forEach((node) => {
+                      console.log("webview");
+                      if (!isDev) {
+                        node.parentNode?.removeChild(node);
+                      }
+                    });
+                  }
+                },
+                this.settings?.prevConfig,
+              ).open();
             });
         });
       }),
