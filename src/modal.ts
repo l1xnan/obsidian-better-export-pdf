@@ -1,5 +1,7 @@
-import { Modal, App, Setting } from "obsidian";
+import { Modal, App, Setting, TFile } from "obsidian";
 import * as electron from "electron";
+import BetterExportPdfPlugin from "./main";
+import { generateWebview } from "./render";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -20,14 +22,18 @@ export interface TConfig {
 type Callback = (conf: TConfig) => void;
 
 export class ExportConfigModal extends Modal {
-  result: TConfig;
+  config: TConfig;
   canceled: boolean;
   callback: Callback;
+  plugin: BetterExportPdfPlugin;
+  file: TFile;
 
-  constructor(app: App, callback: Callback, config?: TConfig) {
-    super(app);
+  constructor(plugin: BetterExportPdfPlugin, file: TFile, callback: Callback, config?: TConfig) {
+    super(plugin.app);
     this.canceled = true;
-    this.result =
+    this.plugin = plugin;
+    this.file = file;
+    this.config =
       config ??
       ({
         pageSise: "A4",
@@ -44,18 +50,76 @@ export class ExportConfigModal extends Modal {
     this.callback = callback;
   }
 
-  onOpen() {
-    const { contentEl } = this;
-
-    contentEl.empty();
+  async onOpen() {
+    this.contentEl.empty();
+    console.log(this.containerEl, this.contentEl);
+    this.containerEl.style.setProperty("--dialog-width", "80vw");
 
     this.titleEl.setText("Export to PDF");
+    let completed = false;
+    let preview: Electron.WebviewTag;
+    const wrapper = this.contentEl.createDiv();
+    wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
+
+    const appendWebview = async (e: HTMLDivElement) => {
+      const { webview, doc } = await generateWebview(this.plugin, this.file, this.config);
+      preview = webview;
+      e.appendChild(webview);
+      webview.setAttribute("style", "height:100%;");
+      webview.addEventListener("dom-ready", (e) => {
+        console.log("dom-ready");
+        webview.setZoomFactor(0.7);
+        completed = true;
+      });
+    };
+
+    const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto;" } }, async (e) => {
+      e.empty();
+      await appendWebview(e);
+    });
+
+    const contentEl = wrapper.createDiv();
+    contentEl.setAttribute("style", "width:320px;margin-left:16px;");
+
+    this.generateForm(contentEl);
+
+    new Setting(contentEl).setHeading().addButton((button) => {
+      button.setButtonText("Export").onClick(async () => {
+        this.canceled = false;
+        this.close();
+        await this.callback(this.config);
+      });
+
+      button.buttonEl.style.marginRight = "auto";
+      button.buttonEl.style.marginLeft = "auto";
+      button.buttonEl.style.width = "-webkit-fill-available";
+    });
+    new Setting(contentEl).setHeading().addButton((button) => {
+      button.setButtonText("Debug").onClick(async () => {
+        preview?.openDevTools();
+      });
+      button.buttonEl.style.marginRight = "auto";
+      button.buttonEl.style.marginLeft = "auto";
+      button.buttonEl.style.width = "-webkit-fill-available";
+    });
+    new Setting(contentEl).setHeading().addButton((button) => {
+      button.setButtonText("Refresh").onClick(async () => {
+        previewDiv.empty();
+        await appendWebview(previewDiv);
+      });
+      button.buttonEl.style.marginRight = "auto";
+      button.buttonEl.style.marginLeft = "auto";
+      button.buttonEl.style.width = "-webkit-fill-available";
+    });
+  }
+
+  private generateForm(contentEl: HTMLDivElement) {
     new Setting(contentEl).setName("Add filename as title").addToggle((toggle) =>
       toggle
         .setTooltip("Add filename as title")
         .setValue(true)
         .onChange(async (value) => {
-          this.result["showTitle"] = value;
+          this.config["showTitle"] = value;
         }),
     );
     const pageSizes: PageSizeType[] = [
@@ -74,9 +138,9 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
-        .setValue(this.result.pageSise as string)
+        .setValue(this.config.pageSise as string)
         .onChange(async (value: string) => {
-          this.result["pageSise"] = value as PageSizeType;
+          this.config["pageSise"] = value as PageSizeType;
         });
     });
 
@@ -88,7 +152,7 @@ export class ExportConfigModal extends Modal {
         .addOption("3", "Custom")
         .setValue("1")
         .onChange(async (value: string) => {
-          this.result["marginType"] = value;
+          this.config["marginType"] = value;
           if (value == "3") {
             topEl.settingEl.hidden = false;
             btmEl.settingEl.hidden = false;
@@ -102,80 +166,73 @@ export class ExportConfigModal extends Modal {
     const topEl = new Setting(contentEl)
       .setName("Top/Bottom")
       .addText((text) => {
+        text.inputEl.style.width = "100px";
         text
           .setPlaceholder("margin top")
-          .setValue(this.result["marginTop"] as string)
+          .setValue(this.config["marginTop"] as string)
           .onChange((value) => {
-            this.result["marginTop"] = value;
+            this.config["marginTop"] = value;
           });
       })
-      .addText((text) =>
+      .addText((text) => {
+        text.inputEl.style.width = "100px";
         text
           .setPlaceholder("margin bottom")
-          .setValue(this.result["marginBottom"] as string)
+          .setValue(this.config["marginBottom"] as string)
           .onChange((value) => {
-            this.result["marginBottom"] = value;
-          }),
-      );
+            this.config["marginBottom"] = value;
+          });
+      });
     topEl.settingEl.hidden = true;
     const btmEl = new Setting(contentEl)
       .setName("Left/Right")
       .addText((text) => {
+        text.inputEl.style.width = "100px";
         text
           .setPlaceholder("margin left")
-          .setValue(this.result["marginLeft"] as string)
+          .setValue(this.config["marginLeft"] as string)
           .onChange((value) => {
-            this.result["marginLeft"] = value;
+            this.config["marginLeft"] = value;
           });
       })
-      .addText((text) =>
+      .addText((text) => {
+        text.inputEl.style.width = "100px";
         text
           .setPlaceholder("margin right")
-          .setValue(this.result["marginRight"] as string)
+          .setValue(this.config["marginRight"] as string)
           .onChange((value) => {
-            this.result["marginRight"] = value;
-          }),
-      );
+            this.config["marginRight"] = value;
+          });
+      });
     btmEl.settingEl.hidden = true;
 
     new Setting(contentEl).setName("Downscale precent").addSlider((slider) => {
       slider
         .setLimits(0, 100, 1)
-        .setValue(this.result["scale"] as number)
+        .setValue(this.config["scale"] as number)
         .onChange(async (value) => {
-          this.result["scale"] = value;
+          this.config["scale"] = value;
           slider.showTooltip();
         });
     });
     new Setting(contentEl).setName("Landscape").addToggle((toggle) =>
       toggle
         .setTooltip("landscape")
-        .setValue(this.result["landscape"])
+        .setValue(this.config["landscape"])
         .onChange(async (value) => {
-          this.result["landscape"] = value;
+          this.config["landscape"] = value;
         }),
     );
     new Setting(contentEl).setName("Open after export").addToggle((toggle) =>
       toggle
         .setTooltip("Open the exported file after exporting.")
-        .setValue(this.result["open"])
+        .setValue(this.config["open"])
         .onChange(async (value) => {
-          this.result["open"] = value;
+          this.config["open"] = value;
         }),
     );
-    new Setting(contentEl).setHeading().addButton((button) => {
-      button.setButtonText("Export").onClick(async () => {
-        this.canceled = false;
-        this.close();
-        await this.callback(this.result);
-      });
-
-      button.buttonEl.style.marginRight = "auto";
-      button.buttonEl.style.marginLeft = "auto";
-      button.buttonEl.style.width = "-webkit-fill-available";
-      button.buttonEl.style.marginBottom = "2em";
-    });
   }
+
   onClose() {
     const { contentEl } = this;
     contentEl.empty();

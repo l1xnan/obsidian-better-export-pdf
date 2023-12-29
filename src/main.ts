@@ -1,7 +1,5 @@
 import * as fs from "fs/promises";
 import { MarkdownView, Plugin, TFile } from "obsidian";
-import * as os from "os";
-import * as path from "path";
 
 import * as electron from "electron";
 import { WebviewTag } from "electron";
@@ -10,7 +8,7 @@ import { waitFor } from "./utils";
 
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
-import { renderFile } from "./render";
+import { generateWebview } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -50,7 +48,8 @@ export default class BetterExportPdfPlugin extends Plugin {
           return true;
         }
         new ExportConfigModal(
-          this.app,
+          this,
+          file,
           async (config: TConfig) => {
             try {
               await this.exportToPDF(file, config);
@@ -93,7 +92,8 @@ export default class BetterExportPdfPlugin extends Plugin {
             .setSection("action")
             .onClick(async () => {
               new ExportConfigModal(
-                this.app,
+                this,
+                file,
                 async (config: TConfig) => {
                   try {
                     this.settings.prevConfig = config;
@@ -130,7 +130,10 @@ export default class BetterExportPdfPlugin extends Plugin {
     console.log("export to pdf:", config);
 
     const printOptions: electron.PrintToPDFOptions = {
-      footerTemplate: '<div><span class="pageNumber"></span></div>',
+      displayHeaderFooter: true,
+      headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
+      footerTemplate:
+        '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
       pageSize: config["pageSise"],
       ...config,
       scale: config["scale"] / 100,
@@ -169,47 +172,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const outputFile = result.filePath;
 
-    const tempRoot = path.join(os.tmpdir(), "Obdisian");
-    try {
-      await fs.mkdir(tempRoot, { recursive: true });
-    } catch (error) {
-      /* empty */
-    }
-
-    const tempPath = await fs.mkdtemp(path.join(tempRoot, "export"));
-    try {
-      await fs.mkdir(tempPath, { recursive: true });
-    } catch (error) {
-      /* empty */
-    }
-
-    const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
-
-    const preview = view.previewMode;
-    // @ts-ignore
-    preview.renderer.showAll = true;
-    // @ts-ignore
-    await preview.renderer.unfoldAllHeadings();
-
-    const webview = document.createElement("webview");
-    // webview.addClass("print-preview");
-    const doc = await renderFile(this, file, tempPath, config);
-
-    console.log(file);
-
-    const tempFile = path.join(tempPath, "index.html");
-    console.log("temp html file:", tempFile);
-
-    const html = `<html>${doc.documentElement.innerHTML}</html>`;
-    await fs.writeFile(tempFile, html);
-
-    // TODO: try inline css in order to debug pagedjs
-    // const inlineHtml = juice(html);
-    // await fs.writeFile(path.join(tempPath, "inline-index.html"), inlineHtml);
-
-    webview.src = `file:///${tempFile}`;
-    webview.nodeintegration = true;
-
+    const { webview, doc } = await generateWebview(this, file, config);
     let completed = false;
     document.body.appendChild(webview);
     webview.addEventListener("dom-ready", (e) => {

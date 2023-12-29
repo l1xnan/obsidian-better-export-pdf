@@ -42,7 +42,7 @@ For example, if the total page number 5, set `{page} / {pages}`, which means`1 /
 - [ ] Support pagedjs beautification;
 - [ ] Support print preview;
 - [ ] Print multiple Markdown files into one PDF file;
-- [ ] Improves default '@media print' css style;
+- [ ] Improves default `@media print` css style;
 
 ## Support This Plugin
 

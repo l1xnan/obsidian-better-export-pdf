@@ -1,6 +1,8 @@
 import * as fs from "fs/promises";
-import { MarkdownRenderer, MarkdownView, TFile } from "obsidian";
 import * as path from "path";
+import * as os from "os";
+
+import { MarkdownRenderer, MarkdownView, TFile, Notice, MarkdownPreviewView, loadMermaid } from "obsidian";
 import { TConfig } from "./modal";
 import BetterExportPdfPlugin from "./main";
 import { modifyHeadings, waitFor } from "./utils";
@@ -319,4 +321,146 @@ export async function renderMarkdown(this: BetterExportPdfPlugin, file: TFile) {
   });
 
   console.log("container:", container);
+}
+
+export async function generateWebview(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
+  const tempRoot = path.join(os.tmpdir(), "Obdisian");
+  try {
+    await fs.mkdir(tempRoot, { recursive: true });
+  } catch (error) {
+    /* empty */
+    new Notice(error, 1000);
+  }
+
+  const tempPath = await fs.mkdtemp(path.join(tempRoot, "export"));
+  try {
+    await fs.mkdir(tempPath, { recursive: true });
+  } catch (error) {
+    /* empty */
+  }
+
+  const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+
+  const preview = view.previewMode;
+  // @ts-ignore
+  preview.renderer.showAll = true;
+  // @ts-ignore
+  await preview.renderer.unfoldAllHeadings();
+
+  const webview = document.createElement("webview");
+  // webview.addClass("print-preview");
+  const doc = await renderFile(this, file, tempPath, config);
+
+  console.log(file);
+
+  const tempFile = path.join(tempPath, "index.html");
+  console.log("temp html file:", tempFile);
+
+  const html = `<html>${doc.documentElement.innerHTML}</html>`;
+  await fs.writeFile(tempFile, html);
+
+  // TODO: try inline css in order to debug pagedjs
+  // const inlineHtml = juice(html);
+  // await fs.writeFile(path.join(tempPath, "inline-index.html"), inlineHtml);
+  webview.src = `file:///${tempFile}`;
+  webview.nodeintegration = true;
+  return { webview, doc };
+}
+
+type SelectionType = {
+  rendered: boolean;
+  height: number;
+  computed: boolean;
+  lines: number;
+  lineStart: number;
+  lineEnd: number;
+  used: boolean;
+  highlightRanges: number;
+  level: number;
+  headingCollapsed: boolean;
+  shown: boolean;
+  usesFrontMatter: boolean;
+  html: string;
+  el: HTMLElement;
+};
+
+type AyncFnType = (...args: unknown[]) => Promise<unknown>;
+
+
+export async function renderMarkdownView(
+  preview: MarkdownPreviewView,
+  container: HTMLElement,
+): Promise<HTMLElement | undefined> {
+  // @ts-ignore
+  const renderer = preview.renderer;
+  await renderer.unfoldAllHeadings();
+  await renderer.unfoldAllLists();
+  await renderer.parseSync();
+
+  // @ts-ignore
+  if (!window.mermaid) {
+    await loadMermaid();
+  }
+
+  const sections = renderer.sections as SelectionType[];
+
+  const viewEl = document.body.createDiv({
+    cls: "markdown-preview-view markdown-rendered",
+  });
+  const sizerEl = viewEl.createDiv({
+    cls: "markdown-preview-sizer markdown-preview-section",
+  });
+  const pusherEl = sizerEl.createDiv({ cls: "markdown-preview-pusher" });
+  pusherEl.style.height = "0.1px";
+  pusherEl.style.marginBottom = "0px";
+  pusherEl.style.width = "1px";
+
+  const promises: AyncFnType[] = [];
+
+  for (const section of sections) {
+    section.shown = true;
+    section.rendered = false;
+    // @ts-ignore
+    section.resetCompute();
+    // @ts-ignore
+    section.setCollapsed(false);
+    section.el.innerHTML = "";
+
+    sizerEl.appendChild(section.el);
+
+    // @ts-ignore
+    await section.render();
+
+    await waitFor(() => section.el && section.rendered, 50);
+
+    section.el.querySelectorAll(".language-mermaid").forEach(async (element: HTMLElement) => {
+      const code = element.innerText;
+
+      // @ts-ignore
+      const { svg, bindFunctions } = await mermaid.render("mermaid-" + preview.docId + "-" + i, code);
+
+      if (element.parentElement) {
+        element.parentElement.outerHTML = `<div class="mermaid">${svg}</div>`;
+        bindFunctions(element.parentElement);
+      }
+    });
+
+    await renderer.measureSection(section);
+
+    await waitFor(() => section.computed, 50);
+
+    // @ts-ignore
+    await preview.postProcess(section, promises, renderer.frontmatter);
+  }
+
+  await Promise.all(promises);
+
+  // move all of them back in since rendering can cause some sections to move themselves out of their container
+  for (const section of sections) {
+    sizerEl.appendChild(section.el);
+  }
+
+  container.appendChild(viewEl);
+
+  return viewEl;
 }
