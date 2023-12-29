@@ -14,7 +14,7 @@
 	"devDependencies": {
 		"@types/node": "^20.8.6",
 		"@typescript-eslint/eslint-plugin": "6.4.1",
-		"@typescript-eslint/parser": "6.4.1",
+		"@typescript-eslint/parser": "6.16.0",
 		"builtin-modules": "3.3.0",
 		"electron": "^27.0.2",
 		"esbuild": "0.19.4",
