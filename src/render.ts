@@ -102,6 +102,65 @@ export function getAllStyles(doc: Document, clear = false) {
 
   return cssTexts;
 }
+export function getAllStyles1(doc: Document, clear = false) {
+  const cssTexts: string[] = [];
+
+  Array.from(document.styleSheets).forEach((sheet) => {
+    // @ts-ignore
+    const id = sheet.ownerNode?.id;
+
+    // <style id="svelte-xxx" ignore
+    if (id?.startsWith("svelte-")) {
+      return;
+    }
+    // @ts-ignore
+    const href = sheet.ownerNode?.href;
+
+    const division = `/* ----------${id ? `id:${id}` : href ? `href:${href}` : ""}---------- */`;
+    if (id || href) {
+      console.log(division);
+    }
+    cssTexts.push(division);
+
+    Array.from(sheet.cssRules).forEach((rule) => {
+      cssTexts.push(rule.cssText);
+    });
+  });
+
+  const stylePatch = `
+  /* ---------- css patch ---------- */
+
+  body {
+    overflow: auto !important;
+  }
+  @media print {
+    .print .markdown-preview-view {
+      height: auto !important;
+    }
+    .md-print-anchor {
+      white-space: pre !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+      display: inline-block !important;
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      right: 0 !important;
+      outline: 0 !important;
+      background: 0 0 !important;
+      text-decoration: initial !important;
+      text-shadow: initial !important;
+    }
+    
+
+  }
+  `;
+  cssTexts.push(stylePatch);
+
+  return cssTexts;
+}
 
 export function insertScripts(doc: Document) {
   // app://xxx.js 相关内部 js
@@ -141,6 +200,59 @@ export function insertScripts(doc: Document) {
  * @returns
  */
 export async function createHead(doc: Document, tempPath: string) {
+  const cssTexts = getAllStyles(doc);
+  // 样式补丁
+  const stylePatch = `
+		/* ---------- css patch ---------- */
+    @media print {
+    	.print .markdown-preview-view {
+    		height: auto !important;
+    	}
+
+			.md-print-anchor {
+				white-space: pre !important;
+				border-left: none !important;
+				border-right: none !important;
+				border-top: none !important;
+				border-bottom: none !important;
+				display: inline-block !important;
+				position: absolute !important;
+				width: 1px !important;
+				height: 1px !important;
+				right: 0 !important;
+				outline: 0 !important;
+				background: 0 0 !important;
+				text-decoration: initial !important;
+				text-shadow: initial !important;
+			}
+			
+			.markdown-preview-view {
+				text-align: justify;
+				hyphens: auto;
+			}
+    }
+		`;
+  cssTexts.push(stylePatch);
+  const appCssFile = path.join(tempPath, "app.css");
+
+  await fs.writeFile(appCssFile, cssTexts.join("\n"));
+
+  const linkNode = doc.createElement("link");
+  linkNode.href = "./app.css";
+  linkNode.rel = "stylesheet";
+
+  const styleElement = doc.createElement("style");
+  styleElement.innerHTML = cssTexts.join("\n");
+  doc.head.appendChild(styleElement);
+
+  // 将 <style> 元素追加到 <head> 标签中
+  // doc.head.appendChild(linkNode);
+
+  insertScripts(doc);
+
+  return doc;
+}
+export async function createHead1(doc: Document, tempPath: string) {
   const cssTexts = getAllStyles(doc);
   // 样式补丁
   const stylePatch = `
@@ -256,10 +368,51 @@ export async function createBody(plugin: BetterExportPdfPlugin, doc: Document, f
 
   await renderMermaid(doc);
 }
+export async function createBody1(plugin: BetterExportPdfPlugin, doc: Document, file: TFile, config: TConfig) {
+  const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+
+  const preview = view.previewMode;
+  // @ts-ignore
+  preview.renderer.showAll = true;
+
+  const renderNode = await renderMarkdownView(preview);
+
+  if (config?.["showTitle"]) {
+    const header = doc.createElement("h1");
+    header.innerHTML = file.basename;
+    renderNode?.insertBefore(header, renderNode.firstChild);
+  }
+
+  const printEl = doc.body.createDiv("print");
+  const viewEl = printEl.createDiv({
+    cls: "markdown-preview-view markdown-rendered",
+  });
+
+  // @ts-ignore
+  const sections = preview.renderer.sections as SelectionType[];
+
+  for (const section of sections) {
+    viewEl.appendChild(section.el.cloneNode(true));
+  }
+
+  doc.body.addClass("theme-light");
+  doc.body.removeClass("theme-dark");
+
+  modifyHeadings(doc);
+
+  await renderMermaid(doc);
+}
 
 export async function renderFile(plugin: BetterExportPdfPlugin, file: TFile, tempPath: string, config: TConfig) {
   const doc = document.implementation.createHTMLDocument(file.basename);
-  await createBody(plugin, doc, file, config);
+  await createBody1(plugin, doc, file, config);
+  await createHead(doc, tempPath);
+  return doc;
+}
+
+export async function renderDocument(plugin: BetterExportPdfPlugin, file: TFile, tempPath: string, config: TConfig) {
+  const doc = document.implementation.createHTMLDocument(file.basename);
+  await createBody1(plugin, doc, file, config);
   await createHead(doc, tempPath);
   return doc;
 }
@@ -367,6 +520,48 @@ export async function generateWebview(plugin: BetterExportPdfPlugin, file: TFile
   return { webview, doc };
 }
 
+export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
+  const tempRoot = path.join(os.tmpdir(), "Obdisian");
+  try {
+    await fs.mkdir(tempRoot, { recursive: true });
+  } catch (error) {
+    /* empty */
+    new Notice(error, 1000);
+  }
+
+  const tempPath = await fs.mkdtemp(path.join(tempRoot, "export"));
+  try {
+    await fs.mkdir(tempPath, { recursive: true });
+  } catch (error) {
+    /* empty */
+  }
+
+  const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+
+  const preview = view.previewMode;
+  // @ts-ignore
+  preview.renderer.showAll = true;
+
+  const doc = document.implementation.createHTMLDocument("webview");
+
+  const printEl = doc.body.createDiv("print");
+  const viewEl = printEl.createDiv({
+    cls: "markdown-preview-view markdown-rendered",
+  });
+  // @ts-ignore
+  const sections = preview.renderer.sections as SelectionType[];
+
+  for (const section of sections) {
+    viewEl.appendChild(section.el.cloneNode(true));
+  }
+
+  const webview = document.createElement("webview");
+  webview.src = `app://obsidian.md/help.html`;
+  webview.nodeintegration = true;
+
+  modifyHeadings(doc);
+  return { webview, doc };
+}
 type SelectionType = {
   rendered: boolean;
   height: number;
@@ -386,10 +581,9 @@ type SelectionType = {
 
 type AyncFnType = (...args: unknown[]) => Promise<unknown>;
 
-
 export async function renderMarkdownView(
   preview: MarkdownPreviewView,
-  container: HTMLElement,
+  // container: HTMLElement,
 ): Promise<HTMLElement | undefined> {
   // @ts-ignore
   const renderer = preview.renderer;
@@ -404,16 +598,12 @@ export async function renderMarkdownView(
 
   const sections = renderer.sections as SelectionType[];
 
-  const viewEl = document.body.createDiv({
+  const doc = document.implementation.createHTMLDocument("webview");
+
+  const printEl = doc.body.createDiv("print");
+  const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered",
   });
-  const sizerEl = viewEl.createDiv({
-    cls: "markdown-preview-sizer markdown-preview-section",
-  });
-  const pusherEl = sizerEl.createDiv({ cls: "markdown-preview-pusher" });
-  pusherEl.style.height = "0.1px";
-  pusherEl.style.marginBottom = "0px";
-  pusherEl.style.width = "1px";
 
   const promises: AyncFnType[] = [];
 
@@ -457,10 +647,10 @@ export async function renderMarkdownView(
 
   // move all of them back in since rendering can cause some sections to move themselves out of their container
   for (const section of sections) {
-    sizerEl.appendChild(section.el);
+    viewEl.appendChild(section.el);
   }
 
-  container.appendChild(viewEl);
+  // container.appendChild(viewEl);
 
   return viewEl;
 }

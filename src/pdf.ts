@@ -1,6 +1,10 @@
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
 
 import { TreeNode, getHeadingTree } from "./utils";
+import { TFile } from "obsidian";
+import { TConfig } from "./modal";
+import electron, { WebviewTag } from "electron";
+import * as fs from "fs/promises";
 
 interface TPosition {
   [key: string]: number[];
@@ -250,10 +254,79 @@ export async function editPDF(data: Uint8Array, doc: Document, { format, positio
 
   const outlines = generateOutlines(headings, posistions);
   setOutline(pdfDoc, outlines);
-  await addPageNumbers(pdfDoc, {
-    format,
-    position,
-  });
+  // await addPageNumbers(pdfDoc, {
+  //   format,
+  //   position,
+  // });
   data = await pdfDoc.save();
   return data;
+}
+
+export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
+  console.log("export to pdf:", config);
+
+  const printOptions: electron.PrintToPDFOptions = {
+    displayHeaderFooter: true,
+    headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
+    footerTemplate:
+      '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+    pageSize: config["pageSise"],
+    ...config,
+    scale: config["scale"] / 100,
+    margins: {
+      marginType: "default",
+    },
+  };
+
+  if (config.marginType == "3") {
+    // Custom Margin
+    printOptions["margins"] = {
+      marginType: "custom",
+      top: parseFloat(config["marginTop"] ?? "0"),
+      bottom: parseFloat(config["marginBottom"] ?? "0"),
+      left: parseFloat(config["marginLeft"] ?? "0"),
+      right: parseFloat(config["marginRight"] ?? "0"),
+    };
+  }
+
+  console.log(printOptions);
+
+  // @ts-ignore
+  const result = await electron.remote.dialog.showSaveDialog({
+    title: "Export to PDF",
+    defaultPath: file.basename + ".pdf",
+    filters: [
+      { name: "All Files", extensions: ["*"] },
+      { name: "PDF", extensions: ["pdf"] },
+    ],
+    properties: ["showOverwriteConfirmation", "createDirectory"],
+  });
+
+  if (result.canceled) {
+    return;
+  }
+
+  const outputFile = result.filePath;
+
+  const w = document.querySelector("webview:last-child") as WebviewTag;
+
+  console.log("webviewID", w.getWebContentsId());
+  try {
+    let data = await w.printToPDF(printOptions);
+
+    data = await editPDF(data, doc, {
+      // format: this.settings.pageFormat,
+      // position: parseFloat(this.settings.distance) || parseFloat(config["marginBottom"] ?? "30") / 2,
+    });
+
+    await fs.writeFile(outputFile, data);
+
+    if (config.open) {
+      // @ts-ignore
+      electron.remote.shell.openPath(outputFile);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  console.log("finished");
 }

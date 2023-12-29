@@ -1,7 +1,8 @@
 import { Modal, App, Setting, TFile } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { generateWebview } from "./render";
+import { generateWebview, generateWebview1, getAllStyles, getAllStyles1 } from "./render";
+import { editPDF, exportToPDF } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -53,7 +54,7 @@ export class ExportConfigModal extends Modal {
   async onOpen() {
     this.contentEl.empty();
     console.log(this.containerEl, this.contentEl);
-    this.containerEl.style.setProperty("--dialog-width", "80vw");
+    this.containerEl.style.setProperty("--dialog-width", "60vw");
 
     this.titleEl.setText("Export to PDF");
     let completed = false;
@@ -61,18 +62,23 @@ export class ExportConfigModal extends Modal {
     const wrapper = this.contentEl.createDiv();
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
+    const { webview, doc } = await generateWebview1(this.plugin, this.file, this.config);
     const appendWebview = async (e: HTMLDivElement) => {
-      const { webview, doc } = await generateWebview(this.plugin, this.file, this.config);
-      preview = webview;
-      e.appendChild(webview);
+      preview = e.appendChild(webview);
       webview.setAttribute("style", "height:100%;");
       webview.addEventListener("dom-ready", (e) => {
         console.log("dom-ready");
         webview.setZoomFactor(0.7);
         completed = true;
+        getAllStyles1(document).forEach((css) => {
+          webview.insertCSS(css);
+        });
+        webview.executeJavaScript(`
+        document.body.innerHTML = \`${doc.body.innerHTML}\`;
+        `);
       });
     };
-
+    
     const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto;" } }, async (e) => {
       e.empty();
       await appendWebview(e);
@@ -86,8 +92,14 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Export").onClick(async () => {
         this.canceled = false;
+        
+        preview.executeJavaScript(`
+        document.body.addClass("theme-light");
+        document.body.removeClass("theme-dark");
+        `);
+        exportToPDF(this.file, this.config, preview, doc)
         this.close();
-        await this.callback(this.config);
+        // await this.callback(this.config);
       });
 
       button.buttonEl.style.marginRight = "auto";
