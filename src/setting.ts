@@ -5,6 +5,18 @@ function setAttributes(element: HTMLTextAreaElement, attributes: { [x: string]: 
     element.setAttribute(key, attributes[key]);
   }
 }
+
+export const renderBuyMeACoffeeBadge = (contentEl: HTMLElement | DocumentFragment, width = 175) => {
+  const linkEl = contentEl.createEl("a", {
+    href: "https://www.buymeacoffee.com/l1xnan",
+  });
+  const imgEl = linkEl.createEl("img");
+  imgEl.src =
+    "https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=nathangeorge&button_colour=6a8696&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00";
+  imgEl.alt = "Buy me a coffee";
+  imgEl.width = width;
+};
+
 export default class ConfigSettingTab extends PluginSettingTab {
   plugin: BetterExportPdfPlugin;
 
@@ -17,20 +29,60 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
+    new Setting(containerEl).setName("Better Export PDF").setHeading();
+
+    const supportDesc = new DocumentFragment();
+    supportDesc.createDiv({
+      text: "Support the continued development of this plugin.",
+    });
+    new Setting(containerEl).setDesc(supportDesc);
+    renderBuyMeACoffeeBadge(containerEl);
+
+    new Setting(containerEl).setName("General").setHeading();
+
+    new Setting(containerEl).setName("Add filename as title").addToggle((toggle) =>
+      toggle
+        .setTooltip("Add filename as title")
+        .setValue(this.plugin.settings.showTitle)
+        .onChange(async (value) => {
+          this.plugin.settings.showTitle = value;
+          this.plugin.saveSettings();
+        }),
+    );
+    new Setting(containerEl).setName("Display header/footer").addToggle((toggle) =>
+      toggle
+        .setTooltip("Display header/footer")
+        .setValue(this.plugin.settings.displayHeaderFooter)
+        .onChange(async (value) => {
+          this.plugin.settings.displayHeaderFooter = value;
+          this.plugin.saveSettings();
+        }),
+    );
+    new Setting(containerEl).setName("Max headings level of the outline").addDropdown((dropdown) => {
+      dropdown
+        .addOptions(Object.fromEntries(["1", "2", "3", "4", "5", "6"].map((level) => [level, `h${level}`])))
+        .setValue(this.plugin.settings.maxLevel)
+        .onChange(async (value: string) => {
+          this.plugin.settings.maxLevel = value;
+          this.plugin.saveSettings();
+        });
+    });
+
+    new Setting(containerEl).setName("Advanced").setHeading();
 
     const headerContentAreaSetting = new Setting(containerEl);
     headerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
     headerContentAreaSetting
       .setName("Header Template")
       .setDesc(
-        "string (optional) - HTML template for the print header." +
+        "HTML template for the print header." +
           "Should be valid HTML markup with following classes used to inject printing values into them: " +
           "date (formatted print date), title (document title), url (document location), pageNumber (current page number) and totalPages (total pages in the document). For example, <span class=title></span> would generate span containing the title.",
       );
     const hederContentArea = new TextAreaComponent(headerContentAreaSetting.controlEl);
 
     setAttributes(hederContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%;  height: 10vh;",
+      style: "margin-top: 12px; width: 100%;  height: 6vh;",
     });
     hederContentArea.setValue(this.plugin.settings.headerTemplate).onChange(async (value) => {
       this.plugin.settings.headerTemplate = value;
@@ -45,33 +97,22 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const footerContentArea = new TextAreaComponent(footerContentAreaSetting.controlEl);
 
     setAttributes(footerContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%;  height: 10vh;",
+      style: "margin-top: 12px; width: 100%;  height: 6vh;",
     });
     footerContentArea.setValue(this.plugin.settings.footerTemplate).onChange(async (value) => {
       this.plugin.settings.footerTemplate = value;
       this.plugin.saveSettings();
     });
 
+    new Setting(containerEl).setName("Debug").setHeading();
     new Setting(containerEl)
-      .setName("Page number format")
-      .setDesc("{page}: current page number, {pages}: total page numbers, examples: {page} / {pages}")
-      .addText((text) =>
-        text
-          .setPlaceholder("{page}")
-          .setValue(this.plugin.settings.pageFormat)
-          .onChange(async (value) => {
-            this.plugin.settings.pageFormat = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-    new Setting(containerEl).setName("Footer bottom distance").addText((text) =>
-      text
-        .setPlaceholder("20")
-        .setValue(this.plugin.settings.distance)
-        .onChange(async (value) => {
-          this.plugin.settings.distance = value;
+      .setName("Debug mode")
+      .setDesc("This is useful for troubleshooting.")
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.debug).onChange(async (value) => {
+          this.plugin.settings.debug = value;
           await this.plugin.saveSettings();
-        }),
-    );
+        });
+      });
   }
 }
