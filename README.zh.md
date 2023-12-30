@@ -2,15 +2,17 @@
 
 [English](./README.md) | 中文
 
-Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF 导出功能相比，增加了导出书签大纲和给 PDF 添加页码功能。
+Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF 导出功能相比，增加了导出预览、导出书签大纲和给 PDF 添加页码等功能。
 
 ## 功能
 
 与官方导出 PDF 功能相比：
 
-1. 自定义页边距
-2. 导出包含书签大纲
-3. 导出包含页码
+1. 🚀支持导出预览
+2. 🎉支持导出PDF带大纲书签
+3. 🛩️支持自定义页边距
+4. ✨支持添加页面
+5. ... ...
 
 ## 安装
 
@@ -27,6 +29,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 如果导出的 PDF 页面异常，尝试在外观中将颜色将切换为浅色。
 
+
 ### 设置
 
 可以简单的设置页码格式：
@@ -35,11 +38,34 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - `{pages}`: 代表总页码；
 
 例如: 如果总页码为 5，那么设置 `{page} / {pages}`，表示 `1 / 5`, `2 / 5` ...
+可以通过设置 `Header Template` and `Footer Template` 配置来设置页码, 例如:
+```html
+<div style="width: 100vw;font-size:10px;text-align:center;">
+    <span class="pageNumber"></span> / <span class="totalPages"></span>
+</div>
+```
+可以实现类似 ` 3 / 5` 页码效果。详见[`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions)。
+
+
+### 导出预览
+
+![Export preview](./assets/preview0.png)
+
+### 导出效果
+
+![Export preview](./assets/preview1.png)
 
 ## TODO
 
 - [ ] 将内部链接内容自动添加到脚注/附录中；
 - [ ] 支持 pagedjs 美化；
-- [ ] 支持打印预览；
+- [x] 支持打印预览；
 - [ ] 多个 Markdown 合并打印到一个 PDF 文件中；
 - [ ] 完善默认 `@media print` css 样式；
+
+
+## 赞助
+如果你喜欢这个插件，并对我表示感谢，你可以在这里请我喝一杯奶茶！
+
+
+<img src="./assets/sponsor-chat.png" width="300px"/>

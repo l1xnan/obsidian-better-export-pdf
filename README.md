@@ -2,15 +2,17 @@
 
 English | [中文](./README.zh.md)
 
-Better Export PDF is an Obsidian PDF export enhancement plugin that adds the ability to export bookmarks outline and add page numbers to PDF compared to the official PDF export function.
+Better Export PDF is an Obsidian PDF export enhancement plugin that adds the ability to export bookmarks outline, export preview and add page numbers to PDF compared to the official PDF export function.
 
 ## Features
 
 Compared to the official Export PDF feature:
 
-1. Customize the margins
-2. Export the outline bookmarks
-3. Export the included page numbers
+1. 🚀Support export preview
+2. 🎉Export the outline bookmarks
+3. 🛩️Customize the margins
+4. ✨Export the page numbers
+5. ... ...
 
 ## Installation
 
@@ -27,20 +29,31 @@ The current plugin is not published to the official plugin store and needs to be
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
 
+
 ### Settings
 
-Page number format can be easily set:
+Set page numbers using the `Header Template` and `Footer Template`, for example:
+```html
+<div style="width: 100vw;font-size:10px;text-align:center;">
+    <span class="pageNumber"></span> / <span class="totalPages"></span>
+</div>
+```
+See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
 
-- `{page}` : indicates the current page number.
-- `{pages}` : indicates the total page number;
+### Export preview
 
-For example, if the total page number 5, set `{page} / {pages}`, which means`1 / 5`, `2 / 5`...
+![Export preview](./assets/preview0.png)
+
+### Effect picture
+
+![Export preview](./assets/preview1.png)
+
 
 ## TODO
 
 - [ ] Automatically adds internal link content to footnotes/appendices;
 - [ ] Support pagedjs beautification;
-- [ ] Support print preview;
+- [x] Support print preview;
 - [ ] Print multiple Markdown files into one PDF file;
 - [ ] Improves default `@media print` css style;
 
