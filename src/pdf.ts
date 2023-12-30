@@ -5,6 +5,7 @@ import { TFile } from "obsidian";
 import { TConfig } from "./modal";
 import electron, { WebviewTag } from "electron";
 import * as fs from "fs/promises";
+import { BetterExportPdfPluginSettings } from "./main";
 
 interface TPosition {
   [key: string]: number[];
@@ -48,8 +49,11 @@ export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition
   return links;
 }
 
-export function generateOutlines(root: TreeNode, positions: TPosition) {
+export function generateOutlines(root: TreeNode, positions: TPosition, maxLevel = 6) {
   const _outline = (node: TreeNode) => {
+    if (node.level > maxLevel) {
+      return;
+    }
     const [pageIdx, pos] = positions?.[node.key] ?? [0, 0];
     const outline: PDFOutline = {
       title: node.title,
@@ -242,27 +246,27 @@ export async function addPageNumbers(doc: PDFDocument, setting: PageSetting) {
   }
 }
 
-type PdfOptionn = {
-  format: string;
-  position: number;
-};
-
-export async function editPDF(data: Uint8Array, doc: Document): Promise<Uint8Array> {
+export async function editPDF(data: Uint8Array, doc: Document, maxLevel = 6): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getHeadingPosition(pdfDoc);
   const headings = await getHeadingTree(doc);
 
-  const outlines = generateOutlines(headings, posistions);
+  const outlines = generateOutlines(headings, posistions, maxLevel);
+  console.log(outlines, headings, posistions);
   setOutline(pdfDoc, outlines);
   data = await pdfDoc.save();
   return data;
 }
 
-export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
-  console.log("export to pdf:", config);
+export async function exportToPDF(
+  file: TFile,
+  config: TConfig & BetterExportPdfPluginSettings,
+  webview: WebviewTag,
+  doc: Document,
+) {
+  console.log("print options:", config);
 
   const printOptions: electron.PrintToPDFOptions = {
-    displayHeaderFooter: true,
     pageSize: config["pageSise"],
     ...config,
     scale: config["scale"] / 100,
@@ -275,14 +279,12 @@ export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
     // Custom Margin
     printOptions["margins"] = {
       marginType: "custom",
-      top: parseFloat(config["marginTop"] ?? "0"),
-      bottom: parseFloat(config["marginBottom"] ?? "0"),
-      left: parseFloat(config["marginLeft"] ?? "0"),
-      right: parseFloat(config["marginRight"] ?? "0"),
+      top: parseFloat(config["marginTop"] ?? "0") / 25.4,
+      bottom: parseFloat(config["marginBottom"] ?? "0") / 25.4,
+      left: parseFloat(config["marginLeft"] ?? "0") / 25.4,
+      right: parseFloat(config["marginRight"] ?? "0") / 25.4,
     };
   }
-
-  console.log(printOptions);
 
   // @ts-ignore
   const result = await electron.remote.dialog.showSaveDialog({
@@ -307,7 +309,7 @@ export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
   try {
     let data = await w.printToPDF(printOptions);
 
-    data = await editPDF(data, doc);
+    data = await editPDF(data, doc, parseInt(config?.maxLevel ?? "6"));
 
     await fs.writeFile(outputFile, data);
 

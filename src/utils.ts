@@ -52,7 +52,7 @@ export function modifyHeadings(doc: Document) {
   const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
   headings.forEach((heading, i) => {
     const link = document.createElement("a") as HTMLAnchorElement;
-    link.href = `af://n${i}`;
+    link.href = `af://${heading.tagName.toLowerCase()}-${i}`;
     link.className = "md-print-anchor";
     heading.appendChild(link);
   });

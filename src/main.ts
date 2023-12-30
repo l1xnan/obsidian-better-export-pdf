@@ -12,19 +12,34 @@ import { generateWebview } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
 
-interface BetterExportPdfPluginSettings {
+export interface BetterExportPdfPluginSettings {
   pageFormat: string;
   distance: string;
+
   prevConfig?: TConfig;
+
+  showTitle: boolean;
+  maxLevel: string;
+
+  displayHeaderFooter: boolean;
   headerTemplate: string;
   footerTemplate: string;
+
+  debug: boolean;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   pageFormat: "{page}",
   distance: "15",
+
+  showTitle: true,
+  maxLevel: "6",
+
+  displayHeaderFooter: true,
   headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
   footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
+  
+  debug: false,
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
@@ -134,7 +149,6 @@ export default class BetterExportPdfPlugin extends Plugin {
     console.log("export to pdf:", config);
 
     const printOptions: electron.PrintToPDFOptions = {
-      displayHeaderFooter: true,
       headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
       footerTemplate:
         '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
@@ -192,10 +206,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     try {
       let data = await w.printToPDF(printOptions);
 
-      data = await editPDF(data, doc, {
-        format: this.settings.pageFormat,
-        position: parseFloat(this.settings.distance) || parseFloat(config["marginBottom"] ?? "30") / 2,
-      });
+      data = await editPDF(data, doc);
 
       await fs.writeFile(outputFile, data);
 
