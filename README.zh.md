@@ -32,12 +32,6 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 ### 设置
 
-可以简单的设置页码格式：
-
-- `{page}`: 代表当前页码；
-- `{pages}`: 代表总页码；
-
-例如: 如果总页码为 5，那么设置 `{page} / {pages}`，表示 `1 / 5`, `2 / 5` ...
 可以通过设置 `Header Template` and `Footer Template` 配置来设置页码, 例如:
 ```html
 <div style="width: 100vw;font-size:10px;text-align:center;">
