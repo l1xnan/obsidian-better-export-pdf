@@ -1,8 +1,8 @@
-import { Modal, App, Setting, TFile, ButtonComponent, Notice } from "obsidian";
+import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { generateWebview, generateWebview1, getAllStyles, getAllStyles1 } from "./render";
-import { editPDF, exportToPDF } from "./pdf";
+import { generateWebview1, getAllStyles1 } from "./render";
+import { exportToPDF } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -13,6 +13,7 @@ export interface TConfig {
   landscape: boolean;
   scale: number;
   showTitle: boolean;
+  displayHeaderFooter: boolean;
 
   marginTop?: string;
   marginBottom?: string;
@@ -43,30 +44,28 @@ export class ExportConfigModal extends Modal {
     this.plugin = plugin;
     this.file = file;
     this.completed = false;
-    this.config =
-      config ??
-      ({
-        pageSise: "A4",
-        marginType: "1",
-        showTitle: true,
-        open: true,
-        scale: 100,
-        landscape: false,
-        marginTop: "0",
-        marginBottom: "0",
-        marginLeft: "0",
-        marginRight: "0",
-      } as TConfig);
+    this.config = {
+      pageSise: "A4",
+      marginType: "1",
+      showTitle: true,
+      open: true,
+      scale: 100,
+      landscape: false,
+      marginTop: "10",
+      marginBottom: "10",
+      marginLeft: "10",
+      marginRight: "10",
+
+      ...(plugin.settings?.prevConfig ?? {}),
+    } as TConfig;
     this.callback = callback;
   }
 
   async onOpen() {
     this.contentEl.empty();
-    console.log(this.containerEl, this.contentEl);
     this.containerEl.style.setProperty("--dialog-width", "60vw");
 
     this.titleEl.setText("Export to PDF");
-    let preview: Electron.WebviewTag;
     const wrapper = this.contentEl.createDiv();
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
@@ -86,7 +85,9 @@ export class ExportConfigModal extends Modal {
         document.title = \`${this.file.basename}\`;
         document.body.addClass("theme-light");
         document.body.removeClass("theme-dark");
-        document.body.innerHTML = \`${doc.body.innerHTML}\`;
+        document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
+
+        document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`) 
         `);
       });
     };
@@ -101,25 +102,25 @@ export class ExportConfigModal extends Modal {
 
     this.generateForm(contentEl);
 
+    const handleExport = async () => {
+      this.plugin.settings.prevConfig = this.config;
+      await this.plugin.saveSettings();
+
+      if (this.completed) {
+        await exportToPDF(this.file, { ...this.plugin.settings, ...this.config }, this.preview, this.doc);
+        this.close();
+      } else {
+        new Notice("dom not ready");
+      }
+      // await this.callback(this.config);
+    };
+
     new Setting(contentEl).setHeading().addButton((button) => {
-      button.setButtonText("Export").onClick(async () => {
-        if (this.completed) {
-          await exportToPDF(this.file, this.config, preview, this.doc);
-          this.close();
-        } else {
-          new Notice("not dom ready");
-        }
-        // await this.callback(this.config);
-      });
+      button.setButtonText("Export").onClick(handleExport);
 
       fullWidthButton(button);
     });
-    new Setting(contentEl).setHeading().addButton((button) => {
-      button.setButtonText("Debug").onClick(async () => {
-        this.preview?.openDevTools();
-      });
-      fullWidthButton(button);
-    });
+
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Refresh").onClick(async () => {
         previewDiv.empty();
@@ -127,13 +128,22 @@ export class ExportConfigModal extends Modal {
       });
       fullWidthButton(button);
     });
+
+    const debugEl = new Setting(contentEl).setHeading().addButton((button) => {
+      button.setButtonText("Debug").onClick(async () => {
+        this.preview?.openDevTools();
+      });
+      fullWidthButton(button);
+    });
+    debugEl.settingEl.hidden = !this.plugin.settings.debug;
   }
 
   private generateForm(contentEl: HTMLDivElement) {
+    console.log("export modal config:", this.config);
     new Setting(contentEl).setName("Add filename as title").addToggle((toggle) =>
       toggle
         .setTooltip("Add filename as title")
-        .setValue(true)
+        .setValue(this.config["showTitle"])
         .onChange(async (value) => {
           this.config["showTitle"] = value;
 
@@ -141,7 +151,7 @@ export class ExportConfigModal extends Modal {
             const { doc } = await generateWebview1(this.plugin, this.file, this.config);
             this.doc = doc;
             this.preview?.executeJavaScript(`
-            document.body.innerHTML = \`${doc.body.innerHTML}\`;
+            document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
             `);
           }
         }),
@@ -177,7 +187,7 @@ export class ExportConfigModal extends Modal {
           .addOption("1", "Default")
           .addOption("2", "Small")
           .addOption("3", "Custom")
-          .setValue("1")
+          .setValue(this.config["marginType"])
           .onChange(async (value: string) => {
             this.config["marginType"] = value;
             if (value == "3") {
@@ -210,7 +220,7 @@ export class ExportConfigModal extends Modal {
             this.config["marginBottom"] = value;
           });
       });
-    topEl.settingEl.hidden = true;
+    topEl.settingEl.hidden = this.config["marginType"] != "3";
     const btmEl = new Setting(contentEl)
       .setName("Left/Right")
       .addText((text) => {
@@ -231,7 +241,7 @@ export class ExportConfigModal extends Modal {
             this.config["marginRight"] = value;
           });
       });
-    btmEl.settingEl.hidden = true;
+    btmEl.settingEl.hidden = this.config["marginType"] != "3";
 
     new Setting(contentEl).setName("Downscale precent").addSlider((slider) => {
       slider
@@ -250,6 +260,16 @@ export class ExportConfigModal extends Modal {
           this.config["landscape"] = value;
         }),
     );
+
+    new Setting(contentEl).setName("Display header/footer").addToggle((toggle) =>
+      toggle
+        .setTooltip("Display header/footer")
+        .setValue(this.config["displayHeaderFooter"])
+        .onChange(async (value) => {
+          this.config["displayHeaderFooter"] = value;
+        }),
+    );
+
     new Setting(contentEl).setName("Open after export").addToggle((toggle) =>
       toggle
         .setTooltip("Open the exported file after exporting.")
