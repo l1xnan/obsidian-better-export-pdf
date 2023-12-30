@@ -521,21 +521,6 @@ export async function generateWebview(plugin: BetterExportPdfPlugin, file: TFile
 }
 
 export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
-  const tempRoot = path.join(os.tmpdir(), "Obdisian");
-  try {
-    await fs.mkdir(tempRoot, { recursive: true });
-  } catch (error) {
-    /* empty */
-    new Notice(error, 1000);
-  }
-
-  const tempPath = await fs.mkdtemp(path.join(tempRoot, "export"));
-  try {
-    await fs.mkdir(tempPath, { recursive: true });
-  } catch (error) {
-    /* empty */
-  }
-
   const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
 
   const preview = view.previewMode;
@@ -551,6 +536,12 @@ export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFil
   // @ts-ignore
   const sections = preview.renderer.sections as SelectionType[];
 
+  if (config?.["showTitle"]) {
+    const header = doc.createElement("h1");
+    header.innerHTML = file.basename;
+    viewEl.appendChild(header);
+  }
+
   for (const section of sections) {
     viewEl.appendChild(section.el.cloneNode(true));
   }
@@ -562,6 +553,7 @@ export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFil
   modifyHeadings(doc);
   return { webview, doc };
 }
+
 type SelectionType = {
   rendered: boolean;
   height: number;
@@ -616,7 +608,7 @@ export async function renderMarkdownView(
     section.setCollapsed(false);
     section.el.innerHTML = "";
 
-    sizerEl.appendChild(section.el);
+    viewEl.appendChild(section.el);
 
     // @ts-ignore
     await section.render();

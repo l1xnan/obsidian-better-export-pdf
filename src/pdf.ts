@@ -247,17 +247,13 @@ type PdfOptionn = {
   position: number;
 };
 
-export async function editPDF(data: Uint8Array, doc: Document, { format, position }: PdfOptionn): Promise<Uint8Array> {
+export async function editPDF(data: Uint8Array, doc: Document): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getHeadingPosition(pdfDoc);
   const headings = await getHeadingTree(doc);
 
   const outlines = generateOutlines(headings, posistions);
   setOutline(pdfDoc, outlines);
-  // await addPageNumbers(pdfDoc, {
-  //   format,
-  //   position,
-  // });
   data = await pdfDoc.save();
   return data;
 }
@@ -267,9 +263,6 @@ export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
 
   const printOptions: electron.PrintToPDFOptions = {
     displayHeaderFooter: true,
-    headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
-    footerTemplate:
-      '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
     pageSize: config["pageSise"],
     ...config,
     scale: config["scale"] / 100,
@@ -314,10 +307,7 @@ export async function exportToPDF(file: TFile, config: TConfig, webview, doc) {
   try {
     let data = await w.printToPDF(printOptions);
 
-    data = await editPDF(data, doc, {
-      // format: this.settings.pageFormat,
-      // position: parseFloat(this.settings.distance) || parseFloat(config["marginBottom"] ?? "30") / 2,
-    });
+    data = await editPDF(data, doc);
 
     await fs.writeFile(outputFile, data);
 

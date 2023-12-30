@@ -16,11 +16,15 @@ interface BetterExportPdfPluginSettings {
   pageFormat: string;
   distance: string;
   prevConfig?: TConfig;
+  headerTemplate: string;
+  footerTemplate: string;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   pageFormat: "{page}",
   distance: "15",
+  headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
+  footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
@@ -184,7 +188,6 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const w = document.querySelector("webview:last-child") as WebviewTag;
     console.log("webviewID", w.getWebContentsId());
-    // w.openDevTools();
     await sleep(5000); // 5s
     try {
       let data = await w.printToPDF(printOptions);
