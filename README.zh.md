@@ -59,7 +59,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 
 ## 赞助
-如果你喜欢这个插件，并对我表示感谢，你可以在这里请我喝一杯奶茶！
+如果这个插件帮到了您，请我喝一杯奶茶吧！
 
 
 <img src="./assets/sponsor-chat.png" width="300px"/>
