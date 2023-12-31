@@ -101,7 +101,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile) => {
         menu.addItem((item) => {
-          let title = "Better to PDF";
+          let title = "Better Export PDF";
           if (isDev) {
             title = `${title} (dev)`;
           }
