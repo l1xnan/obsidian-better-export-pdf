@@ -143,7 +143,10 @@ export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile,
 export function createWebview() {
   const webview = document.createElement("webview");
   webview.src = `app://obsidian.md/help.html`;
-  webview.setAttribute("style", "height:100%;");
+  webview.setAttribute(
+    "style",
+    "height:calc(1/0.75 * 100%);width:calc(1/0.75 * 100%);transform:scale(0.75, 0.75);transform-origin: top left;",
+  );
   webview.nodeintegration = true;
   return webview;
 }

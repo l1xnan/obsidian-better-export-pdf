@@ -70,17 +70,16 @@ export class ExportConfigModal extends Modal {
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
     this.doc = await renderMarkdown(this.plugin, this.file, this.config);
-    const webview = createWebview();
     const appendWebview = async (e: HTMLDivElement) => {
+      const webview = createWebview();
       this.preview = e.appendChild(webview);
-      webview.addEventListener("dom-ready", (e) => {
+      this.preview.addEventListener("dom-ready", async (e) => {
         console.log("dom-ready");
-        webview.setZoomFactor(0.7);
         this.completed = true;
         getAllStyles().forEach((css) => {
-          webview.insertCSS(css);
+          this.preview.insertCSS(css);
         });
-        webview.executeJavaScript(`
+        await this.preview.executeJavaScript(`
         document.title = \`${this.file.basename}\`;
         document.body.addClass("theme-light");
         document.body.removeClass("theme-dark");
@@ -280,5 +279,6 @@ export class ExportConfigModal extends Modal {
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+    electron.webFrame.setZoomLevel(0);
   }
 }
