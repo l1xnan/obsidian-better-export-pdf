@@ -6,6 +6,7 @@ import { MarkdownRenderer, MarkdownView, TFile, Notice, MarkdownPreviewView, loa
 import { TConfig } from "./modal";
 import BetterExportPdfPlugin from "./main";
 import { modifyHeadings, waitFor } from "./utils";
+import { SelectionType } from "./type";
 
 export async function renderMermaid(doc: Document) {
   doc.querySelectorAll(".language-mermaid").forEach(async (element: HTMLElement, i: number) => {
@@ -615,19 +616,21 @@ export async function generateWebview2(plugin: BetterExportPdfPlugin, file: TFil
   const preview = view.previewMode;
   // @ts-ignore
   preview.renderer.showAll = true;
-
+  
   const comp = new Component();
   comp.load();
   const promises: AyncFnType[] = [];
   const doc = document.implementation.createHTMLDocument("webview");
-
+  
   const printEl = document.body.createDiv("print");
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered",
   });
   plugin.app.vault.cachedRead(file);
-
+  
+  // @ts-ignore
   viewEl.toggleClass("rtl", plugin.app.vault.getConfig("rightToLeft"));
+  // @ts-ignore
   viewEl.toggleClass("show-properties", "hidden" !== plugin.app.vault.getConfig("propertiesInDocument"));
 
   if (config.showTitle) {
@@ -682,8 +685,11 @@ export async function renderMarkdownView(
 ): Promise<HTMLElement | undefined> {
   // @ts-ignore
   const renderer = preview.renderer;
+  // @ts-ignore
   await renderer.unfoldAllHeadings();
+  // @ts-ignore
   await renderer.unfoldAllLists();
+  // @ts-ignore
   await renderer.parseSync();
 
   // @ts-ignore
@@ -730,6 +736,7 @@ export async function renderMarkdownView(
       }
     });
 
+    // @ts-ignore
     await renderer.measureSection(section);
 
     await waitFor(() => section.computed, 50);
