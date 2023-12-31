@@ -38,27 +38,6 @@ declare module "obsidian" {
       text: string;
       owner: MarkdownPreviewView;
     };
-    postProcess: (section, promisses, frontmatter) => unknown;
-  }
-
-  declare class MarkdownRenderer extends MarkdownRenderer {
-    /**
-    {
-        docId: string // Xe(16),
-        sourcePath: string
-        frontmatter: any,
-        promises: any[],
-        addChild: function(e) {
-            return t.addChild(e)
-        },
-        getSectionInfo: function() {
-            return null
-        },
-        containerEl: i,
-        el: i,
-        displayMode: !0
-    }
-     */
-    static postProcess: (app: App, param: any) => any;
+    postProcess: (section: unknown, promisses: unknown, frontmatter: unknown) => unknown;
   }
 }

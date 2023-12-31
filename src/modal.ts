@@ -1,7 +1,7 @@
 import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { generateWebview2, getAllStyles1 } from "./render";
+import { renderMarkdown, getAllStyles, createWebview } from "./render";
 import { exportToPDF } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -69,23 +69,22 @@ export class ExportConfigModal extends Modal {
     const wrapper = this.contentEl.createDiv();
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
-    const { webview, doc } = await generateWebview2(this.plugin, this.file, this.config);
-    this.doc = doc;
+    this.doc = await renderMarkdown(this.plugin, this.file, this.config);
+    const webview = createWebview();
     const appendWebview = async (e: HTMLDivElement) => {
       this.preview = e.appendChild(webview);
-      webview.setAttribute("style", "height:100%;");
       webview.addEventListener("dom-ready", (e) => {
         console.log("dom-ready");
         webview.setZoomFactor(0.7);
         this.completed = true;
-        getAllStyles1(document).forEach((css) => {
+        getAllStyles().forEach((css) => {
           webview.insertCSS(css);
         });
         webview.executeJavaScript(`
         document.title = \`${this.file.basename}\`;
         document.body.addClass("theme-light");
         document.body.removeClass("theme-dark");
-        document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
+        document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
 
         document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`) 
         `);
@@ -112,7 +111,6 @@ export class ExportConfigModal extends Modal {
       } else {
         new Notice("dom not ready");
       }
-      // await this.callback(this.config);
     };
 
     new Setting(contentEl).setHeading().addButton((button) => {
@@ -148,10 +146,9 @@ export class ExportConfigModal extends Modal {
           this.config["showTitle"] = value;
 
           if (this.completed) {
-            const { doc } = await generateWebview2(this.plugin, this.file, this.config);
-            this.doc = doc;
+            this.doc = await renderMarkdown(this.plugin, this.file, this.config);
             this.preview?.executeJavaScript(`
-            document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
+            document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
             `);
           }
         }),

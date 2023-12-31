@@ -8,7 +8,7 @@ import { waitFor } from "./utils";
 
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
-import { generateWebview } from "./render";
+import { generateWebview } from "./deprecated";
 
 const isDev = process.env.NODE_ENV === "development";
 
