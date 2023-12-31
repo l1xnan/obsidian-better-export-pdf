@@ -153,8 +153,58 @@ export function getAllStyles1(doc: Document, clear = false) {
       text-decoration: initial !important;
       text-shadow: initial !important;
     }
-    
+  }
 
+  /* ---------- app.css @media print {} ---------- */
+  html,
+  body {
+    padding-top: 0 !important;
+    overflow: auto !important;
+    height: auto !important;
+  }
+  iframe,
+  .titlebar,
+  .app-container,
+  .progress-bar,
+  .popover,
+  .markdown-embed-link {
+    display: none !important;
+  }
+  body > :not(.print) {
+    display: none !important;
+  }
+  .print .markdown-preview-view {
+    -webkit-print-color-adjust: exact;
+    color: initial;
+  }
+  .print .markdown-preview-view mark {
+    color: initial;
+  }
+  .print .markdown-preview-view .metadata-container {
+    display: none;
+  }
+  .print .markdown-preview-view .markdown-embed-content {
+    max-height: none;
+    overflow: visible;
+  }
+  .print .markdown-preview-view .callout-content {
+    display: inherit !important;
+  }
+  .print .external-link {
+    background: none;
+    padding-right: 0;
+  }
+  * {
+    text-shadow: none !important;
+  }
+  webview {
+    display: none;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  body {
+    --font-text: var(--font-print) !important;
   }
   `;
   cssTexts.push(stylePatch);
@@ -231,60 +281,6 @@ export async function createHead(doc: Document, tempPath: string) {
 				hyphens: auto;
 			}
     }
-
-		/* ---------- app.css @media print {} ---------- */
-
-   
-      html,
-      body {
-        padding-top: 0 !important;
-        overflow: auto !important;
-        height: auto !important;
-      }
-      iframe,
-      .titlebar,
-      .app-container,
-      .progress-bar,
-      .popover,
-      .markdown-embed-link {
-        display: none !important;
-      }
-      body > :not(.print) {
-        display: none !important;
-      }
-      .print .markdown-preview-view {
-        -webkit-print-color-adjust: exact;
-        color: initial;
-      }
-      .print .markdown-preview-view mark {
-        color: initial;
-      }
-      .print .markdown-preview-view .metadata-container {
-        display: none;
-      }
-      .print .markdown-preview-view .markdown-embed-content {
-        max-height: none;
-        overflow: visible;
-      }
-      .print .markdown-preview-view .callout-content {
-        display: inherit !important;
-      }
-      .print .external-link {
-        background: none;
-        padding-right: 0;
-      }
-      * {
-        text-shadow: none !important;
-      }
-      webview {
-        display: none;
-      }
-      ::-webkit-scrollbar {
-        display: none;
-      }
-      body {
-        --font-text: var(--font-print) !important;
-      }
 		`;
   cssTexts.push(stylePatch);
   const appCssFile = path.join(tempPath, "app.css");
