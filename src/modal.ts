@@ -1,7 +1,7 @@
 import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { generateWebview1, getAllStyles1 } from "./render";
+import { generateWebview2, getAllStyles1 } from "./render";
 import { exportToPDF } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -69,7 +69,7 @@ export class ExportConfigModal extends Modal {
     const wrapper = this.contentEl.createDiv();
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
-    const { webview, doc } = await generateWebview1(this.plugin, this.file, this.config);
+    const { webview, doc } = await generateWebview2(this.plugin, this.file, this.config);
     this.doc = doc;
     const appendWebview = async (e: HTMLDivElement) => {
       this.preview = e.appendChild(webview);
@@ -148,7 +148,7 @@ export class ExportConfigModal extends Modal {
           this.config["showTitle"] = value;
 
           if (this.completed) {
-            const { doc } = await generateWebview1(this.plugin, this.file, this.config);
+            const { doc } = await generateWebview2(this.plugin, this.file, this.config);
             this.doc = doc;
             this.preview?.executeJavaScript(`
             document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);

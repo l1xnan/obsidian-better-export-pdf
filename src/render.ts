@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 
-import { MarkdownRenderer, MarkdownView, TFile, Notice, MarkdownPreviewView, loadMermaid } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Notice, MarkdownPreviewView, loadMermaid, Component } from "obsidian";
 import { TConfig } from "./modal";
 import BetterExportPdfPlugin from "./main";
 import { modifyHeadings, waitFor } from "./utils";
@@ -231,6 +231,60 @@ export async function createHead(doc: Document, tempPath: string) {
 				hyphens: auto;
 			}
     }
+
+		/* ---------- app.css @media print {} ---------- */
+
+   
+      html,
+      body {
+        padding-top: 0 !important;
+        overflow: auto !important;
+        height: auto !important;
+      }
+      iframe,
+      .titlebar,
+      .app-container,
+      .progress-bar,
+      .popover,
+      .markdown-embed-link {
+        display: none !important;
+      }
+      body > :not(.print) {
+        display: none !important;
+      }
+      .print .markdown-preview-view {
+        -webkit-print-color-adjust: exact;
+        color: initial;
+      }
+      .print .markdown-preview-view mark {
+        color: initial;
+      }
+      .print .markdown-preview-view .metadata-container {
+        display: none;
+      }
+      .print .markdown-preview-view .markdown-embed-content {
+        max-height: none;
+        overflow: visible;
+      }
+      .print .markdown-preview-view .callout-content {
+        display: inherit !important;
+      }
+      .print .external-link {
+        background: none;
+        padding-right: 0;
+      }
+      * {
+        text-shadow: none !important;
+      }
+      webview {
+        display: none;
+      }
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        --font-text: var(--font-print) !important;
+      }
 		`;
   cssTexts.push(stylePatch);
   const appCssFile = path.join(tempPath, "app.css");
@@ -520,6 +574,10 @@ export async function generateWebview(plugin: BetterExportPdfPlugin, file: TFile
   return { webview, doc };
 }
 
+function generateDocId(n: number) {
+  return Array.from({ length: n }, () => ((16 * Math.random()) | 0).toString(16)).join("");
+}
+
 export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
   const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
 
@@ -554,24 +612,73 @@ export async function generateWebview1(plugin: BetterExportPdfPlugin, file: TFil
   return { webview, doc };
 }
 
-type SelectionType = {
-  rendered: boolean;
-  height: number;
-  computed: boolean;
-  lines: number;
-  lineStart: number;
-  lineEnd: number;
-  used: boolean;
-  highlightRanges: number;
-  level: number;
-  headingCollapsed: boolean;
-  shown: boolean;
-  usesFrontMatter: boolean;
-  html: string;
-  el: HTMLElement;
-};
-
 type AyncFnType = (...args: unknown[]) => Promise<unknown>;
+// 逆向原生打印函数
+export async function generateWebview2(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
+  const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+  const preview = view.previewMode;
+  // @ts-ignore
+  preview.renderer.showAll = true;
+
+  const comp = new Component();
+  comp.load();
+  const promises: AyncFnType[] = [];
+  const doc = document.implementation.createHTMLDocument("webview");
+
+  const printEl = document.body.createDiv("print");
+  const viewEl = printEl.createDiv({
+    cls: "markdown-preview-view markdown-rendered",
+  });
+  plugin.app.vault.cachedRead(file);
+
+  viewEl.toggleClass("rtl", plugin.app.vault.getConfig("rightToLeft"));
+  viewEl.toggleClass("show-properties", "hidden" !== plugin.app.vault.getConfig("propertiesInDocument"));
+
+  if (config.showTitle) {
+    viewEl.createEl("h1", {
+      text: file.basename,
+    });
+  }
+  await MarkdownRenderer.render(plugin.app, view.data, viewEl, file.path, comp);
+  // @ts-ignore
+  MarkdownRenderer.postProcess(plugin.app, {
+    docId: generateDocId(16),
+    sourcePath: file.path,
+    frontmatter: {},
+    promises,
+    addChild: function (e: Component) {
+      return comp.addChild(e);
+    },
+    getSectionInfo: function () {
+      return null;
+    },
+    containerEl: viewEl,
+    el: viewEl,
+    displayMode: true,
+  });
+
+  await Promise.all(promises);
+
+  // viewEl.querySelectorAll(".callout-content").forEach((el: HTMLElement) => {
+  //   el.style.display = "initial";
+  // });
+
+  printEl.findAll("a.internal-link").forEach((el) => {
+    el.removeAttribute("href");
+  });
+
+  const webview = document.createElement("webview");
+  webview.src = `app://obsidian.md/help.html`;
+  webview.nodeintegration = true;
+
+  doc.body.appendChild(printEl.cloneNode(true));
+  modifyHeadings(doc);
+
+  printEl.detach();
+  comp.unload();
+  printEl.remove();
+  return { webview, doc };
+}
 
 export async function renderMarkdownView(
   preview: MarkdownPreviewView,

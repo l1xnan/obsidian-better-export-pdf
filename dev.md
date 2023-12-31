@@ -4,14 +4,14 @@
 ```js
 return s = g.sent(),
             l = jb(s),  // markdown 语法树
-            c = Yb(l),
+            c = Yb(l), // 解析 frontmatter
             u = Xb(l),  // markdown 渲染后的 html
             h = OM(u),
             i.appendChild(h),
             i.addClasses(tw(c)),
             p = [],
-            wP.postProcess(o, {  // o 为 app
-                docId: wt(16),
+            wP.postProcess(o, {  // o 为 this.app
+                docId: wt(16), // 随机生成的16位编码
                 sourcePath: a.path,
                 frontmatter: c,
                 promises: p,
@@ -21,14 +21,16 @@ return s = g.sent(),
                 getSectionInfo: function() {
                     return null
                 },
+                // <div class="markdown-preview-view
                 containerEl: i,
                 el: i,
-                displayMode: !0
+                displayMode: true
             }),
             p.length > 0 ? [4, Promise.all(p)] : [3, 3];
 ```
 
 
+https://github.com/Pr0dt0s/obsidian-html-server
 
 ```js
 t.postProcess = function(e, t) {
