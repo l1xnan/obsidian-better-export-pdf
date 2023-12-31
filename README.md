@@ -8,11 +8,11 @@ Better Export PDF is an Obsidian PDF export enhancement plugin that adds the abi
 
 Compared to the official Export PDF feature:
 
-1. 🚀Support export preview
-2. 🎉Export the outline bookmarks
-3. 🛩️Customize the margins
-4. ✨Export the page numbers
-5. ... ...
+- 🚀Support export preview
+- 🎉Export the outline bookmarks
+- 🛩️Customize the margins
+- ✨Export the page numbers
+- ... ...
 
 ## Installation
 
@@ -24,7 +24,7 @@ The current plugin is not published to the official plugin store and needs to be
 
 ## Usage
 
-1. In the upper right corner of the current Markdown view, click More options and select `Better to PDF`;
+1. In the upper right corner of the current Markdown view, click More options and select `Better Export PDF`;
 2. Open the command panel and select `Better Export PDF: Export Current file to PDF`.
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
