@@ -1,4 +1,4 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Component, Notice } from "obsidian";
 import { TConfig } from "./modal";
 import BetterExportPdfPlugin from "./main";
 import { modifyHeadings } from "./utils";
@@ -83,7 +83,14 @@ function generateDocId(n: number) {
 export type AyncFnType = (...args: unknown[]) => Promise<unknown>;
 // 逆向原生打印函数
 export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
-  const view = plugin.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
+  const ws = plugin.app.workspace;
+  const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
+
+  // @ts-ignore
+  const data = view?.data ?? ws?.getActiveFileView()?.data ?? ws.activeEditor?.data;
+  if (!data) {
+    new Notice("data is empty!");
+  }
 
   const comp = new Component();
   comp.load();
@@ -105,7 +112,7 @@ export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile,
       text: file.basename,
     });
   }
-  await MarkdownRenderer.render(plugin.app, view.data, viewEl, file.path, comp);
+  await MarkdownRenderer.render(plugin.app, data ?? "", viewEl, file.path, comp);
   // @ts-ignore
   // (app: App: param: T) => T
   MarkdownRenderer.postProcess(plugin.app, {
