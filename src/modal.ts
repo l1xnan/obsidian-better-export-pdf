@@ -85,7 +85,8 @@ export class ExportConfigModal extends Modal {
         document.body.removeClass("theme-dark");
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
 
-        document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`) 
+        document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
+        document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
         `);
       });
     };
