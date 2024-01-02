@@ -81,12 +81,12 @@ export class ExportConfigModal extends Modal {
         });
         await this.preview.executeJavaScript(`
         document.title = \`${this.file.basename}\`;
-        document.body.addClass("theme-light");
-        document.body.removeClass("theme-dark");
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
-
+				
         document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
         document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
+        document.body.addClass("theme-light");
+        document.body.removeClass("theme-dark");
         `);
       });
     };
