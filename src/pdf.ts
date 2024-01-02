@@ -30,7 +30,7 @@ export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition
           const linkDict = annotation.get(PDFName.of("A")) as PDFDict;
           // @ts-ignore
           const uri = linkDict?.get(PDFName.of("URI")).toString();
-          console.log("uri", uri);
+          console.debug("uri", uri);
           const regexMatch = /^\(af:\/\/(.+)\)$/.exec(uri || "");
 
           if (regexMatch) {
@@ -252,7 +252,6 @@ export async function editPDF(data: Uint8Array, doc: Document, maxLevel = 6): Pr
   const headings = await getHeadingTree(doc);
 
   const outlines = generateOutlines(headings, posistions, maxLevel);
-  console.log(outlines, headings, posistions);
   setOutline(pdfDoc, outlines);
   data = await pdfDoc.save();
   return data;
@@ -264,7 +263,6 @@ export async function exportToPDF(
   webview: WebviewTag,
   doc: Document,
 ) {
-  console.log("print options:", config);
 
   const printOptions: electron.PrintToPDFOptions = {
     pageSize: config["pageSise"],
@@ -289,7 +287,6 @@ export async function exportToPDF(
 
   const w = document.querySelector("webview:last-child") as WebviewTag;
 
-  console.log("webviewID", w.getWebContentsId());
   try {
     let data = await w.printToPDF(printOptions);
 
@@ -302,9 +299,8 @@ export async function exportToPDF(
       electron.remote.shell.openPath(outputFile);
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
-  console.log("finished");
 }
 
 export async function getOutputFile(file: TFile) {

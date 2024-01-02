@@ -18,9 +18,7 @@ export function getAllStyles() {
     const href = sheet.ownerNode?.href;
 
     const division = `/* ----------${id ? `id:${id}` : href ? `href:${href}` : ""}---------- */`;
-    if (id || href) {
-      console.log(division);
-    }
+
     cssTexts.push(division);
 
     Array.from(sheet.cssRules).forEach((rule) => {

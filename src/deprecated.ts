@@ -150,10 +150,8 @@ export async function generateWebview(plugin: BetterExportPdfPlugin, file: TFile
   // webview.addClass("print-preview");
   const doc = await renderFile(this, file, tempPath, config);
 
-  console.log(file);
-
   const tempFile = path.join(tempPath, "index.html");
-  console.log("temp html file:", tempFile);
+  console.warn("temp html file:", tempFile);
 
   const html = `<html>${doc.documentElement.innerHTML}</html>`;
   await fs.writeFile(tempFile, html);
@@ -254,25 +252,18 @@ export async function renderDocument(plugin: BetterExportPdfPlugin, file: TFile,
 
 export async function renderMarkdown(this: BetterExportPdfPlugin, file: TFile) {
   const workspace = this.app.workspace;
-  console.log("workspace:", workspace);
 
   const view = this.app.workspace.getActiveViewOfType(MarkdownView) as MarkdownView;
   const leaf = workspace.getLeaf("window");
 
-  console.log("leaf:", leaf);
   await leaf.openFile(file, { active: true });
   // @ts-ignore
   await waitFor(() => leaf?.view.previewMode, 2000);
-
-  // const view = leaf.view as MarkdownView;
-  console.log("view:", view);
-  console.log("data:", view.data);
 
   // @ts-ignore
   await view.setMode(view.modes["preview"]);
 
   const preview = view.previewMode;
-  console.log("====preview:", preview);
 
   // @ts-ignore
   preview.renderer.showAll = true;
@@ -294,10 +285,6 @@ export async function renderMarkdown(this: BetterExportPdfPlugin, file: TFile) {
     () => preview.renderer.lastRender != lastRender && isRendered,
     10 * 1000,
   );
-  // @ts-ignore
-  const container = preview.containerEl;
-  console.log("html:", container.innerHTML);
-
   await waitFor(() => {
     // @ts-ignore
     const currRender = preview.renderer.lastRender;
@@ -308,14 +295,12 @@ export async function renderMarkdown(this: BetterExportPdfPlugin, file: TFile) {
     return false;
   });
 
-  console.log("container:", container);
 }
 export function insertScripts(doc: Document) {
   // app://xxx.js 相关内部 js
   const element = doc.body;
 
   getAppScripts().forEach((src) => {
-    console.log("src:", src);
     const script = doc.createElement("script");
     if (src.includes("mermaid")) {
       return;
@@ -470,7 +455,7 @@ export async function inlineMedia(doc: Document, file: TFile) {
 
       elem.setAttribute("src", `data:${type}/${extension};base64,${base64}`);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   });
 }
@@ -540,7 +525,7 @@ export function getAllStyles(doc: Document, clear = false) {
 
     const division = `/* ----------${id ? `id:${id}` : href ? `href:${href}` : ""}---------- */`;
     if (id || href) {
-      console.log(division);
+      console.warn(division);
     }
     cssTexts.push(division);
 

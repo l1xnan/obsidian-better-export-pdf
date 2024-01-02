@@ -74,7 +74,6 @@ export class ExportConfigModal extends Modal {
       const webview = createWebview();
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
-        console.log("dom-ready");
         this.completed = true;
         getAllStyles().forEach((css) => {
           this.preview.insertCSS(css);
@@ -140,7 +139,6 @@ export class ExportConfigModal extends Modal {
   }
 
   private generateForm(contentEl: HTMLDivElement) {
-    console.log("export modal config:", this.config);
     new Setting(contentEl).setName("Add filename as title").addToggle((toggle) =>
       toggle
         .setTooltip("Add filename as title")

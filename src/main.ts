@@ -76,7 +76,6 @@ export default class BetterExportPdfPlugin extends Plugin {
               console.error(error);
             } finally {
               document.querySelectorAll("webview").forEach((node) => {
-                console.log("webview");
                 if (!isDev) {
                   node.parentNode?.removeChild(node);
                 }
@@ -122,7 +121,6 @@ export default class BetterExportPdfPlugin extends Plugin {
                     console.error(error);
                   } finally {
                     document.querySelectorAll("webview").forEach((node) => {
-                      console.log("webview");
                       if (!isDev) {
                         node.parentNode?.removeChild(node);
                       }
@@ -146,8 +144,6 @@ export default class BetterExportPdfPlugin extends Plugin {
   }
 
   async exportToPDF(file: TFile, config: TConfig) {
-    console.log("export to pdf:", config);
-
     const printOptions: electron.PrintToPDFOptions = {
       headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
       footerTemplate:
@@ -171,8 +167,6 @@ export default class BetterExportPdfPlugin extends Plugin {
       };
     }
 
-    console.log(printOptions);
-
     // @ts-ignore
     const result = await electron.remote.dialog.showSaveDialog({
       title: "Export to PDF",
@@ -194,14 +188,12 @@ export default class BetterExportPdfPlugin extends Plugin {
     let completed = false;
     document.body.appendChild(webview);
     webview.addEventListener("dom-ready", (e) => {
-      console.log("dom-ready");
       completed = true;
     });
 
     await waitFor(() => completed);
 
     const w = document.querySelector("webview:last-child") as WebviewTag;
-    console.log("webviewID", w.getWebContentsId());
     await sleep(5000); // 5s
     try {
       let data = await w.printToPDF(printOptions);
@@ -215,9 +207,8 @@ export default class BetterExportPdfPlugin extends Plugin {
         electron.remote.shell.openPath(outputFile);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
-    console.log("finished");
   }
 
   changeConfig() {
