@@ -2,7 +2,7 @@ import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview } from "./render";
-import { exportToPDF } from "./pdf";
+import { exportToPDF, getOutputFile } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -106,8 +106,11 @@ export class ExportConfigModal extends Modal {
       await this.plugin.saveSettings();
 
       if (this.completed) {
-        await exportToPDF(this.file, { ...this.plugin.settings, ...this.config }, this.preview, this.doc);
-        this.close();
+        const outputFile = await getOutputFile(this.file);
+        if (outputFile) {
+          await exportToPDF(outputFile, { ...this.plugin.settings, ...this.config }, this.preview, this.doc);
+          this.close();
+        }
       } else {
         new Notice("dom not ready");
       }

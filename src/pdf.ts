@@ -259,7 +259,7 @@ export async function editPDF(data: Uint8Array, doc: Document, maxLevel = 6): Pr
 }
 
 export async function exportToPDF(
-  file: TFile,
+  outputFile: string,
   config: TConfig & BetterExportPdfPluginSettings,
   webview: WebviewTag,
   doc: Document,
@@ -286,22 +286,6 @@ export async function exportToPDF(
     };
   }
 
-  // @ts-ignore
-  const result = await electron.remote.dialog.showSaveDialog({
-    title: "Export to PDF",
-    defaultPath: file.basename + ".pdf",
-    filters: [
-      { name: "All Files", extensions: ["*"] },
-      { name: "PDF", extensions: ["pdf"] },
-    ],
-    properties: ["showOverwriteConfirmation", "createDirectory"],
-  });
-
-  if (result.canceled) {
-    return;
-  }
-
-  const outputFile = result.filePath;
 
   const w = document.querySelector("webview:last-child") as WebviewTag;
 
@@ -321,4 +305,22 @@ export async function exportToPDF(
     console.log(error);
   }
   console.log("finished");
+}
+
+export async function getOutputFile(file: TFile) {
+  // @ts-ignore
+  const result = await electron.remote.dialog.showSaveDialog({
+    title: "Export to PDF",
+    defaultPath: file.basename + ".pdf",
+    filters: [
+      { name: "All Files", extensions: ["*"] },
+      { name: "PDF", extensions: ["pdf"] },
+    ],
+    properties: ["showOverwriteConfirmation", "createDirectory"],
+  });
+
+  if (result.canceled) {
+    return;
+  }
+  return result.filePath;
 }
