@@ -22,6 +22,8 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 2. 解压到: `{VaultFolder}/.obsidian/plugins/`
 3. 重启 Obdisian，并再插件管理器中启用插件。
 
+或者用 [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat)。
+
 ## 使用
 
 1. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better Export PDF`；

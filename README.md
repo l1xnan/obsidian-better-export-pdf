@@ -22,6 +22,8 @@ The current plugin is not published to the official plugin store and needs to be
 2. Unzip into: `{VaultFolder}/.obsidian/plugins/`
 3. Reload Obsidian and enable the plug-in.
 
+or use the [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat).
+
 ## Usage
 
 1. In the upper right corner of the current Markdown view, click More options and select `Better Export PDF`;
