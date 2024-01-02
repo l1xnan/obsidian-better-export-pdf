@@ -8,7 +8,7 @@ import { waitFor } from "./utils";
 
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
-import { generateWebview } from "./deprecated";
+import { createWebview, renderMarkdown } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -184,7 +184,9 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const outputFile = result.filePath;
 
-    const { webview, doc } = await generateWebview(this, file, config);
+		const doc = await renderMarkdown(this, file, config);
+		const webview = createWebview();
+
     let completed = false;
     document.body.appendChild(webview);
     webview.addEventListener("dom-ready", (e) => {
