@@ -24,10 +24,13 @@ export interface TConfig {
 type Callback = (conf: TConfig) => void;
 
 function fullWidthButton(button: ButtonComponent) {
-  button.buttonEl.style.marginRight = "auto";
-  button.buttonEl.style.marginLeft = "auto";
-  button.buttonEl.style.width = "-webkit-fill-available";
+  button.buttonEl.setAttribute("style", `margin: "0 auto"; width: -webkit-fill-available`);
 }
+
+function setInputWidth(inputEl: HTMLInputElement) {
+  inputEl.setAttribute("style", `width: 100px;`);
+}
+
 export class ExportConfigModal extends Modal {
   config: TConfig;
   canceled: boolean;
@@ -201,7 +204,7 @@ export class ExportConfigModal extends Modal {
     const topEl = new Setting(contentEl)
       .setName("Top/Bottom")
       .addText((text) => {
-        text.inputEl.style.width = "100px";
+				setInputWidth(text.inputEl)
         text
           .setPlaceholder("margin top")
           .setValue(this.config["marginTop"] as string)
@@ -210,7 +213,7 @@ export class ExportConfigModal extends Modal {
           });
       })
       .addText((text) => {
-        text.inputEl.style.width = "100px";
+				setInputWidth(text.inputEl)
         text
           .setPlaceholder("margin bottom")
           .setValue(this.config["marginBottom"] as string)
@@ -222,7 +225,7 @@ export class ExportConfigModal extends Modal {
     const btmEl = new Setting(contentEl)
       .setName("Left/Right")
       .addText((text) => {
-        text.inputEl.style.width = "100px";
+				setInputWidth(text.inputEl)
         text
           .setPlaceholder("margin left")
           .setValue(this.config["marginLeft"] as string)
@@ -231,7 +234,7 @@ export class ExportConfigModal extends Modal {
           });
       })
       .addText((text) => {
-        text.inputEl.style.width = "100px";
+				setInputWidth(text.inputEl)
         text
           .setPlaceholder("margin right")
           .setValue(this.config["marginRight"] as string)
