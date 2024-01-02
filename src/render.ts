@@ -152,7 +152,12 @@ export function createWebview() {
   webview.src = `app://obsidian.md/help.html`;
   webview.setAttribute(
     "style",
-    "height:calc(1/0.75 * 100%);width:calc(1/0.75 * 100%);transform:scale(0.75, 0.75);transform-origin: top left;",
+    `height:calc(1/0.75 * 100%);
+		 width: calc(1/0.75 * 100%);
+		 transform: scale(0.75, 0.75);
+		 transform-origin: top left;
+		 border: 1px solid #f2f2f2;
+		`,
   );
   webview.nodeintegration = true;
   return webview;
