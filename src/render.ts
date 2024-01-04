@@ -53,6 +53,15 @@ export function getAllStyles() {
       text-shadow: initial !important;
     }
   }
+  @media print {
+    table {
+      page-break-inside: auto;
+    }
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+  }
   `;
   cssTexts.push(stylePatch);
   cssTexts.push(...getPrintStyle());

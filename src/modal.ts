@@ -78,8 +78,8 @@ export class ExportConfigModal extends Modal {
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
         this.completed = true;
-        getAllStyles().forEach((css) => {
-          this.preview.insertCSS(css);
+        getAllStyles().forEach(async (css) => {
+          await this.preview.insertCSS(css);
         });
         await this.preview.executeJavaScript(`
         document.title = \`${this.file.basename}\`;
