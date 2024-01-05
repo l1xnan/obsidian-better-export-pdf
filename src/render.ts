@@ -1,7 +1,7 @@
 import { MarkdownRenderer, MarkdownView, TFile, Component, Notice } from "obsidian";
 import { TConfig } from "./modal";
 import BetterExportPdfPlugin from "./main";
-import { modifyHeadings } from "./utils";
+import { modifyHeadings, waitFor } from "./utils";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -143,6 +143,14 @@ export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile,
   printEl.findAll("a.internal-link").forEach((el) => {
     el.removeAttribute("href");
   });
+
+  if (data.includes("```dataview")) {
+    try {
+      await waitFor(() => false, 2000);
+    } catch (error) {
+      /* empty */
+    }
+  }
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
