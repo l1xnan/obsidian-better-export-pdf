@@ -284,6 +284,5 @@ export class ExportConfigModal extends Modal {
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
-    electron.webFrame.setZoomLevel(0);
   }
 }
