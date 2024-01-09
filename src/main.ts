@@ -13,15 +13,13 @@ import { createWebview, renderMarkdown } from "./render";
 const isDev = process.env.NODE_ENV === "development";
 
 export interface BetterExportPdfPluginSettings {
-  pageFormat: string;
-  distance: string;
-
   prevConfig?: TConfig;
 
   showTitle: boolean;
   maxLevel: string;
 
-  displayHeaderFooter: boolean;
+  displayHeader: boolean;
+  displayFooter: boolean;
   headerTemplate: string;
   footerTemplate: string;
 
@@ -29,13 +27,11 @@ export interface BetterExportPdfPluginSettings {
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
-  pageFormat: "{page}",
-  distance: "15",
-
   showTitle: true,
   maxLevel: "6",
 
-  displayHeaderFooter: true,
+  displayHeader: true,
+  displayFooter: true,
   headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
   footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
   
