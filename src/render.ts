@@ -26,46 +26,50 @@ export function getAllStyles() {
     });
   });
 
-  const stylePatch = `
-  /* ---------- css patch ---------- */
-
-  body {
-    overflow: auto !important;
-  }
-  @media print {
-    .print .markdown-preview-view {
-      height: auto !important;
-    }
-    .md-print-anchor {
-      white-space: pre !important;
-      border-left: none !important;
-      border-right: none !important;
-      border-top: none !important;
-      border-bottom: none !important;
-      display: inline-block !important;
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      right: 0 !important;
-      outline: 0 !important;
-      background: 0 0 !important;
-      text-decoration: initial !important;
-      text-shadow: initial !important;
-    }
-  }
-  @media print {
-    table {
-      page-break-inside: auto;
-    }
-    tr {
-      page-break-inside: avoid;
-      page-break-after: auto;
-    }
-  }
-  `;
-  cssTexts.push(stylePatch);
-  cssTexts.push(...getPrintStyle());
+  cssTexts.push(...getPatchStyle());
   return cssTexts;
+}
+
+const CSS_PATCH = `
+/* ---------- css patch ---------- */
+
+body {
+	overflow: auto !important;
+}
+@media print {
+	.print .markdown-preview-view {
+		height: auto !important;
+	}
+	.md-print-anchor {
+		white-space: pre !important;
+		border-left: none !important;
+		border-right: none !important;
+		border-top: none !important;
+		border-bottom: none !important;
+		display: inline-block !important;
+		position: absolute !important;
+		width: 1px !important;
+		height: 1px !important;
+		right: 0 !important;
+		outline: 0 !important;
+		background: 0 0 !important;
+		text-decoration: initial !important;
+		text-shadow: initial !important;
+	}
+}
+@media print {
+	table {
+		page-break-inside: auto;
+	}
+	tr {
+		page-break-inside: avoid;
+		page-break-after: auto;
+	}
+}
+`;
+
+export function getPatchStyle() {
+  return [...getPrintStyle(), CSS_PATCH];
 }
 
 export function getPrintStyle() {
@@ -169,7 +173,7 @@ export function modifyEmbedSpan(doc: Document) {
   spans.forEach((span: HTMLElement) => {
     const newDiv = document.createElement("div");
 
-		// copy attributes
+    // copy attributes
     Array.from(span.attributes).forEach((attr) => {
       newDiv.setAttribute(attr.name, attr.value);
     });

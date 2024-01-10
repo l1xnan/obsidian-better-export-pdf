@@ -1,7 +1,7 @@
 import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { renderMarkdown, getAllStyles, createWebview } from "./render";
+import { renderMarkdown, getAllStyles, createWebview, getPatchStyle } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -80,18 +80,22 @@ export class ExportConfigModal extends Modal {
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
         this.completed = true;
-        getAllStyles().forEach(async (css) => {
+				getAllStyles().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
         await this.preview.executeJavaScript(`
-        document.title = \`${this.file.basename}\`;
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
+        document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
 				
         document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
         document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
         document.body.addClass("theme-light");
         document.body.removeClass("theme-dark");
+        document.title = \`${this.file.basename}\`;
         `);
+        getPatchStyle().forEach(async (css) => {
+          await this.preview.insertCSS(css);
+        });
       });
     };
 
