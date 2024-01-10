@@ -49,12 +49,21 @@ export default class ConfigSettingTab extends PluginSettingTab {
           this.plugin.saveSettings();
         }),
     );
-    new Setting(containerEl).setName("Display header/footer").addToggle((toggle) =>
+    new Setting(containerEl).setName("Display header").addToggle((toggle) =>
       toggle
-        .setTooltip("Display header/footer")
-        .setValue(this.plugin.settings.displayHeaderFooter)
+        .setTooltip("Display header")
+        .setValue(this.plugin.settings.displayHeader)
         .onChange(async (value) => {
-          this.plugin.settings.displayHeaderFooter = value;
+          this.plugin.settings.displayHeader = value;
+          this.plugin.saveSettings();
+        }),
+    );
+    new Setting(containerEl).setName("Display footer").addToggle((toggle) =>
+      toggle
+        .setTooltip("Display footer")
+        .setValue(this.plugin.settings.displayFooter)
+        .onChange(async (value) => {
+          this.plugin.settings.displayFooter = value;
           this.plugin.saveSettings();
         }),
     );

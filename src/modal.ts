@@ -13,7 +13,8 @@ export interface TConfig {
   landscape: boolean;
   scale: number;
   showTitle: boolean;
-  displayHeaderFooter: boolean;
+  displayHeader: boolean;
+  displayFooter: boolean;
 
   marginTop?: string;
   marginBottom?: string;
@@ -50,7 +51,7 @@ export class ExportConfigModal extends Modal {
     this.config = {
       pageSise: "A4",
       marginType: "1",
-      showTitle: true,
+      showTitle: plugin.settings.showTitle ?? true,
       open: true,
       scale: 100,
       landscape: false,
@@ -58,7 +59,8 @@ export class ExportConfigModal extends Modal {
       marginBottom: "10",
       marginLeft: "10",
       marginRight: "10",
-
+      displayHeader: plugin.settings.displayHeader ?? true,
+      displayFooter: plugin.settings.displayHeader ?? true,
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
     this.callback = callback;
@@ -204,7 +206,7 @@ export class ExportConfigModal extends Modal {
     const topEl = new Setting(contentEl)
       .setName("Top/Bottom")
       .addText((text) => {
-				setInputWidth(text.inputEl)
+        setInputWidth(text.inputEl);
         text
           .setPlaceholder("margin top")
           .setValue(this.config["marginTop"] as string)
@@ -213,7 +215,7 @@ export class ExportConfigModal extends Modal {
           });
       })
       .addText((text) => {
-				setInputWidth(text.inputEl)
+        setInputWidth(text.inputEl);
         text
           .setPlaceholder("margin bottom")
           .setValue(this.config["marginBottom"] as string)
@@ -225,7 +227,7 @@ export class ExportConfigModal extends Modal {
     const btmEl = new Setting(contentEl)
       .setName("Left/Right")
       .addText((text) => {
-				setInputWidth(text.inputEl)
+        setInputWidth(text.inputEl);
         text
           .setPlaceholder("margin left")
           .setValue(this.config["marginLeft"] as string)
@@ -234,7 +236,7 @@ export class ExportConfigModal extends Modal {
           });
       })
       .addText((text) => {
-				setInputWidth(text.inputEl)
+        setInputWidth(text.inputEl);
         text
           .setPlaceholder("margin right")
           .setValue(this.config["marginRight"] as string)
@@ -262,12 +264,21 @@ export class ExportConfigModal extends Modal {
         }),
     );
 
-    new Setting(contentEl).setName("Display header/footer").addToggle((toggle) =>
+    new Setting(contentEl).setName("Display header").addToggle((toggle) =>
       toggle
-        .setTooltip("Display header/footer")
-        .setValue(this.config["displayHeaderFooter"])
+        .setTooltip("Display header")
+        .setValue(this.config["displayHeader"])
         .onChange(async (value) => {
-          this.config["displayHeaderFooter"] = value;
+          this.config["displayHeader"] = value;
+        }),
+    );
+
+    new Setting(contentEl).setName("Display footer").addToggle((toggle) =>
+      toggle
+        .setTooltip("Display footer")
+        .setValue(this.config["displayFooter"])
+        .onChange(async (value) => {
+          this.config["displayFooter"] = value;
         }),
     );
 
@@ -284,6 +295,5 @@ export class ExportConfigModal extends Modal {
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
-    electron.webFrame.setZoomLevel(0);
   }
 }

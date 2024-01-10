@@ -263,7 +263,6 @@ export async function exportToPDF(
   webview: WebviewTag,
   doc: Document,
 ) {
-
   const printOptions: electron.PrintToPDFOptions = {
     pageSize: config["pageSise"],
     ...config,
@@ -271,6 +270,9 @@ export async function exportToPDF(
     margins: {
       marginType: "default",
     },
+    displayHeaderFooter: true,
+    headerTemplate: config["displayHeader"] ? config["headerTemplate"] : "<span></span>",
+    footerTemplate: config["displayFooter"] ? config["footerTemplate"] : "<span></span>",
   };
 
   if (config.marginType == "3") {
@@ -283,7 +285,6 @@ export async function exportToPDF(
       right: parseFloat(config["marginRight"] ?? "0") / 25.4,
     };
   }
-
 
   const w = document.querySelector("webview:last-child") as WebviewTag;
 

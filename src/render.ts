@@ -155,11 +155,29 @@ export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile,
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
   modifyHeadings(doc);
+  modifyEmbedSpan(doc);
 
   printEl.detach();
   comp.unload();
   printEl.remove();
   return doc;
+}
+
+export function modifyEmbedSpan(doc: Document) {
+  const spans = doc.querySelectorAll("span.markdown-embed");
+
+  spans.forEach((span: HTMLElement) => {
+    const newDiv = document.createElement("div");
+
+		// copy attributes
+    Array.from(span.attributes).forEach((attr) => {
+      newDiv.setAttribute(attr.name, attr.value);
+    });
+
+    newDiv.innerHTML = span.innerHTML;
+
+    span.parentNode?.replaceChild(newDiv, span);
+  });
 }
 
 export function createWebview() {
