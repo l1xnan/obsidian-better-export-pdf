@@ -15,7 +15,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
@@ -53,19 +56,22 @@ jobs:
           ls
           echo "::set-output name=tag_name::$(git tag --sort version:refname | tail -n 1)"
 
-      - name: Build Changelog
-        id: github_release
-        uses: mikepenz/release-changelog-builder-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
+          body: ${{steps.generate_changelog.outputs.changelog}}
           files: |
             main.js
             manifest.json
-            ./${{ env.PLUGIN_NAME }}-${{ steps.build.outputs.tag_name }}.zip
+            ./${{ env.PLUGIN_NAME }}.zip
+
+      - name: Generate Changelog
+        id: generate_changelog
+        run: npx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
