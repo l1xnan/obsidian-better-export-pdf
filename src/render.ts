@@ -92,6 +92,15 @@ function generateDocId(n: number) {
 
 export type AyncFnType = (...args: unknown[]) => Promise<unknown>;
 
+export function getFrontMatter(app: App, file: TFile) {
+  const cache = app.metadataCache.getFileCache(file);
+  const frontMatter = cache?.frontmatter;
+  return {
+    title: file.basename,
+    ...frontMatter,
+  };
+}
+
 // 逆向原生打印函数
 export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
   const ws = app.workspace;

@@ -1,10 +1,10 @@
+import * as fs from "fs/promises";
+import electron, { WebviewTag } from "electron";
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
+import { FrontMatterCache, TFile } from "obsidian";
 
 import { TreeNode, getHeadingTree } from "./utils";
-import { TFile } from "obsidian";
 import { TConfig } from "./modal";
-import electron, { WebviewTag } from "electron";
-import * as fs from "fs/promises";
 import { BetterExportPdfPluginSettings } from "./main";
 
 interface TPosition {
@@ -246,15 +246,45 @@ export async function addPageNumbers(doc: PDFDocument, setting: PageSetting) {
   }
 }
 
-export async function editPDF(data: Uint8Array, doc: Document, maxLevel = 6): Promise<Uint8Array> {
+export type EditPDFParamType = {
+  headings: TreeNode;
+  maxLevel: number;
+  frontMatter?: FrontMatterCache;
+};
+
+// add outlines
+export async function editPDF(
+  data: Uint8Array,
+  { headings, maxLevel, frontMatter }: EditPDFParamType,
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getHeadingPosition(pdfDoc);
-  const headings = await getHeadingTree(doc);
 
   const outlines = generateOutlines(headings, posistions, maxLevel);
+
   setOutline(pdfDoc, outlines);
+  if (frontMatter) {
+    setMetadata(pdfDoc, frontMatter);
+  }
   data = await pdfDoc.save();
   return data;
+}
+
+// add pdf metadata [title, author, keywords, created_at, updated_at, creator, producer]
+export function setMetadata(pdfDoc: PDFDocument, frontMatter: FrontMatterCache) {
+  if (frontMatter?.title) {
+    pdfDoc.setTitle(frontMatter?.title, { showInWindowTitleBar: true });
+  }
+  if (frontMatter?.author) {
+    pdfDoc.setAuthor(frontMatter?.author);
+  }
+  if (frontMatter?.keywords) {
+    pdfDoc.setKeywords(frontMatter?.keywords);
+  }
+  pdfDoc.setCreator(frontMatter?.creator ?? "Obsidian");
+  pdfDoc.setProducer("Obsidian");
+  pdfDoc.setCreationDate(new Date(frontMatter?.created_at ?? new Date()));
+  pdfDoc.setModificationDate(new Date(frontMatter?.updated_at ?? new Date()));
 }
 
 export async function exportToPDF(
@@ -262,6 +292,7 @@ export async function exportToPDF(
   config: TConfig & BetterExportPdfPluginSettings,
   webview: WebviewTag,
   doc: Document,
+  frontMatter?: FrontMatterCache,
 ) {
   const printOptions: electron.PrintToPDFOptions = {
     pageSize: config["pageSise"],
@@ -291,7 +322,11 @@ export async function exportToPDF(
   try {
     let data = await w.printToPDF(printOptions);
 
-    data = await editPDF(data, doc, parseInt(config?.maxLevel ?? "6"));
+    data = await editPDF(data, {
+      headings: getHeadingTree(doc),
+      frontMatter,
+      maxLevel: parseInt(config?.maxLevel ?? "6"),
+    });
 
     await fs.writeFile(outputFile, data);
 

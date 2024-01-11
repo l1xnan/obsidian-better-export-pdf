@@ -1,7 +1,7 @@
 import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { renderMarkdown, getAllStyles, createWebview, getPatchStyle } from "./render";
+import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -80,7 +80,7 @@ export class ExportConfigModal extends Modal {
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
         this.completed = true;
-				getAllStyles().forEach(async (css) => {
+        getAllStyles().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
         await this.preview.executeJavaScript(`
@@ -116,7 +116,15 @@ export class ExportConfigModal extends Modal {
       if (this.completed) {
         const outputFile = await getOutputFile(this.file);
         if (outputFile) {
-          await exportToPDF(outputFile, { ...this.plugin.settings, ...this.config }, this.preview, this.doc);
+          const frontMatter = getFrontMatter(this.plugin.app, this.file);
+					console.log(frontMatter)
+          await exportToPDF(
+            outputFile,
+            { ...this.plugin.settings, ...this.config },
+            this.preview,
+            this.doc,
+            frontMatter,
+          );
           this.close();
         }
       } else {
