@@ -1,14 +1,6 @@
-import * as fs from "fs/promises";
 import { MarkdownView, Plugin, TFile } from "obsidian";
-
-import * as electron from "electron";
-import { WebviewTag } from "electron";
-import { editPDF } from "./pdf";
-import { waitFor } from "./utils";
-
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
-import { createWebview, renderMarkdown } from "./render";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -34,7 +26,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   displayFooter: true,
   headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
   footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
-  
+
   debug: false,
 };
 
@@ -62,24 +54,7 @@ export default class BetterExportPdfPlugin extends Plugin {
         if (checking) {
           return true;
         }
-        new ExportConfigModal(
-          this,
-          file,
-          async (config: TConfig) => {
-            try {
-              await this.exportToPDF(file, config);
-            } catch (error) {
-              console.error(error);
-            } finally {
-              document.querySelectorAll("webview").forEach((node) => {
-                if (!isDev) {
-                  node.parentNode?.removeChild(node);
-                }
-              });
-            }
-          },
-          this.settings?.prevConfig,
-        ).open();
+        new ExportConfigModal(this, file, this.settings?.prevConfig).open();
 
         return true;
       },
@@ -105,26 +80,7 @@ export default class BetterExportPdfPlugin extends Plugin {
             .setIcon("download")
             .setSection("action")
             .onClick(async () => {
-              new ExportConfigModal(
-                this,
-                file,
-                async (config: TConfig) => {
-                  try {
-                    this.settings.prevConfig = config;
-                    await this.saveSettings();
-                    await this.exportToPDF(file, config);
-                  } catch (error) {
-                    console.error(error);
-                  } finally {
-                    document.querySelectorAll("webview").forEach((node) => {
-                      if (!isDev) {
-                        node.parentNode?.removeChild(node);
-                      }
-                    });
-                  }
-                },
-                this.settings?.prevConfig,
-              ).open();
+              new ExportConfigModal(this, file, this.settings?.prevConfig).open();
             });
         });
       }),
@@ -137,76 +93,6 @@ export default class BetterExportPdfPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
-  }
-
-  async exportToPDF(file: TFile, config: TConfig) {
-    const printOptions: electron.PrintToPDFOptions = {
-      headerTemplate: '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>',
-      footerTemplate:
-        '<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-      pageSize: config["pageSise"],
-      ...config,
-      scale: config["scale"] / 100,
-      margins: {
-        marginType: "default",
-      },
-    };
-
-    if (config.marginType == "3") {
-      // Custom Margin
-      printOptions["margins"] = {
-        marginType: "custom",
-        top: parseFloat(config["marginTop"] ?? "0"),
-        bottom: parseFloat(config["marginBottom"] ?? "0"),
-        left: parseFloat(config["marginLeft"] ?? "0"),
-        right: parseFloat(config["marginRight"] ?? "0"),
-      };
-    }
-
-    // @ts-ignore
-    const result = await electron.remote.dialog.showSaveDialog({
-      title: "Export to PDF",
-      defaultPath: file.basename + ".pdf",
-      filters: [
-        { name: "All Files", extensions: ["*"] },
-        { name: "PDF", extensions: ["pdf"] },
-      ],
-      properties: ["showOverwriteConfirmation", "createDirectory"],
-    });
-
-    if (result.canceled) {
-      return;
-    }
-
-    const outputFile = result.filePath;
-
-		const doc = await renderMarkdown(this.app, file, config);
-		const webview = createWebview();
-
-    let completed = false;
-    document.body.appendChild(webview);
-    webview.addEventListener("dom-ready", (e) => {
-      completed = true;
-    });
-
-    await waitFor(() => completed);
-
-    const w = document.querySelector("webview:last-child") as WebviewTag;
-    await sleep(5000); // 5s
-    try {
-      let data = await w.printToPDF(printOptions);
-
-      data = await editPDF(data, doc);
-
-      await fs.writeFile(outputFile, data);
-
-      if (config.open) {
-        // @ts-ignore
-        electron.remote.shell.openPath(outputFile);
-      }
-    } catch (error) {
-      console.error(error);
-    }
   }
 
   changeConfig() {

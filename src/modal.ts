@@ -42,7 +42,7 @@ export class ExportConfigModal extends Modal {
   completed: boolean;
   doc: Document;
 
-  constructor(plugin: BetterExportPdfPlugin, file: TFile, callback: Callback, config?: TConfig) {
+  constructor(plugin: BetterExportPdfPlugin, file: TFile, config?: TConfig) {
     super(plugin.app);
     this.canceled = true;
     this.plugin = plugin;
@@ -63,7 +63,6 @@ export class ExportConfigModal extends Modal {
       displayFooter: plugin.settings.displayHeader ?? true,
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
-    this.callback = callback;
   }
 
   async onOpen() {
@@ -117,7 +116,6 @@ export class ExportConfigModal extends Modal {
         const outputFile = await getOutputFile(this.file);
         if (outputFile) {
           const frontMatter = getFrontMatter(this.plugin.app, this.file);
-					console.log(frontMatter)
           await exportToPDF(
             outputFile,
             { ...this.plugin.settings, ...this.config },
