@@ -180,7 +180,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 
     const outputFile = result.filePath;
 
-		const doc = await renderMarkdown(this, file, config);
+		const doc = await renderMarkdown(this.app, file, config);
 		const webview = createWebview();
 
     let completed = false;

@@ -1,6 +1,5 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component, Notice } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App } from "obsidian";
 import { TConfig } from "./modal";
-import BetterExportPdfPlugin from "./main";
 import { modifyHeadings, waitFor } from "./utils";
 
 export function getAllStyles() {
@@ -92,9 +91,10 @@ function generateDocId(n: number) {
 }
 
 export type AyncFnType = (...args: unknown[]) => Promise<unknown>;
+
 // 逆向原生打印函数
-export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile, config: TConfig) {
-  const ws = plugin.app.workspace;
+export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
+  const ws = app.workspace;
   const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
 
   // @ts-ignore
@@ -111,22 +111,22 @@ export async function renderMarkdown(plugin: BetterExportPdfPlugin, file: TFile,
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered",
   });
-  plugin.app.vault.cachedRead(file);
+  app.vault.cachedRead(file);
 
   // @ts-ignore
-  viewEl.toggleClass("rtl", plugin.app.vault.getConfig("rightToLeft"));
+  viewEl.toggleClass("rtl", app.vault.getConfig("rightToLeft"));
   // @ts-ignore
-  viewEl.toggleClass("show-properties", "hidden" !== plugin.app.vault.getConfig("propertiesInDocument"));
+  viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
   if (config.showTitle) {
     viewEl.createEl("h1", {
       text: file.basename,
     });
   }
-  await MarkdownRenderer.render(plugin.app, data ?? "", viewEl, file.path, comp);
+  await MarkdownRenderer.render(app, data ?? "", viewEl, file.path, comp);
   // @ts-ignore
   // (app: App: param: T) => T
-  MarkdownRenderer.postProcess(plugin.app, {
+  MarkdownRenderer.postProcess(app, {
     docId: generateDocId(16),
     sourcePath: file.path,
     frontmatter: {},

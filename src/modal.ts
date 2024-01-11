@@ -75,7 +75,7 @@ export class ExportConfigModal extends Modal {
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
     const appendWebview = async (e: HTMLDivElement) => {
-      this.doc = await renderMarkdown(this.plugin, this.file, this.config);
+      this.doc = await renderMarkdown(this.plugin.app, this.file, this.config);
       const webview = createWebview();
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
@@ -156,7 +156,7 @@ export class ExportConfigModal extends Modal {
           this.config["showTitle"] = value;
 
           if (this.completed) {
-            this.doc = await renderMarkdown(this.plugin, this.file, this.config);
+            this.doc = await renderMarkdown(this.plugin.app, this.file, this.config);
             this.preview?.executeJavaScript(`
             document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
             `);
