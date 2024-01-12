@@ -49,7 +49,7 @@ export default class BetterExportPdfPlugin extends Plugin {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const file = view?.file;
         if (!file) {
-          return;
+          return false;
         }
         if (checking) {
           return true;
