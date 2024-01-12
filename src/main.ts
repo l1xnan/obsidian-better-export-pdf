@@ -44,7 +44,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerCommand() {
     this.addCommand({
       id: "export-current-file-to-pdf",
-      name: "Export Current file to PDF",
+      name: "Export Current File to PDF",
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const file = view?.file;

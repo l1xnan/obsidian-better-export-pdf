@@ -29,7 +29,6 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const { containerEl } = this;
 
     containerEl.empty();
-    new Setting(containerEl).setName("Better Export PDF").setHeading();
 
     const supportDesc = new DocumentFragment();
     supportDesc.createDiv({
@@ -37,8 +36,6 @@ export default class ConfigSettingTab extends PluginSettingTab {
     });
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
-
-    new Setting(containerEl).setName("General").setHeading();
 
     new Setting(containerEl).setName("Add filename as title").addToggle((toggle) =>
       toggle

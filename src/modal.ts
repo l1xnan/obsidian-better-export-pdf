@@ -154,9 +154,9 @@ export class ExportConfigModal extends Modal {
   }
 
   private generateForm(contentEl: HTMLDivElement) {
-    new Setting(contentEl).setName("Add filename as title").addToggle((toggle) =>
+    new Setting(contentEl).setName("Include file name as title").addToggle((toggle) =>
       toggle
-        .setTooltip("Add filename as title")
+        .setTooltip("Include file name as title")
         .setValue(this.config["showTitle"])
         .onChange(async (value) => {
           this.config["showTitle"] = value;

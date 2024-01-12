@@ -27,7 +27,7 @@ or use the [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat).
 ## Usage
 
 1. In the upper right corner of the current Markdown view, click More options and select `Better Export PDF`;
-2. Open the command panel and select `Better Export PDF: Export Current file to PDF`.
+2. Open the command panel and select `Better Export PDF: Export Current File to PDF`.
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
 

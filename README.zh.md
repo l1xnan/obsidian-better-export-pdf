@@ -27,7 +27,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 ## 使用
 
 1. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better Export PDF`；
-2. 打开命令面板，选择 `Better Export PDF: Export Current file to PDF`。
+2. 打开命令面板，选择 `Better Export PDF: Export Current File to PDF`。
 
 如果导出的 PDF 页面异常，尝试在外观中将颜色将切换为浅色。
 
