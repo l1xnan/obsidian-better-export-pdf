@@ -56,8 +56,9 @@ See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/la
 - [ ] Automatically adds internal link content to footnotes/appendices;
 - [ ] Support pagedjs beautification;
 - [x] Support print preview;
-- [ ] Print multiple Markdown files into one PDF file;
+- [ ] Export multiple Markdown files into one PDF file;
 - [ ] Improves default `@media print` css style;
+- [ ] Support add PDF metadata from front matter;
 
 ## Support This Plugin
 
