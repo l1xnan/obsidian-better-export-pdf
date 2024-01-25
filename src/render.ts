@@ -33,37 +33,37 @@ const CSS_PATCH = `
 /* ---------- css patch ---------- */
 
 body {
-	overflow: auto !important;
+  overflow: auto !important;
 }
 @media print {
-	.print .markdown-preview-view {
-		height: auto !important;
-	}
-	.md-print-anchor {
-		white-space: pre !important;
-		border-left: none !important;
-		border-right: none !important;
-		border-top: none !important;
-		border-bottom: none !important;
-		display: inline-block !important;
-		position: absolute !important;
-		width: 1px !important;
-		height: 1px !important;
-		right: 0 !important;
-		outline: 0 !important;
-		background: 0 0 !important;
-		text-decoration: initial !important;
-		text-shadow: initial !important;
-	}
+  .print .markdown-preview-view {
+    height: auto !important;
+  }
+  .md-print-anchor {
+    white-space: pre !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    display: inline-block !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    right: 0 !important;
+    outline: 0 !important;
+    background: 0 0 !important;
+    text-decoration: initial !important;
+    text-shadow: initial !important;
+  }
 }
 @media print {
-	table {
-		page-break-inside: auto;
-	}
-	tr {
-		page-break-inside: avoid;
-		page-break-after: auto;
-	}
+  table {
+    break-inside: auto;
+  }
+  tr {
+    break-inside: avoid;
+    break-after: auto;
+  }
 }
 `;
 
@@ -199,11 +199,11 @@ export function createWebview() {
   webview.setAttribute(
     "style",
     `height:calc(1/0.75 * 100%);
-		 width: calc(1/0.75 * 100%);
-		 transform: scale(0.75, 0.75);
-		 transform-origin: top left;
-		 border: 1px solid #f2f2f2;
-		`,
+     width: calc(1/0.75 * 100%);
+     transform: scale(0.75, 0.75);
+     transform-origin: top left;
+     border: 1px solid #f2f2f2;
+    `,
   );
   webview.nodeintegration = true;
   return webview;
