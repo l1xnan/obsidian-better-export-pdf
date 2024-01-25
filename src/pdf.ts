@@ -271,20 +271,26 @@ export async function editPDF(
 }
 
 // add pdf metadata [title, author, keywords, created_at, updated_at, creator, producer]
-export function setMetadata(pdfDoc: PDFDocument, frontMatter: FrontMatterCache) {
-  if (frontMatter?.title) {
-    pdfDoc.setTitle(frontMatter?.title, { showInWindowTitleBar: true });
+export function setMetadata(
+  pdfDoc: PDFDocument,
+  { title, author, keywords, subject, creator, created_at, updated_at }: FrontMatterCache,
+) {
+  if (title) {
+    pdfDoc.setTitle(title, { showInWindowTitleBar: true });
   }
-  if (frontMatter?.author) {
-    pdfDoc.setAuthor(frontMatter?.author);
+  if (author) {
+    pdfDoc.setAuthor(author);
   }
-  if (frontMatter?.keywords) {
-    pdfDoc.setKeywords(frontMatter?.keywords);
+  if (keywords) {
+    pdfDoc.setKeywords(typeof keywords == "string" ? [keywords] : keywords);
   }
-  pdfDoc.setCreator(frontMatter?.creator ?? "Obsidian");
+  if (subject) {
+    pdfDoc.setSubject(subject);
+  }
+  pdfDoc.setCreator(creator ?? "Obsidian");
   pdfDoc.setProducer("Obsidian");
-  pdfDoc.setCreationDate(new Date(frontMatter?.created_at ?? new Date()));
-  pdfDoc.setModificationDate(new Date(frontMatter?.updated_at ?? new Date()));
+  pdfDoc.setCreationDate(new Date(created_at ?? new Date()));
+  pdfDoc.setModificationDate(new Date(updated_at ?? new Date()));
 }
 
 export async function exportToPDF(

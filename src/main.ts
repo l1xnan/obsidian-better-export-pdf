@@ -15,6 +15,8 @@ export interface BetterExportPdfPluginSettings {
   headerTemplate: string;
   footerTemplate: string;
 
+  displayMetadata: boolean,
+
   debug: boolean;
 }
 
@@ -27,6 +29,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
   footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,
 
+  displayMetadata: false,
   debug: false,
 };
 

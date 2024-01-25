@@ -74,6 +74,16 @@ export default class ConfigSettingTab extends PluginSettingTab {
         });
     });
 
+    new Setting(containerEl)
+      .setName("PDF metadata")
+      .setDesc("Add frontMatter(title, author, keywords, subjectm creator, etc) to pdf metadata")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.displayMetadata).onChange(async (value) => {
+          this.plugin.settings.displayMetadata = value;
+          this.plugin.saveSettings();
+        }),
+      );
+
     new Setting(containerEl).setName("Advanced").setHeading();
 
     const headerContentAreaSetting = new Setting(containerEl);
