@@ -12,6 +12,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - 🎉支持导出PDF带大纲书签
 - 🛩️支持自定义页边距
 - ✨支持添加页面
+- 💥支持将文档属性添加到PDF元数据中
 - ... ...
 
 ## 安装
@@ -57,7 +58,8 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - [ ] 支持 pagedjs 美化；
 - [x] 支持打印预览；
 - [ ] 多个 Markdown 合并打印到一个 PDF 文件中；
-- [ ] 完善默认 `@media print` css 样式；
+- [x] 完善默认 `@media print` css 样式；
+- [x] 支持将文档属性添加到PDF元数据中；
 
 
 ## 赞助

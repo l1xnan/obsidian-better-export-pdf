@@ -12,6 +12,7 @@ Compared to the official Export PDF feature:
 - 🎉Export the outline bookmarks
 - 🛩️Customize the margins
 - ✨Export the page numbers
+- 💥Support add PDF metadata from front matter;
 - ... ...
 
 ## Installation
