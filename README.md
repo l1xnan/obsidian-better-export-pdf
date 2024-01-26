@@ -59,7 +59,8 @@ See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/la
 - [x] Support print preview;
 - [ ] Export multiple Markdown files into one PDF file;
 - [ ] Improves default `@media print` css style;
-- [ ] Support add PDF metadata from front matter;
+- [x] Support add PDF metadata from front matter;
+- [ ] Export internal links within file;
 
 ## Support This Plugin
 

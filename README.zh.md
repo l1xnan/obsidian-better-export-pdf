@@ -60,6 +60,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - [ ] 多个 Markdown 合并打印到一个 PDF 文件中；
 - [x] 完善默认 `@media print` css 样式；
 - [x] 支持将文档属性添加到PDF元数据中；
+- [ ] 保留文档内链接跳转；
 
 
 ## 赞助
