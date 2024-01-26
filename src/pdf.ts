@@ -49,6 +49,55 @@ export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition
   return links;
 }
 
+// refer to: https://github.com/Hopding/pdf-lib/issues/206
+export async function setAnchors(pdfDoc: PDFDocument, links: TPosition) {
+  const pages = pdfDoc.getPages();
+
+  pages.forEach((page, _) => {
+    const annots = page.node.Annots();
+    if (!annots) {
+      return;
+    }
+    const numAnnotations = annots?.size() ?? 0;
+
+    for (let idx = 0; idx < numAnnotations; idx++) {
+      try {
+        const linkAnnotRef = annots.get(idx);
+        const linkAnnot = annots.lookup(idx, PDFDict);
+        const subtype = linkAnnot.get(PDFName.of("Subtype"));
+        if (subtype?.toString() === "/Link") {
+          const linkDict = linkAnnot.get(PDFName.of("A")) as PDFDict;
+          // @ts-ignore
+          const uri = linkDict?.get(PDFName.of("URI")).toString();
+          console.debug("uri", uri);
+          const regexMatch = /^\(an:\/\/(.+)\)$/.exec(uri || "");
+
+          const key = regexMatch?.[1];
+          if (key && links?.[key]) {
+            const [pageIdx, yPos] = links[key];
+            const newAnnot = pdfDoc.context.obj({
+              Type: "Annot",
+              Subtype: "Link",
+              Rect: linkAnnot.lookup(PDFName.of("Rect")),
+              Border: linkAnnot.lookup(PDFName.of("Border")),
+              C: linkAnnot.lookup(PDFName.of("C")),
+              Dest: [pages[pageIdx].ref, "XYZ", null, yPos, null],
+            });
+
+						// @ts-ignore
+            // Replace all occurrences of the external annotation with the internal one
+            pdfDoc.context.assign(linkAnnotRef, newAnnot);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  });
+
+  return links;
+}
+
 export function generateOutlines(root: TreeNode, positions: TPosition, maxLevel = 6) {
   const _outline = (node: TreeNode) => {
     if (node.level > maxLevel) {
@@ -259,7 +308,8 @@ export async function editPDF(
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getHeadingPosition(pdfDoc);
-
+  console.log(headings, posistions);
+  setAnchors(pdfDoc, posistions);
   const outlines = generateOutlines(headings, posistions, maxLevel);
 
   setOutline(pdfDoc, outlines);

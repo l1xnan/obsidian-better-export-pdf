@@ -1,6 +1,6 @@
 import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App } from "obsidian";
 import { TConfig } from "./modal";
-import { modifyHeadings, waitFor } from "./utils";
+import { modifyAnchors, modifyHeadings, waitFor } from "./utils";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -167,7 +167,8 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
-  modifyHeadings(doc);
+  const headings = modifyHeadings(doc);
+  modifyAnchors(doc, headings);
   modifyEmbedSpan(doc);
 
   printEl.detach();
