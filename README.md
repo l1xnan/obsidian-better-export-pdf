@@ -13,6 +13,7 @@ Compared to the official Export PDF feature:
 - 🛩️Customize the margins
 - ✨Export the page numbers
 - 💥Support add PDF metadata from front matter;
+- 🎇Export internal links within file;
 - ... ...
 
 ## Installation
@@ -32,6 +33,16 @@ or use the [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat).
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
 
+
+If you want to further customize the PDF export style, you can add custom CSS in the `Appearance > CSS Snippet`, such as custom fonts and sizes:
+
+```css
+@media print {
+  body {
+    font-size: 20px !important;
+    font-family: "Times New Roman" !important;
+  }
+}
 
 ### Settings
 
@@ -60,7 +71,7 @@ See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/la
 - [ ] Export multiple Markdown files into one PDF file;
 - [ ] Improves default `@media print` css style;
 - [x] Support add PDF metadata from front matter;
-- [ ] Export internal links within file;
+- [x] Export internal links within file;
 
 ## Support This Plugin
 
