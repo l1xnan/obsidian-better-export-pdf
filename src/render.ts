@@ -168,7 +168,7 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
   const headings = modifyHeadings(doc);
-  modifyAnchors(doc, headings);
+  modifyAnchors(doc, headings, file.basename);
   modifyEmbedSpan(doc);
 
   printEl.detach();

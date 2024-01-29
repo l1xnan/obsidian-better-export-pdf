@@ -63,15 +63,18 @@ export function modifyHeadings(doc: Document) {
   return data;
 }
 
-export function modifyAnchors(doc: Document, headings: Map<string, string>) {
+export function modifyAnchors(doc: Document, headings: Map<string, string>, basename: string) {
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
-    const heading = el.dataset.href?.slice(1);
-    if (!heading) {
-      return;
-    }
-    const flag = headings.get(heading);
-    if (flag) {
-      el.href = `an://${flag}`;
+    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+    if (anchor?.length > 0) {
+      if (title?.length > 0 && title != basename) {
+        return;
+      }
+			console.log(title, basename, anchor)
+      const flag = headings.get(anchor);
+      if (flag) {
+        el.href = `an://${flag}`;
+      }
     }
   });
 }
