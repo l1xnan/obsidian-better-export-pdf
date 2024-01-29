@@ -15,7 +15,7 @@ export interface BetterExportPdfPluginSettings {
   headerTemplate: string;
   footerTemplate: string;
 
-  displayMetadata: boolean,
+  displayMetadata: boolean;
 
   debug: boolean;
 }

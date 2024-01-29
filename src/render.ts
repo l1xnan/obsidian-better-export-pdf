@@ -132,7 +132,19 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
       text: file.basename,
     });
   }
-  await MarkdownRenderer.render(app, data ?? "", viewEl, file.path, comp);
+
+  const cache = app.metadataCache.getFileCache(file);
+
+  const lines = data?.split("\n") ?? [];
+
+  Object.entries(cache?.blocks ?? {})
+    .sort(([k, v]) => -v.position.end.line)
+    .forEach(([key, c]) => {
+      const idx = c.position.end.line;
+      lines[idx] = `<span id="${key}" class="blockid"></span>` + lines[idx];
+    });
+
+  await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
   // @ts-ignore
   // (app: App: param: T) => T
   MarkdownRenderer.postProcess(app, {
