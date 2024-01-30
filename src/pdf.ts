@@ -11,7 +11,8 @@ interface TPosition {
   [key: string]: number[];
 }
 
-export async function getHeadingPosition(pdfDoc: PDFDocument): Promise<TPosition> {
+// heading, block position
+export async function getDestPosition(pdfDoc: PDFDocument): Promise<TPosition> {
   const pages = pdfDoc.getPages();
   const links: TPosition = {};
 
@@ -307,9 +308,10 @@ export async function editPDF(
   { headings, maxLevel, frontMatter }: EditPDFParamType,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
-  const posistions = await getHeadingPosition(pdfDoc);
-  console.log(headings, posistions);
-  setAnchors(pdfDoc, posistions);
+  const posistions = await getDestPosition(pdfDoc);
+  
+	setAnchors(pdfDoc, posistions);
+
   const outlines = generateOutlines(headings, posistions, maxLevel);
 
   setOutline(pdfDoc, outlines);

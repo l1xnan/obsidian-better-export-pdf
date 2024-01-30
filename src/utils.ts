@@ -49,10 +49,10 @@ export function getHeadingTree(doc = document) {
   return root;
 }
 
-export function modifyHeadings(doc: Document) {
-  const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
+// modify heading/block, and get heading/block flag
+export function modifyDest(doc: Document) {
   const data = new Map();
-  headings.forEach((heading: HTMLElement, i) => {
+  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
     const link = document.createElement("a") as HTMLAnchorElement;
     const flag = `${heading.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
@@ -60,18 +60,23 @@ export function modifyHeadings(doc: Document) {
     heading.appendChild(link);
     data.set(heading.dataset.heading, flag);
   });
+
+  doc.querySelectorAll("a.blockid").forEach((a: HTMLAnchorElement, i) => {
+    data.set(a.id, a.id);
+  });
+
   return data;
 }
 
-export function modifyAnchors(doc: Document, headings: Map<string, string>, basename: string) {
+export function modifyAnchors(doc: Document, dest: Map<string, string>, basename: string) {
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
     if (anchor?.length > 0) {
       if (title?.length > 0 && title != basename) {
         return;
       }
-			console.log(title, basename, anchor)
-      const flag = headings.get(anchor);
+
+			const flag = dest.get(anchor);
       if (flag) {
         el.href = `an://${flag}`;
       }

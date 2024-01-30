@@ -1,6 +1,6 @@
 import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App } from "obsidian";
 import { TConfig } from "./modal";
-import { modifyAnchors, modifyHeadings, waitFor } from "./utils";
+import { modifyAnchors, modifyDest, waitFor } from "./utils";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -39,7 +39,7 @@ body {
   .print .markdown-preview-view {
     height: auto !important;
   }
-  .md-print-anchor {
+  .md-print-anchor, .blockid {
     white-space: pre !important;
     border-left: none !important;
     border-right: none !important;
@@ -68,7 +68,7 @@ body {
 `;
 
 export function getPatchStyle() {
-  return [...getPrintStyle(), CSS_PATCH];
+  return [CSS_PATCH, ...getPrintStyle()];
 }
 
 export function getPrintStyle() {
@@ -141,7 +141,7 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
     .sort(([k, v]) => -v.position.end.line)
     .forEach(([key, c]) => {
       const idx = c.position.end.line;
-      lines[idx] = `<span id="${key}" class="blockid"></span>` + lines[idx];
+      lines[idx] = `<a id="^${key}" href="af://^${key}" class="blockid"></a>` + lines[idx];
     });
 
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
@@ -179,8 +179,9 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
-  const headings = modifyHeadings(doc);
-  modifyAnchors(doc, headings, file.basename);
+  const dest = modifyDest(doc);
+
+  modifyAnchors(doc, dest, file.basename);
   modifyEmbedSpan(doc);
 
   printEl.detach();
