@@ -33,6 +33,16 @@ or use the [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat).
 
 If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
 
+### Settings
+
+Set page numbers using the `Header Template` and `Footer Template`, for example:
+```html
+<div style="width: 100vw;font-size:10px;text-align:center;">
+    <span class="pageNumber"></span> / <span class="totalPages"></span>
+</div>
+```
+See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
+
 
 If you want to further customize the PDF export style, you can add custom CSS in the `Appearance > CSS Snippet`, such as custom fonts and sizes:
 
@@ -43,16 +53,7 @@ If you want to further customize the PDF export style, you can add custom CSS in
     font-family: "Times New Roman" !important;
   }
 }
-
-### Settings
-
-Set page numbers using the `Header Template` and `Footer Template`, for example:
-```html
-<div style="width: 100vw;font-size:10px;text-align:center;">
-    <span class="pageNumber"></span> / <span class="totalPages"></span>
-</div>
 ```
-See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
 
 ### Export preview
 
