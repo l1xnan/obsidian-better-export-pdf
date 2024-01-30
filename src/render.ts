@@ -137,12 +137,10 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   const lines = data?.split("\n") ?? [];
 
-  Object.entries(cache?.blocks ?? {})
-    .sort(([k, v]) => -v.position.end.line)
-    .forEach(([key, c]) => {
-      const idx = c.position.end.line;
-      lines[idx] = `<a id="^${key}" href="af://^${key}" class="blockid"></a>` + lines[idx];
-    });
+  Object.entries(cache?.blocks ?? {}).forEach(([key, c]) => {
+    const idx = c.position.end.line;
+    lines[idx] = `<a id="^${key}" href="af://^${key}" class="blockid"></a>` + lines[idx];
+  });
 
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
   // @ts-ignore
