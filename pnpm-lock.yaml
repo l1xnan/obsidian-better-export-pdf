@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   juice:
-    specifier: ^9.1.0
-    version: 9.1.0
+    specifier: ^10.0.0
+    version: 10.0.0
   pdf-lib:
     specifier: ^1.17.1
     version: 1.17.1
@@ -1901,8 +1901,8 @@ packages:
       graceful-fs: 4.2.11
     dev: true
 
-  /juice@9.1.0:
-    resolution: {integrity: sha512-odblShmPrUoHUwRuC8EmLji5bPP2MLO1GL+gt4XU3tT2ECmbSrrMjtMQaqg3wgMFP2zvUzdPZGfxc5Trk3Z+fQ==}
+  /juice@10.0.0:
+    resolution: {integrity: sha512-9f68xmhGrnIi6DBkiiP3rUrQN33SEuaKu1+njX6VgMP+jwZAsnT33WIzlrWICL9matkhYu3OyrqSUP55YTIdGg==}
     engines: {node: '>=10.0.0'}
     hasBin: true
     dependencies:

@@ -24,7 +24,7 @@
 		"typescript": "5.3.3"
 	},
 	"dependencies": {
-		"juice": "^9.1.0",
+		"juice": "^10.0.0",
 		"pdf-lib": "^1.17.1"
 	}
 }
