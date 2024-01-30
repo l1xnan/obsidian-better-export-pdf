@@ -61,9 +61,6 @@ export function modifyDest(doc: Document) {
     data.set(heading.dataset.heading, flag);
   });
 
-  doc.querySelectorAll("a.blockid").forEach((a: HTMLAnchorElement, i) => {
-    data.set(a.id, a.id);
-  });
 
   return data;
 }
@@ -76,8 +73,8 @@ export function modifyAnchors(doc: Document, dest: Map<string, string>, basename
         return;
       }
 
-			const flag = dest.get(anchor);
-      if (flag) {
+      const flag = dest.get(anchor);
+      if (flag && !anchor.startsWith("^")) {
         el.href = `an://${flag}`;
       }
     }

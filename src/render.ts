@@ -1,4 +1,4 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, parseLinktext } from "obsidian";
 import { TConfig } from "./modal";
 import { modifyAnchors, modifyDest, waitFor } from "./utils";
 
@@ -139,7 +139,7 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   Object.entries(cache?.blocks ?? {}).forEach(([key, c]) => {
     const idx = c.position.end.line;
-    lines[idx] = `<a id="^${key}" href="af://^${key}" class="blockid"></a>` + lines[idx];
+    lines[idx] = `<span id="^${key}" class="blockid"></span>` + lines[idx];
   });
 
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
@@ -163,7 +163,13 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   await Promise.all(promises);
 
-  printEl.findAll("a.internal-link").forEach((el) => {
+  printEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
+    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+
+    if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
+      return;
+    }
+
     el.removeAttribute("href");
   });
 
