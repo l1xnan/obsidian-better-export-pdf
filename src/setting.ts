@@ -64,6 +64,29 @@ export default class ConfigSettingTab extends PluginSettingTab {
           this.plugin.saveSettings();
         }),
     );
+
+    new Setting(containerEl)
+      .setName("Print background")
+      .setDesc("Whether to print background graphics")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.printBackground).onChange(async (value) => {
+          this.plugin.settings.printBackground = value;
+          this.plugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
+      .setName("Generate tagged PDF")
+      .setDesc("Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.generateTaggedPDF).onChange(async (value) => {
+          this.plugin.settings.generateTaggedPDF = value;
+          this.plugin.saveSettings();
+        }),
+      );
+
+
+			
     new Setting(containerEl).setName("Max headings level of the outline").addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(["1", "2", "3", "4", "5", "6"].map((level) => [level, `h${level}`])))

@@ -85,7 +85,7 @@ export async function setAnchors(pdfDoc: PDFDocument, links: TPosition) {
               Dest: [pages[pageIdx].ref, "XYZ", null, yPos, null],
             });
 
-						// @ts-ignore
+            // @ts-ignore
             // Replace all occurrences of the external annotation with the internal one
             pdfDoc.context.assign(linkAnnotRef, newAnnot);
           }
@@ -309,8 +309,8 @@ export async function editPDF(
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getDestPosition(pdfDoc);
-  
-	setAnchors(pdfDoc, posistions);
+
+  setAnchors(pdfDoc, posistions);
 
   const outlines = generateOutlines(headings, posistions, maxLevel);
 
