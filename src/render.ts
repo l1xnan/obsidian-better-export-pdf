@@ -139,7 +139,7 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   Object.entries(cache?.blocks ?? {}).forEach(([key, c]) => {
     const idx = c.position.end.line;
-    lines[idx] = `<span id="^${key}" class="blockid"></span>` + lines[idx];
+    lines[idx] = `<span id="^${key}" class="blockid"></span>\n` + lines[idx];
   });
 
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
