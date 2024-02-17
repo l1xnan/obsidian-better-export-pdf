@@ -18,7 +18,7 @@ Compared to the official Export PDF feature:
 
 ## Installation
 
-In Obsidian go to `Settings > Third-party plugins > Community Plugins > Browse` and search for `Better Export PDF`.
+In Obsidian go to `Settings > Third-party plugins > Community Plugins > Browse` and search for [`Better Export PDF`](obsidian://show-plugin?id=better-export-pdf).
 
 ### Manual installation
 
