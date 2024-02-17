@@ -18,7 +18,9 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 ## 安装
 
-当前插件没有发布到官方插件商店，需要手动安装：
+在官方商店中搜索 `Better Export PDF` 安装。
+
+### 手动安装
 
 1. 在 [Release](https://github.com/l1xnan/obsidian-better-export-pdf/releases) 页面，下载 zip 包
 2. 解压到: `{VaultFolder}/.obsidian/plugins/`
