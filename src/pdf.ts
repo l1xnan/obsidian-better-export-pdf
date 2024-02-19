@@ -348,7 +348,7 @@ export function setMetadata(
 export async function exportToPDF(
   outputFile: string,
   config: TConfig & BetterExportPdfPluginSettings,
-  webview: WebviewTag,
+  w: WebviewTag,
   doc: Document,
   frontMatter?: FrontMatterCache,
 ) {
@@ -374,8 +374,6 @@ export async function exportToPDF(
       right: parseFloat(config["marginRight"] ?? "0") / 25.4,
     };
   }
-
-  const w = document.querySelector("webview:last-child") as WebviewTag;
 
   try {
     let data = await w.printToPDF(printOptions);
