@@ -115,9 +115,7 @@ export class ExportConfigModal extends Modal {
       if (this.completed) {
         const outputFile = await getOutputFile(this.file);
         if (outputFile) {
-          const frontMatter = this.plugin.settings.displayMetadata
-            ? getFrontMatter(this.plugin.app, this.file)
-            : undefined;
+          const frontMatter = getFrontMatter(this.plugin.app, this.file);
           await exportToPDF(
             outputFile,
             { ...this.plugin.settings, ...this.config },

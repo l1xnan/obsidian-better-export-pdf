@@ -296,16 +296,32 @@ export async function addPageNumbers(doc: PDFDocument, setting: PageSetting) {
   }
 }
 
+export type PdfFrontMatterCache = {
+  // pdf metadata
+  title?: string;
+  author?: string;
+  keywords?: string;
+  created_at?: string;
+  updated_at?: string;
+  creator?: string;
+  producer?: string;
+
+  // header/footer
+  headerTemplate?: string;
+  footerTemplate?: string;
+} & FrontMatterCache;
+
 export type EditPDFParamType = {
   headings: TreeNode;
   maxLevel: number;
-  frontMatter?: FrontMatterCache;
+  displayMetadata?: boolean;
+  frontMatter?: PdfFrontMatterCache;
 };
 
 // add outlines
 export async function editPDF(
   data: Uint8Array,
-  { headings, maxLevel, frontMatter }: EditPDFParamType,
+  { headings, maxLevel, frontMatter, displayMetadata }: EditPDFParamType,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getDestPosition(pdfDoc);
@@ -315,8 +331,8 @@ export async function editPDF(
   const outlines = generateOutlines(headings, posistions, maxLevel);
 
   setOutline(pdfDoc, outlines);
-  if (frontMatter) {
-    setMetadata(pdfDoc, frontMatter);
+  if (displayMetadata) {
+    setMetadata(pdfDoc, frontMatter ?? {});
   }
   data = await pdfDoc.save();
   return data;
@@ -360,8 +376,12 @@ export async function exportToPDF(
       marginType: "default",
     },
     displayHeaderFooter: true,
-    headerTemplate: config["displayHeader"] ? config["headerTemplate"] : "<span></span>",
-    footerTemplate: config["displayFooter"] ? config["footerTemplate"] : "<span></span>",
+    headerTemplate: config["displayHeader"]
+      ? frontMatter?.["headerTemplate"] ?? config["headerTemplate"]
+      : "<span></span>",
+    footerTemplate: config["displayFooter"]
+      ? frontMatter?.["footerTemplate"] ?? config["footerTemplate"]
+      : "<span></span>",
   };
 
   if (config.marginType == "3") {
@@ -381,6 +401,7 @@ export async function exportToPDF(
     data = await editPDF(data, {
       headings: getHeadingTree(doc),
       frontMatter,
+      displayMetadata: config?.displayMetadata,
       maxLevel: parseInt(config?.maxLevel ?? "6"),
     });
 

@@ -57,6 +57,24 @@ If you want to further customize the PDF export style, you can add custom CSS in
 }
 ```
 
+### frontMatter
+
+PDF Metadata can be added to through frontMatter of the configuration document. Supported field items are:
+
+- `title`
+- `author`
+- `keywords`
+- `created_at`
+- `updated_at`
+- `creator`
+- `producer`
+
+
+Document level header/footer templates can also be configured in frontMatter:
+
+- `headerTemplate`
+- `footerTemplate`
+
 ### Export preview
 
 ![Export preview](./assets/preview0.png)

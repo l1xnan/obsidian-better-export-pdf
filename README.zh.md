@@ -58,6 +58,25 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 }
 ```
 
+### frontMatter
+
+可以通过配置文档的 `frontMatter` 给 PDF 添加元数据，支持的字段项有：
+
+- `title`
+- `author`
+- `keywords`
+- `created_at`
+- `updated_at`
+- `creator`
+- `producer`
+
+
+也可以在`frontMatter`中配置文档级别的页眉/页脚模板：
+
+- `headerTemplate`
+- `footerTemplate`
+
+
 ### 导出预览
 
 ![Export preview](./assets/preview0.png)
