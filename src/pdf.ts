@@ -418,7 +418,6 @@ export async function exportToPDF(
   }
 
   try {
-    console.debug("printOptions:", printOptions);
     let data = await w.printToPDF(printOptions);
 
     data = await editPDF(data, {
