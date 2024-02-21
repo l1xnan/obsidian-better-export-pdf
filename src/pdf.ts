@@ -369,13 +369,15 @@ export async function exportToPDF(
   frontMatter?: FrontMatterCache,
 ) {
   const printOptions: electron.PrintToPDFOptions = {
+    landscape: config?.["landscape"],
+    printBackground: config?.["printBackground"],
+    generateTaggedPDF: config?.["generateTaggedPDF"],
     pageSize: config["pageSise"],
-    ...config,
     scale: config["scale"] / 100,
     margins: {
       marginType: "default",
     },
-    displayHeaderFooter: true,
+    displayHeaderFooter: config["displayHeader"] || config["displayFooter"],
     headerTemplate: config["displayHeader"]
       ? frontMatter?.["headerTemplate"] ?? config["headerTemplate"]
       : "<span></span>",
@@ -384,7 +386,27 @@ export async function exportToPDF(
       : "<span></span>",
   };
 
-  if (config.marginType == "3") {
+  if (config.marginType == "0") {
+    printOptions["margins"] = {
+      marginType: "custom",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    };
+  } else if (config.marginType == "1") {
+    printOptions["margins"] = {
+      marginType: "default",
+    };
+  } else if (config.marginType == "2") {
+    printOptions["margins"] = {
+      marginType: "custom",
+      top: 0.1,
+      bottom: 0.1,
+      left: 0.1,
+      right: 0.1,
+    };
+  } else if (config.marginType == "3") {
     // Custom Margin
     printOptions["margins"] = {
       marginType: "custom",
@@ -396,6 +418,7 @@ export async function exportToPDF(
   }
 
   try {
+    console.debug("printOptions:", printOptions);
     let data = await w.printToPDF(printOptions);
 
     data = await editPDF(data, {
