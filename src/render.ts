@@ -20,9 +20,13 @@ export function getAllStyles() {
 
     cssTexts.push(division);
 
-    Array.from(sheet.cssRules).forEach((rule) => {
-      cssTexts.push(rule.cssText);
-    });
+    try {
+      Array.from(sheet?.cssRules ?? []).forEach((rule) => {
+        cssTexts.push(rule.cssText);
+      });
+    } catch (error) {
+      console.error(error);
+    }
   });
 
   cssTexts.push(...getPatchStyle());
@@ -74,14 +78,19 @@ export function getPatchStyle() {
 export function getPrintStyle() {
   const cssTexts: string[] = [];
   Array.from(document.styleSheets).forEach((sheet) => {
-    Array.from(sheet.cssRules).forEach((rule) => {
-      if (rule.constructor.name == "CSSMediaRule") {
-        if ((rule as CSSMediaRule).conditionText === "print") {
-          const res = rule.cssText.replace(/@media print\s*\{(.+)\}/gms, "$1");
-          cssTexts.push(res);
+    try {
+      const cssRules = sheet?.cssRules ?? [];
+      Array.from(cssRules).forEach((rule) => {
+        if (rule.constructor.name == "CSSMediaRule") {
+          if ((rule as CSSMediaRule).conditionText === "print") {
+            const res = rule.cssText.replace(/@media print\s*\{(.+)\}/gms, "$1");
+            cssTexts.push(res);
+          }
         }
-      }
-    });
+      });
+    } catch (error) {
+      console.error(error);
+    }
   });
   return cssTexts;
 }
