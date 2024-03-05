@@ -105,7 +105,11 @@ export class ExportConfigModal extends Modal {
 
     const contentEl = wrapper.createDiv();
     contentEl.setAttribute("style", "width:320px;margin-left:16px;");
-
+    contentEl.addEventListener("keyup", (event) => {
+      if (event.key === "Enter") {
+        handleExport();
+      }
+    });
     this.generateForm(contentEl);
 
     const handleExport = async () => {
@@ -132,7 +136,7 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Export").onClick(handleExport);
-
+      button.setCta();
       fullWidthButton(button);
     });
 
