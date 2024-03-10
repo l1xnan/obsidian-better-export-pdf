@@ -1,4 +1,4 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, parseLinktext } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, FrontMatterCache } from "obsidian";
 import { TConfig } from "./modal";
 import { modifyAnchors, modifyDest, waitFor } from "./utils";
 
@@ -107,7 +107,7 @@ export function getFrontMatter(app: App, file: TFile) {
   return {
     title: file.basename,
     ...frontMatter,
-  };
+  } as FrontMatterCache;
 }
 
 // 逆向原生打印函数
@@ -121,13 +121,26 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
     new Notice("data is empty!");
   }
 
+  const frontMatter = getFrontMatter(app, file);
+
+  const cssclasses = [];
+  for (const [key, val] of Object.entries(frontMatter)) {
+    if (key.toLowerCase() == "cssclass" || key.toLowerCase() == "cssclasses") {
+      if (Array.isArray(val)) {
+        cssclasses.push(...val);
+      } else {
+        cssclasses.push(val);
+      }
+    }
+  }
+
   const comp = new Component();
   comp.load();
   const promises: AyncFnType[] = [];
 
   const printEl = document.body.createDiv("print");
   const viewEl = printEl.createDiv({
-    cls: "markdown-preview-view markdown-rendered",
+    cls: "markdown-preview-view markdown-rendered " + cssclasses.join(" "),
   });
   app.vault.cachedRead(file);
 
