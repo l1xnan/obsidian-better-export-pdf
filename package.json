@@ -21,7 +21,7 @@
 		"mermaid": "^10.7.0",
 		"obsidian": "^1.5.7",
 		"tslib": "2.6.2",
-		"typescript": "5.3.3"
+		"typescript": "5.4.2"
 	},
 	"dependencies": {
 		"juice": "^9.1.0",
