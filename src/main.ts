@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin, TFile } from "obsidian";
+import { MarkdownView, Plugin, TFile, TFolder } from "obsidian";
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
 
@@ -15,8 +15,8 @@ export interface BetterExportPdfPluginSettings {
   headerTemplate: string;
   footerTemplate: string;
 
-  printBackground : boolean;
-  generateTaggedPDF : boolean;
+  printBackground: boolean;
+  generateTaggedPDF: boolean;
 
   displayMetadata: boolean;
 
@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
 
   printBackground: false,
   generateTaggedPDF: false,
-	
+
   displayMetadata: false,
   debug: false,
 };
@@ -78,12 +78,13 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerEvents() {
     // Register the Export As HTML button in the file menu
     this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file: TFile) => {
+      this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
+        let title = file instanceof TFolder ? "Export folder to PDF" : "Better Export PDF";
+        if (isDev) {
+          title = `${title} (dev)`;
+        }
+
         menu.addItem((item) => {
-          let title = "Better Export PDF";
-          if (isDev) {
-            title = `${title} (dev)`;
-          }
           item
             .setTitle(title)
             .setIcon("download")

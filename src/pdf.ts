@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import electron, { WebviewTag } from "electron";
 import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
-import { FrontMatterCache, TFile } from "obsidian";
+import { FrontMatterCache } from "obsidian";
 
 import { TreeNode, getHeadingTree } from "./utils";
 import { TConfig } from "./modal";
@@ -438,11 +438,11 @@ export async function exportToPDF(
   }
 }
 
-export async function getOutputFile(file: TFile) {
+export async function getOutputFile(filename: string) {
   // @ts-ignore
   const result = await electron.remote.dialog.showSaveDialog({
     title: "Export to PDF",
-    defaultPath: file.basename + ".pdf",
+    defaultPath: filename + ".pdf",
     filters: [
       { name: "All Files", extensions: ["*"] },
       { name: "PDF", extensions: ["pdf"] },

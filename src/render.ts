@@ -1,4 +1,4 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, FrontMatterCache } from "obsidian";
+import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, FrontMatterCache, TFolder } from "obsidian";
 import { TConfig } from "./modal";
 import { modifyAnchors, modifyDest, waitFor } from "./utils";
 
@@ -103,11 +103,7 @@ export type AyncFnType = (...args: unknown[]) => Promise<unknown>;
 
 export function getFrontMatter(app: App, file: TFile) {
   const cache = app.metadataCache.getFileCache(file);
-  const frontMatter = cache?.frontmatter;
-  return {
-    title: file.basename,
-    ...frontMatter,
-  } as FrontMatterCache;
+  return cache?.frontmatter ?? ({} as FrontMatterCache);
 }
 
 // 逆向原生打印函数
@@ -208,15 +204,17 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
-  const dest = modifyDest(doc);
-
-  modifyAnchors(doc, dest, file.basename);
-  modifyEmbedSpan(doc);
 
   printEl.detach();
   comp.unload();
   printEl.remove();
   return doc;
+}
+
+export function fixDoc(doc: Document, title: string) {
+  const dest = modifyDest(doc);
+  modifyAnchors(doc, dest, title);
+  modifyEmbedSpan(doc);
 }
 
 export function modifyEmbedSpan(doc: Document) {
