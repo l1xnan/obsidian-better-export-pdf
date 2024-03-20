@@ -113,8 +113,11 @@ export function getFrontMatter(app: App, file: TFile) {
 // 逆向原生打印函数
 export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
   const ws = app.workspace;
+  if (ws.getActiveFile()?.path != file.path) {
+    const leaf = ws.getLeaf();
+    await leaf.openFile(file);
+  }
   const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
-
   // @ts-ignore
   const data = view?.data ?? ws?.getActiveFileView()?.data ?? ws.activeEditor?.data;
   if (!data) {
