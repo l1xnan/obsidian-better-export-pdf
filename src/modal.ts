@@ -1,4 +1,4 @@
-import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache } from "obsidian";
+import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache, parseLinktext } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
@@ -78,9 +78,24 @@ export class ExportConfigModal extends Modal {
       }
     } else {
       docs.push(await renderMarkdown(this.plugin.app, this.file, this.config));
-      Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, this.file));
+      const matter = getFrontMatter(this.plugin.app, this.file);
+      Object.assign(this.frontMatter, matter);
+      if (matter.catalog) {
+        const cache = this.app.metadataCache.getFileCache(this.file as TFile);
+        const files: TFile[] =
+          cache?.links
+            ?.map((link) => {
+              return this.app.metadataCache.getFirstLinkpathDest(link.link, this.file.path) as TFile;
+            })
+            .filter((item) => item instanceof TFile) ?? [];
+        for (const file of files) {
+          docs.push(await renderMarkdown(this.plugin.app, file, this.config));
+          Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, file));
+        }
+      }
     }
     this.doc = docs[0];
+
     for (const doc of docs.slice(1)) {
       const element = doc.querySelector("body > div > div");
 
@@ -198,7 +213,7 @@ export class ExportConfigModal extends Modal {
           this.config["showTitle"] = value;
 
           if (this.completed) {
-						await this.renderFiles();
+            await this.renderFiles();
             this.preview?.executeJavaScript(`
             document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
             `);
