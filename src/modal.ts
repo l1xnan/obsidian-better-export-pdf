@@ -1,7 +1,7 @@
-import { Modal, Setting, TFile, ButtonComponent, Notice } from "obsidian";
+import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
-import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter } from "./render";
+import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
 
 type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -37,12 +37,14 @@ export class ExportConfigModal extends Modal {
   canceled: boolean;
   callback: Callback;
   plugin: BetterExportPdfPlugin;
-  file: TFile;
+  file: TFile | TFolder;
   preview: electron.WebviewTag;
   completed: boolean;
   doc: Document;
+  title: string;
+  frontMatter: FrontMatterCache;
 
-  constructor(plugin: BetterExportPdfPlugin, file: TFile, config?: TConfig) {
+  constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, config?: TConfig) {
     super(plugin.app);
     this.canceled = true;
     this.plugin = plugin;
@@ -65,6 +67,33 @@ export class ExportConfigModal extends Modal {
     } as TConfig;
   }
 
+  async renderFiles() {
+    const docs = [];
+    if (this.file instanceof TFolder) {
+      for (const file of this.file.children) {
+        if (file instanceof TFile && file.extension == "md") {
+          docs.push(await renderMarkdown(this.plugin.app, file, this.config));
+          Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, file));
+        }
+      }
+    } else {
+      docs.push(await renderMarkdown(this.plugin.app, this.file, this.config));
+      Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, this.file));
+    }
+    this.doc = docs[0];
+    for (const doc of docs.slice(1)) {
+      const element = doc.querySelector("body > div > div");
+
+      if (element) {
+        const newElement = this.doc.importNode(element, true);
+        this.doc.querySelector(".print")?.appendChild(newElement);
+      }
+    }
+    fixDoc(this.doc, this.title);
+
+    return this.doc;
+  }
+
   async onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
@@ -73,8 +102,12 @@ export class ExportConfigModal extends Modal {
     const wrapper = this.contentEl.createDiv();
     wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
+    const title = (this.file as TFile)?.basename ?? this.file?.name;
+    this.frontMatter = { title };
+    this.title = title;
+
     const appendWebview = async (e: HTMLDivElement) => {
-      this.doc = await renderMarkdown(this.plugin.app, this.file, this.config);
+      await this.renderFiles();
       const webview = createWebview();
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
@@ -90,7 +123,7 @@ export class ExportConfigModal extends Modal {
         document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
         document.body.addClass("theme-light");
         document.body.removeClass("theme-dark");
-        document.title = \`${this.file.basename}\`;
+        document.title = \`${title}\`;
         `);
         getPatchStyle().forEach(async (css) => {
           await this.preview.insertCSS(css);
@@ -117,15 +150,14 @@ export class ExportConfigModal extends Modal {
       await this.plugin.saveSettings();
 
       if (this.completed) {
-        const outputFile = await getOutputFile(this.file);
+        const outputFile = await getOutputFile(title);
         if (outputFile) {
-          const frontMatter = getFrontMatter(this.plugin.app, this.file);
           await exportToPDF(
             outputFile,
             { ...this.plugin.settings, ...this.config },
             this.preview,
             this.doc,
-            frontMatter,
+            this.frontMatter,
           );
           this.close();
         }
@@ -166,7 +198,7 @@ export class ExportConfigModal extends Modal {
           this.config["showTitle"] = value;
 
           if (this.completed) {
-            this.doc = await renderMarkdown(this.plugin.app, this.file, this.config);
+						await this.renderFiles();
             this.preview?.executeJavaScript(`
             document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
             `);
