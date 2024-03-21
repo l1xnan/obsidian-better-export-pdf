@@ -92,6 +92,8 @@ export class ExportConfigModal extends Modal {
           docs.push(await renderMarkdown(this.plugin.app, file, this.config));
           Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, file));
         }
+        const leaf = this.app.workspace.getLeaf();
+        await leaf.openFile(this.file);
       }
     }
     this.doc = docs[0];
