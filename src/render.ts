@@ -107,7 +107,16 @@ export function getFrontMatter(app: App, file: TFile) {
 }
 
 // 逆向原生打印函数
-export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
+export async function renderMarkdown(
+  app: App,
+  file: TFile,
+  config: TConfig,
+  extra?: {
+    title?: string;
+    file: TFile;
+    id?: string;
+  },
+) {
   const ws = app.workspace;
   if (ws.getActiveFile()?.path != file.path) {
     const leaf = ws.getLeaf();
@@ -149,9 +158,10 @@ export async function renderMarkdown(app: App, file: TFile, config: TConfig) {
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
   if (config.showTitle) {
-    viewEl.createEl("h1", {
-      text: file.basename,
+    const h = viewEl.createEl("h1", {
+      text: extra?.title ?? file.basename,
     });
+    h.id = extra?.id ?? "";
   }
 
   const cache = app.metadataCache.getFileCache(file);

@@ -67,30 +67,46 @@ export class ExportConfigModal extends Modal {
     } as TConfig;
   }
 
+  getFileCache(file: TFile) {
+    return this.app.metadataCache.getFileCache(file);
+  }
+
   async renderFiles() {
+    const app = this.plugin.app;
+
     const docs = [];
     if (this.file instanceof TFolder) {
       for (const file of this.file.children) {
         if (file instanceof TFile && file.extension == "md") {
-          docs.push(await renderMarkdown(this.plugin.app, file, this.config));
-          Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, file));
+          docs.push(await renderMarkdown(app, file, this.config));
+          Object.assign(this.frontMatter, getFrontMatter(app, file));
         }
       }
     } else {
-      docs.push(await renderMarkdown(this.plugin.app, this.file, this.config));
-      const matter = getFrontMatter(this.plugin.app, this.file);
+      const doc0 = await renderMarkdown(app, this.file, this.config);
+      docs.push(doc0);
+      const matter = getFrontMatter(app, this.file);
       Object.assign(this.frontMatter, matter);
       if (matter.catalog) {
-        const cache = this.app.metadataCache.getFileCache(this.file as TFile);
-        const files: TFile[] =
+        const cache = this.getFileCache(this.file as TFile);
+        const files =
           cache?.links
-            ?.map((link) => {
-              return this.app.metadataCache.getFirstLinkpathDest(link.link, this.file.path) as TFile;
+            ?.map(({ link, displayText }) => {
+              const id = crypto.randomUUID();
+              const elem = doc0.querySelector(`a[data-href="${link}"]`) as HTMLAnchorElement;
+              if (elem) {
+                elem.href = `#${id}`;
+              }
+              return {
+                title: displayText,
+                file: this.app.metadataCache.getFirstLinkpathDest(link, this.file.path) as TFile,
+                id,
+              };
             })
-            .filter((item) => item instanceof TFile) ?? [];
-        for (const file of files) {
-          docs.push(await renderMarkdown(this.plugin.app, file, this.config));
-          Object.assign(this.frontMatter, getFrontMatter(this.plugin.app, file));
+            .filter((item) => item.file instanceof TFile) ?? [];
+        for (const item of files) {
+          docs.push(await renderMarkdown(app, item.file, this.config, item));
+          Object.assign(this.frontMatter, getFrontMatter(app, item.file));
         }
         const leaf = this.app.workspace.getLeaf();
         await leaf.openFile(this.file);
