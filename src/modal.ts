@@ -113,15 +113,29 @@ export class ExportConfigModal extends Modal {
       }
     }
     this.doc = docs[0];
+    if (docs.length > 1) {
+      const sections = [];
+      for (const doc of docs) {
+        const element = doc.querySelector(".markdown-preview-view");
 
-    for (const doc of docs.slice(1)) {
-      const element = doc.querySelector("body > div > div");
+        if (element) {
+          const section = this.doc.createElement("section");
+          Array.from(element.children).forEach((child) => {
+            section.appendChild(this.doc.importNode(child, true));
+          });
 
-      if (element) {
-        const newElement = this.doc.importNode(element, true);
-        this.doc.querySelector(".print")?.appendChild(newElement);
+          sections.push(section);
+        }
       }
+      const root = this.doc.querySelector(".markdown-preview-view");
+      if (root) {
+        root.innerHTML = "";
+      }
+      sections.forEach((section) => {
+        root?.appendChild(section);
+      });
     }
+
     fixDoc(this.doc, this.title);
 
     return this.doc;
