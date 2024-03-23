@@ -8,13 +8,13 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 与官方导出 PDF 功能相比：
 
-- 🚀支持导出预览
-- 🎉支持导出PDF带大纲书签
-- 🛩️支持自定义页边距
-- ✨支持自定义页眉/页脚（例如：添加页码）
-- 💥支持将文档属性添加到PDF元数据中
-- 🎇支持导出的PDF时，保留文档内链接跳转
-- 🎈多个笔记文件合并打印到一个 PDF 文件中
+- 🚀 支持导出预览
+- 🎉 支持导出 PDF 带大纲书签
+- 🛩️ 支持自定义页边距
+- ✨ 支持自定义页眉/页脚（例如：添加页码）
+- 💥 支持将文档属性添加到 PDF 元数据中
+- 🎇 支持导出的 PDF 时，保留文档内链接跳转
+- 🎈 多个笔记文件合并打印到一个 PDF 文件中
 - ... ...
 
 ## 安装
@@ -36,19 +36,19 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 如果导出的 PDF 页面异常，尝试在外观中将颜色将切换为浅色。
 
-
 ### 设置
 
 可以通过设置 `Header Template` and `Footer Template` 配置来设置页码, 例如:
+
 ```html
 <div style="width: 100vw;font-size:10px;text-align:center;">
-    <span class="pageNumber"></span> / <span class="totalPages"></span>
+  <span class="pageNumber"></span> / <span class="totalPages"></span>
 </div>
 ```
+
 可以实现类似 ` 3 / 5` 页码效果。详见[`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions)。
 
-
-如果想进一步定制PDF导出样式，可以在`外观>CSS代码片段`中添加自定义的CSS，例如自定义字体和字号：
+如果想进一步定制 PDF 导出样式，可以在`外观>CSS代码片段`中添加自定义的 CSS，例如自定义字体和字号：
 
 ```css
 @media print {
@@ -71,17 +71,19 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - `creator`
 - `producer`
 
-
 也可以在`frontMatter`中配置文档级别的页眉/页脚模板：
 
 - `headerTemplate`
 - `footerTemplate`
 
 ### 多文件导出 (未发布)
+
 #### 快速导出
-侧边栏选择文件夹，右键选择菜单 `Export folder to PDF`，即可将整个文件夹内容导出到一个PDF 文件中，这样不保证文件导出顺序；
+
+侧边栏选择文件夹，右键选择菜单 `Export folder to PDF`，即可将整个文件夹内容导出到一个 PDF 文件中，这样不保证文件导出顺序；
 
 #### 自定义导出
+
 新建一个目录笔记，添加如下类似内容，需要添加 `toc: true` 文档属性：
 
 ```markdown
@@ -96,7 +98,7 @@ toc: true
 [[笔记3]]
 ```
 
-这样插件会按照 `当前目录页`、`笔记1`、`笔记2`.. 的顺序导出笔记。导出的PDF，目录页锚点支持点击跳转。
+这样插件会按照 `当前目录页`、`笔记1`、`笔记2`.. 的顺序导出笔记。导出的 PDF，目录页锚点支持点击跳转。
 
 ### 导出预览
 
@@ -113,12 +115,11 @@ toc: true
 - [x] 支持打印预览；
 - [x] 多个 Markdown 合并打印到一个 PDF 文件中；
 - [x] 完善默认 `@media print` css 样式；
-- [x] 支持将文档属性添加到PDF元数据中；
+- [x] 支持将文档属性添加到 PDF 元数据中；
 - [x] 保留文档内链接跳转；
 
-
 ## 赞助
-如果这个插件帮到了您，请点击 Star 或者我喝一杯奶茶吧！
 
+如果这个插件帮到了您，请点击 Star 或者我喝一杯奶茶吧！
 
 <img src="./assets/sponsor-chat.png" width="300px"/>
