@@ -87,7 +87,7 @@ export class ExportConfigModal extends Modal {
       docs.push(doc0);
       const matter = getFrontMatter(app, this.file);
       Object.assign(this.frontMatter, matter);
-      if (matter.catalog) {
+      if (matter.toc) {
         const cache = this.getFileCache(this.file as TFile);
         const files =
           cache?.links
