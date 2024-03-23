@@ -12,8 +12,9 @@ Compared to the official Export PDF feature:
 - 🎉Export the outline bookmarks
 - 🛩️Customize the margins
 - ✨Export the page numbers
-- 💥Support add PDF metadata from front matter;
-- 🎇Export internal links within file;
+- 💥Support add PDF metadata from front matter
+- 🎇Export internal links within file
+- 🎈Export multiple Markdown files into one PDF file
 - ... ...
 
 ## Installation
@@ -38,13 +39,14 @@ If the exported PDF page is abnormal, trying to change the color in the appearan
 ### Settings
 
 Set page numbers using the `Header Template` and `Footer Template`, for example:
+
 ```html
 <div style="width: 100vw;font-size:10px;text-align:center;">
-    <span class="pageNumber"></span> / <span class="totalPages"></span>
+  <span class="pageNumber"></span> / <span class="totalPages"></span>
 </div>
 ```
-See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
 
+See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
 
 If you want to further customize the PDF export style, you can add custom CSS in the `Appearance > CSS Snippet`, such as custom fonts and sizes:
 
@@ -69,11 +71,37 @@ PDF Metadata can be added to through frontMatter of the configuration document. 
 - `creator`
 - `producer`
 
-
 Document level header/footer templates can also be configured in frontMatter:
 
 - `headerTemplate`
 - `footerTemplate`
+
+### Export multiple Markdown files (not release)
+
+#### Quick export
+
+Select the folder in the sidebar, right-click the menu `Export folder to PDF`, you can export the entire folder contents to a PDF file.
+
+Note: This does not guarantee the file export order.
+
+#### Custom export
+
+Create a new table of contents note, add something like the following, need to add a `toc: true` document property:
+
+
+```markdown
+---
+toc: true
+---
+
+## Table of Contents
+
+[[Note1|Title1]]
+[[Note2]]
+[[Note2]]
+```
+
+This allows the plugin to export the notes in the order of the internal links. The anchor point of the exported PDF table of contents supports clicking to jump.
 
 ### Export preview
 
@@ -82,7 +110,6 @@ Document level header/footer templates can also be configured in frontMatter:
 ### Effect picture
 
 ![Export preview](./assets/preview1.png)
-
 
 ## TODO
 
