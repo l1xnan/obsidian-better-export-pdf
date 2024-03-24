@@ -37,7 +37,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
 
-    new Setting(containerEl).setName("Add filename as title").addToggle((toggle) =>
+    new Setting(containerEl).setName("Add file name as title").addToggle((toggle) =>
       toggle
         .setTooltip("Add filename as title")
         .setValue(this.plugin.settings.showTitle)
@@ -99,7 +99,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("PDF metadata")
-      .setDesc("Add frontMatter(title, author, keywords, subjectm creator, etc) to pdf metadata")
+      .setDesc("Add frontMatter(title, author, keywords, subject creator, etc) to pdf metadata")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.displayMetadata).onChange(async (value) => {
           this.plugin.settings.displayMetadata = value;
@@ -114,14 +114,14 @@ export default class ConfigSettingTab extends PluginSettingTab {
     headerContentAreaSetting
       .setName("Header Template")
       .setDesc(
-        "HTML template for the print header." +
+        "HTML template for the print header. " +
           "Should be valid HTML markup with following classes used to inject printing values into them: " +
           "date (formatted print date), title (document title), url (document location), pageNumber (current page number) and totalPages (total pages in the document). For example, <span class=title></span> would generate span containing the title.",
       );
     const hederContentArea = new TextAreaComponent(headerContentAreaSetting.controlEl);
 
     setAttributes(hederContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%;  height: 6vh;",
+      style: "margin-top: 12px; width: 100%; height: 6vh;",
     });
     hederContentArea.setValue(this.plugin.settings.headerTemplate).onChange(async (value) => {
       this.plugin.settings.headerTemplate = value;
@@ -136,7 +136,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const footerContentArea = new TextAreaComponent(footerContentAreaSetting.controlEl);
 
     setAttributes(footerContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%;  height: 6vh;",
+      style: "margin-top: 12px; width: 100%; height: 6vh;",
     });
     footerContentArea.setValue(this.plugin.settings.footerTemplate).onChange(async (value) => {
       this.plugin.settings.footerTemplate = value;
