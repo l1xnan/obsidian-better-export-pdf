@@ -76,7 +76,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - `headerTemplate`
 - `footerTemplate`
 
-### 多文件导出 (未发布)
+### 多文件导出
 
 #### 快速导出
 

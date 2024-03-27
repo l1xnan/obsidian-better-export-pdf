@@ -76,7 +76,7 @@ Document level header/footer templates can also be configured in frontMatter:
 - `headerTemplate`
 - `footerTemplate`
 
-### Export multiple Markdown files (not release)
+### Export multiple Markdown files
 
 #### Quick export
 
