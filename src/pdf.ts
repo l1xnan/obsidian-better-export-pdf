@@ -4,7 +4,7 @@ import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, Standard
 import { FrontMatterCache } from "obsidian";
 
 import { TreeNode, getHeadingTree } from "./utils";
-import { TConfig } from "./modal";
+import { PageSizeType, TConfig } from "./modal";
 import { BetterExportPdfPluginSettings } from "./main";
 
 interface TPosition {
@@ -368,11 +368,19 @@ export async function exportToPDF(
   doc: Document,
   frontMatter?: FrontMatterCache,
 ) {
+  let pageSize = config["pageSise"] as PageSizeType;
+  if (config["pageSise"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
+    pageSize = {
+      width: parseFloat(config["pageWidth"] ?? "0") / 25.4,
+      height: parseFloat(config["pageHeight"] ?? "0") / 25.4,
+    };
+  }
+
   const printOptions: electron.PrintToPDFOptions = {
     landscape: config?.["landscape"],
     printBackground: config?.["printBackground"],
     generateTaggedPDF: config?.["generateTaggedPDF"],
-    pageSize: config["pageSise"],
+    pageSize,
     scale: config["scale"] / 100,
     margins: {
       marginType: "default",

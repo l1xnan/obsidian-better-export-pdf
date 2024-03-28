@@ -4,10 +4,13 @@ import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
 
-type PageSizeType = electron.PrintToPDFOptions["pageSize"];
+export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
 export interface TConfig {
-  pageSise: PageSizeType;
+  pageSise: PageSizeType | "Custom";
+  pageWidth?: string;
+  pageHeight?: string;
+
   marginType: string;
   open: boolean;
   landscape: boolean;
@@ -252,7 +255,7 @@ export class ExportConfigModal extends Modal {
           }
         }),
     );
-    const pageSizes: PageSizeType[] = [
+    const pageSizes: (PageSizeType | "Custom")[] = [
       "A0",
       "A1",
       "A2",
@@ -264,6 +267,7 @@ export class ExportConfigModal extends Modal {
       "Letter",
       "Tabloid",
       "Ledger",
+      "Custom",
     ];
     new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
       dropdown
@@ -271,9 +275,39 @@ export class ExportConfigModal extends Modal {
         .setValue(this.config.pageSise as string)
         .onChange(async (value: string) => {
           this.config["pageSise"] = value as PageSizeType;
+
+          if (value == "Custom") {
+            sizeEl.settingEl.hidden = false;
+          } else {
+            sizeEl.settingEl.hidden = true;
+          }
         });
     });
 
+    const sizeEl = new Setting(contentEl)
+      .setName("Width/Height")
+      .addText((text) => {
+        setInputWidth(text.inputEl);
+        text
+          .setPlaceholder("width")
+          .setValue(this.config["pageWidth"] as string)
+          .onChange((value) => {
+            this.config["pageWidth"] = value;
+          });
+      })
+      .addText((text) => {
+        setInputWidth(text.inputEl);
+        text
+          .setPlaceholder("height")
+          .setValue(this.config["pageHeight"] as string)
+          .onChange((value) => {
+            this.config["pageHeight"] = value;
+          });
+      });
+
+    if (this.config["pageSise"] != "Custom") {
+      sizeEl.settingEl.hidden = true;
+    }
     new Setting(contentEl)
       .setName("Margin")
       .setDesc("The unit is millimeters.")
