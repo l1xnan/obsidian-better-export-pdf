@@ -3,6 +3,7 @@ import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
+import { px2mm } from "./utils";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -178,12 +179,37 @@ export class ExportConfigModal extends Modal {
         getPatchStyle().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
+
+        const [width, height] = await this.preview.executeJavaScript(
+          "[document.body.offsetWidth, document.body.offsetHeight]",
+        );
+
+        const sizeEl = document.querySelector("#print-size");
+        if (sizeEl) {
+          sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+        }
       });
     };
 
-    const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto;" } }, async (e) => {
-      e.empty();
-      await appendWebview(e);
+    const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto; position:relative;" } }, async (el) => {
+      el.empty();
+      const resizeObserver = new ResizeObserver(() => {
+        const scale = Math.floor((794 / el.offsetWidth) * 100) / 100;
+        this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
+        this.preview.style.width = `calc(${scale} * 100%)`;
+        this.preview.style.height = `calc(${scale} * 100%)`;
+      });
+      resizeObserver.observe(el);
+
+      await appendWebview(el);
+    });
+
+    previewDiv.createDiv({
+      attr: {
+        id: "print-size",
+        style:
+          "position:absolute;right:8px;top:8px;z-index:99;font-size:0.75rem;white-space:pre-wrap;text-align:right;",
+      },
     });
 
     const contentEl = wrapper.createDiv();

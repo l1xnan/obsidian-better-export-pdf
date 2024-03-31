@@ -61,7 +61,6 @@ export function modifyDest(doc: Document) {
     data.set(heading.dataset.heading, flag);
   });
 
-
   return data;
 }
 
@@ -105,3 +104,7 @@ export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
     poll();
   });
 }
+
+export const px2mm = (px: number) => {
+  return Math.round(px * 0.2645);
+};
