@@ -15,6 +15,7 @@ Compared to the official Export PDF feature:
 - 💥Support add PDF metadata from front matter
 - 🎇Export internal links within file
 - 🎈Export multiple Markdown files into one PDF file
+- ⌛Support exporting PDFs in any size, and can export all content onto a single page
 - ... ...
 
 ## Installation
