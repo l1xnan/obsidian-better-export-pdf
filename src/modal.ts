@@ -1,9 +1,20 @@
-import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache, parseLinktext } from "obsidian";
+import {
+  Modal,
+  Setting,
+  TFile,
+  ButtonComponent,
+  Notice,
+  TFolder,
+  FrontMatterCache,
+  parseLinktext,
+  debounce,
+} from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
-import { px2mm } from "./utils";
+import { mm2px, px2mm } from "./utils";
+import { PageSize } from "./constant";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -43,6 +54,7 @@ export class ExportConfigModal extends Modal {
   plugin: BetterExportPdfPlugin;
   file: TFile | TFolder;
   preview: electron.WebviewTag;
+  previewDiv: HTMLDivElement;
   completed: boolean;
   doc: Document;
   title: string;
@@ -145,6 +157,40 @@ export class ExportConfigModal extends Modal {
     return this.doc;
   }
 
+  calcPageSize(element?: HTMLDivElement, config?: TConfig) {
+    const conf = config ?? this.config;
+    const el = element ?? this.previewDiv;
+    console.log(conf);
+    const width = PageSize?.[conf["pageSise"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
+    const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
+    this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
+    this.preview.style.width = `calc(${scale} * 100%)`;
+    this.preview.style.height = `calc(${scale} * 100%)`;
+  }
+
+  async calcWebviewSize() {
+    await sleep(500);
+    const [width, height] = await this.preview.executeJavaScript(
+      "[document.body.offsetWidth, document.body.offsetHeight]",
+    );
+
+    const sizeEl = document.querySelector("#print-size");
+    if (sizeEl) {
+      sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+    }
+  }
+
+  async togglePrintSize() {
+    const sizeEl = document.querySelector("#print-size") as HTMLDivElement | undefined;
+    if (sizeEl) {
+      if (this.config["pageSise"] == "Custom") {
+        sizeEl.style.visibility = "visible";
+      } else {
+        sizeEl.style.visibility = "hidden";
+      }
+    }
+  }
+
   async onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
@@ -179,38 +225,30 @@ export class ExportConfigModal extends Modal {
         getPatchStyle().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
-
-        const [width, height] = await this.preview.executeJavaScript(
-          "[document.body.offsetWidth, document.body.offsetHeight]",
-        );
-
-        const sizeEl = document.querySelector("#print-size");
-        if (sizeEl) {
-          sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
-        }
+        this.calcWebviewSize();
       });
     };
 
     const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto; position:relative;" } }, async (el) => {
       el.empty();
       const resizeObserver = new ResizeObserver(() => {
-        const scale = Math.floor((794 / el.offsetWidth) * 100) / 100;
-        this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
-        this.preview.style.width = `calc(${scale} * 100%)`;
-        this.preview.style.height = `calc(${scale} * 100%)`;
+        this.calcPageSize(el);
       });
       resizeObserver.observe(el);
 
       await appendWebview(el);
     });
 
+    this.previewDiv = previewDiv;
+
     previewDiv.createDiv({
       attr: {
         id: "print-size",
         style:
-          "position:absolute;right:8px;top:8px;z-index:99;font-size:0.75rem;white-space:pre-wrap;text-align:right;",
+          "position:absolute;right:8px;top:8px;z-index:99;font-size:0.75rem;white-space:pre-wrap;text-align:right;visibility:hidden;",
       },
     });
+		this.togglePrintSize();
 
     const contentEl = wrapper.createDiv();
     contentEl.setAttribute("style", "width:320px;margin-left:16px;");
@@ -301,12 +339,14 @@ export class ExportConfigModal extends Modal {
         .setValue(this.config.pageSise as string)
         .onChange(async (value: string) => {
           this.config["pageSise"] = value as PageSizeType;
-
           if (value == "Custom") {
             sizeEl.settingEl.hidden = false;
           } else {
             sizeEl.settingEl.hidden = true;
           }
+          this.togglePrintSize();
+          this.calcPageSize();
+          await this.calcWebviewSize();
         });
     });
 
@@ -317,9 +357,17 @@ export class ExportConfigModal extends Modal {
         text
           .setPlaceholder("width")
           .setValue(this.config["pageWidth"] as string)
-          .onChange((value) => {
-            this.config["pageWidth"] = value;
-          });
+          .onChange(
+            debounce(
+              async (value) => {
+                this.config["pageWidth"] = value;
+                this.calcPageSize();
+                await this.calcWebviewSize();
+              },
+              500,
+              true,
+            ),
+          );
       })
       .addText((text) => {
         setInputWidth(text.inputEl);

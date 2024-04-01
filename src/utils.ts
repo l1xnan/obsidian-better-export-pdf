@@ -106,5 +106,8 @@ export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
 }
 
 export const px2mm = (px: number) => {
-  return Math.round(px * 0.2645);
+  return Math.round(px * 0.26458333333719);
+};
+export const mm2px = (mm: number) => {
+  return Math.round(mm * 3.779527559 );
 };
