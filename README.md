@@ -15,7 +15,7 @@ Compared to the official Export PDF feature:
 - 💥Support add PDF metadata from front matter
 - 🎇Export internal links within file
 - 🎈Export multiple Markdown files into one PDF file
-- ⌛Support exporting PDFs in any size, and can export all content onto a single page
+- 🍬Support exporting PDFs in any size, and can export all content onto a single page
 - ... ...
 
 ## Installation
@@ -103,6 +103,13 @@ toc: true
 ```
 
 This allows the plugin to export the notes in the order of the internal links. The anchor point of the exported PDF table of contents supports clicking to jump.
+
+
+### Export as One Page
+
+In the export dialog, select `Custom` for **Page Size** and set **Margin** to `None`. Set the page size according to the document's requirements.
+
+## Preview
 
 ### Export preview
 
