@@ -1,3 +1,5 @@
+import { TFile, TFolder } from "obsidian";
+
 export class TreeNode {
   // h2-1, h3-2, etc
   key: string;
@@ -109,5 +111,20 @@ export const px2mm = (px: number) => {
   return Math.round(px * 0.26458333333719);
 };
 export const mm2px = (mm: number) => {
-  return Math.round(mm * 3.779527559 );
+  return Math.round(mm * 3.779527559);
 };
+
+export function traverseFolder(path: TFolder | TFile): TFile[] {
+  if (path instanceof TFile) {
+    if (path.extension == "md") {
+      return [path];
+    } else {
+      return [];
+    }
+  }
+  const arr = [];
+  for (const item of path.children) {
+    arr.push(...traverseFolder(item as TFolder));
+  }
+  return arr;
+}

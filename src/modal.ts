@@ -13,7 +13,7 @@ import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
 import { exportToPDF, getOutputFile } from "./pdf";
-import { mm2px, px2mm } from "./utils";
+import { mm2px, px2mm, traverseFolder } from "./utils";
 import { PageSize } from "./constant";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -92,11 +92,10 @@ export class ExportConfigModal extends Modal {
 
     const docs = [];
     if (this.file instanceof TFolder) {
-      for (const file of this.file.children) {
-        if (file instanceof TFile && file.extension == "md") {
-          docs.push(await renderMarkdown(app, file, this.config));
-          Object.assign(this.frontMatter, getFrontMatter(app, file));
-        }
+      const files = traverseFolder(this.file);
+      for (const file of files) {
+        docs.push(await renderMarkdown(app, file, this.config));
+        Object.assign(this.frontMatter, getFrontMatter(app, file));
       }
     } else {
       const doc0 = await renderMarkdown(app, this.file, this.config);
@@ -248,7 +247,7 @@ export class ExportConfigModal extends Modal {
           "position:absolute;right:8px;top:8px;z-index:99;font-size:0.75rem;white-space:pre-wrap;text-align:right;visibility:hidden;",
       },
     });
-		this.togglePrintSize();
+    this.togglePrintSize();
 
     const contentEl = wrapper.createDiv();
     contentEl.setAttribute("style", "width:320px;margin-left:16px;");
