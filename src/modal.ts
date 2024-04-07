@@ -6,7 +6,6 @@ import {
   Notice,
   TFolder,
   FrontMatterCache,
-  parseLinktext,
   debounce,
 } from "obsidian";
 import * as electron from "electron";
