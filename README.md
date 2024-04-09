@@ -14,7 +14,7 @@ Compared to the official Export PDF feature:
 - ✨Export the page numbers
 - 💥Support add PDF metadata from front matter
 - 🎇Export internal links within file
-- 🎈Export multiple Markdown files(folder or specified files)  into one PDF file
+- 🎈Export multiple Markdown files(folder or specified files) into one PDF file
 - 🍬Support exporting PDFs in any size, and can export all content onto a single page
 - ... ...
 
@@ -32,12 +32,13 @@ or use the [BRAT Plugin](https://obsidian.md/plugins?id=obsidian42-brat).
 
 ## Usage
 
-1. In the upper right corner of the current Markdown view, click More options and select `Better Export PDF`;
-2. Open the command panel and select `Better Export PDF: Export Current File to PDF`.
+1. Select export target:
+   1. In the upper right corner of the current Markdown view, click More options and select `Better Export PDF`;
+   2. Open the command panel and select `Better Export PDF: Export Current File to PDF`.
+2. In the dialog box that is displayed, modify the configuration.
+3. Click `Export`, select the export path, and if you don't need to modify the configuration, you can directly press the `Enter` key to trigger the export operation.
 
-If the exported PDF page is abnormal, trying to change the color in the appearance will switch to a light color.
-
-### Settings
+### Set the header and footer
 
 Set page numbers using the `Header Template` and `Footer Template`, for example:
 
@@ -48,6 +49,22 @@ Set page numbers using the `Header Template` and `Footer Template`, for example:
 ```
 
 See details [`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions).
+
+It can be any HTML fragment, such as adding a base64 image:
+
+```html
+<div style="width: 100vw;font-size:10px;text-align:center;">
+  <img height="10px" width="10px" src="data:image/svg+xml;base64,xxx..." />
+  <span class="title"></span>
+</div>
+```
+
+Document level header/footer templates can also be configured in frontMatter:
+
+- `headerTemplate`
+- `footerTemplate`
+
+### Customize the export style
 
 If you want to further customize the PDF export style, you can add custom CSS in the `Appearance > CSS Snippet`, such as custom fonts and sizes:
 
@@ -60,7 +77,7 @@ If you want to further customize the PDF export style, you can add custom CSS in
 }
 ```
 
-### frontMatter
+### Add PDF metadata
 
 PDF Metadata can be added to through frontMatter of the configuration document. Supported field items are:
 
@@ -71,11 +88,6 @@ PDF Metadata can be added to through frontMatter of the configuration document. 
 - `updated_at`
 - `creator`
 - `producer`
-
-Document level header/footer templates can also be configured in frontMatter:
-
-- `headerTemplate`
-- `footerTemplate`
 
 ### Export multiple Markdown files
 
@@ -88,7 +100,6 @@ Note: This does not guarantee the file export order.
 #### Custom export
 
 Create a new table of contents note, add something like the following, need to add a `toc: true` document property:
-
 
 ```markdown
 ---
@@ -103,7 +114,6 @@ toc: true
 ```
 
 This allows the plugin to export the notes in the order of the internal links. The anchor point of the exported PDF table of contents supports clicking to jump.
-
 
 ### Export as One Page
 

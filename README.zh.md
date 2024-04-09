@@ -39,7 +39,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 2. 在弹出对话框中，修改相关配置。
 3. 点击`Export`，选择导出路径，如果不用修改配置，可以直接按 `Enter` 键，触发导出操作。
 
-### 设置
+### 设置页眉/页脚
 
 可以通过设置 `Header Template` and `Footer Template` 配置来设置页码, 例如:
 
@@ -49,7 +49,25 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 </div>
 ```
 
-可以实现类似 ` 3 / 5` 页码效果。详见[`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions)。
+可以实现类似 `3 / 5` 页码效果。详见[`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions)。
+
+
+可以是任何合法的 HTML 片段，例如添加`base64`格式的图片：
+
+```html
+<div style="width: 100vw;font-size:10px;text-align:center;">
+  <img height="10px" width="10px" src="data:image/svg+xml;base64,xxx..."/>
+  <span class="title"></span>
+</div>
+```
+
+可以在`frontMatter`中配置文档级别的页眉/页脚模板：
+
+- `headerTemplate`
+- `footerTemplate`
+
+
+### 自定义导出样式
 
 如果想进一步定制 PDF 导出样式，可以在`外观>CSS代码片段`中添加自定义的 CSS，例如自定义字体和字号：
 
@@ -62,7 +80,10 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 }
 ```
 
-### frontMatter
+### 导出背景
+默认情况下，导出的PDF会删除主题所得带背景色，如果你需要这个背景色，可以`插件设置 > Print background` 配置中打开它。
+
+### 添加PDF元数据
 
 可以通过配置文档的 `frontMatter` 给 PDF 添加元数据，支持的字段项有：
 
@@ -74,10 +95,7 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - `creator`
 - `producer`
 
-也可以在`frontMatter`中配置文档级别的页眉/页脚模板：
 
-- `headerTemplate`
-- `footerTemplate`
 
 ### 多文件导出
 
