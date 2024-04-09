@@ -32,10 +32,12 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 ## 使用
 
-1. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better Export PDF`；
-2. 打开命令面板，选择 `Better Export PDF: Export Current File to PDF`。
-
-如果导出的 PDF 页面异常，尝试在外观中将颜色将切换为浅色。
+1. 选择导出目标：
+   -. 在当前 Markdown 视图的右上角，点击更多选项，选择 `Better Export PDF`；
+   -. 打开命令面板，选择 `Better Export PDF: Export Current File to PDF`；
+   -. 在文件树中，右键文件夹选择`Export folder to PDF`。
+2. 在弹出对话框中，修改相关配置。
+3. 点击`Export`，选择导出路径，如果不用修改配置，可以直接按 `Enter` 键，触发导出操作。
 
 ### 设置
 
@@ -101,11 +103,9 @@ toc: true
 
 这样插件会按照 `当前目录页`、`笔记1`、`笔记2`.. 的顺序导出笔记。导出的 PDF，目录页锚点支持点击跳转。
 
-
 ### 导出为一页
 
 导出对话框， **Page Size** 选择 `Custom`，**Margin** 设置为 `None`，根据文档情况自行设置页面尺寸。
-
 
 ## 效果
 
