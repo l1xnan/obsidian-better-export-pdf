@@ -268,7 +268,7 @@ export function createWebview() {
   return webview;
 }
 
-function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 100): Promise<boolean> {
+function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): Promise<boolean> {
   return new Promise((resolve, reject) => {
     let timer: NodeJS.Timeout;
     const observer = new MutationObserver((m) => {
