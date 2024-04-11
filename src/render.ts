@@ -117,6 +117,8 @@ export async function renderMarkdown(
     id?: string;
   },
 ) {
+  const startTime = new Date().getTime();
+
   const ws = app.workspace;
   if (ws.getActiveFile()?.path != file.path) {
     const leaf = ws.getLeaf();
@@ -144,7 +146,6 @@ export async function renderMarkdown(
 
   const comp = new Component();
   comp.load();
-  const promises: AyncFnType[] = [];
 
   const printEl = document.body.createDiv("print");
   const viewEl = printEl.createDiv({
@@ -173,10 +174,11 @@ export async function renderMarkdown(
     lines[idx] = `<span id="^${key}" class="blockid"></span>\n` + lines[idx];
   });
 
+  const promises: AyncFnType[] = [];
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
   // @ts-ignore
   // (app: App: param: T) => T
-  MarkdownRenderer.postProcess(app, {
+  await MarkdownRenderer.postProcess(app, {
     docId: generateDocId(16),
     sourcePath: file.path,
     frontmatter: {},
@@ -191,7 +193,6 @@ export async function renderMarkdown(
     el: viewEl,
     displayMode: true,
   });
-
   await Promise.all(promises);
 
   printEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
@@ -203,12 +204,16 @@ export async function renderMarkdown(
 
     el.removeAttribute("href");
   });
-
-  if (data.includes("```dataview")) {
+  if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
     try {
-      await waitFor(() => false, 2000);
+      await waitForDomChange(viewEl);
     } catch (error) {
-      /* empty */
+      console.warn(error);
+      try {
+        await waitFor(() => false, 1000);
+      } catch (error) {
+        console.warn(error);
+      }
     }
   }
 
@@ -218,6 +223,9 @@ export async function renderMarkdown(
   printEl.detach();
   comp.unload();
   printEl.remove();
+  const endTime = new Date().getTime();
+
+  console.log(`render time:${endTime - startTime}ms`);
   return doc;
 }
 
@@ -258,4 +266,29 @@ export function createWebview() {
   );
   webview.nodeintegration = true;
   return webview;
+}
+
+function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 100): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    let timer: NodeJS.Timeout;
+    const observer = new MutationObserver((m) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(true);
+      }, interval);
+    });
+
+    observer.observe(target, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+    });
+
+    setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`timeout ${timeout}ms`));
+    }, timeout);
+  });
 }

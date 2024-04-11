@@ -1,13 +1,4 @@
-import {
-  Modal,
-  Setting,
-  TFile,
-  ButtonComponent,
-  Notice,
-  TFolder,
-  FrontMatterCache,
-  debounce,
-} from "obsidian";
+import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache, debounce } from "obsidian";
 import * as electron from "electron";
 import BetterExportPdfPlugin from "./main";
 import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
@@ -158,12 +149,13 @@ export class ExportConfigModal extends Modal {
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
     const conf = config ?? this.config;
     const el = element ?? this.previewDiv;
-    console.log(conf);
     const width = PageSize?.[conf["pageSise"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
     const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
-    this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
-    this.preview.style.width = `calc(${scale} * 100%)`;
-    this.preview.style.height = `calc(${scale} * 100%)`;
+    if (this.preview) {
+      this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
+      this.preview.style.width = `calc(${scale} * 100%)`;
+      this.preview.style.height = `calc(${scale} * 100%)`;
+    }
   }
 
   async calcWebviewSize() {
