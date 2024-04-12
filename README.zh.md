@@ -51,12 +51,11 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 可以实现类似 `3 / 5` 页码效果。详见[`<webview>.printToPDF(options)`](https://www.electronjs.org/docs/latest/api/webview-tag#webviewprinttopdfoptions)。
 
-
 可以是任何合法的 HTML 片段，例如添加`base64`格式的图片：
 
 ```html
 <div style="width: 100vw;font-size:10px;text-align:center;">
-  <img height="10px" width="10px" src="data:image/svg+xml;base64,xxx..."/>
+  <img height="10px" width="10px" src="data:image/svg+xml;base64,xxx..." />
   <span class="title"></span>
 </div>
 ```
@@ -65,7 +64,6 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 
 - `headerTemplate`
 - `footerTemplate`
-
 
 ### 自定义导出样式
 
@@ -81,9 +79,10 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 ```
 
 ### 导出背景
-默认情况下，导出的PDF会删除主题所得带背景色，如果你需要这个背景色，可以`插件设置 > Print background` 配置中打开它。
 
-### 添加PDF元数据
+默认情况下，导出的 PDF 会删除主题所得带背景色，如果你需要这个背景色，可以`插件设置 > Print background` 配置中打开它。
+
+### 添加 PDF 元数据
 
 可以通过配置文档的 `frontMatter` 给 PDF 添加元数据，支持的字段项有：
 
@@ -94,8 +93,6 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 - `updated_at`
 - `creator`
 - `producer`
-
-
 
 ### 多文件导出
 
@@ -149,4 +146,7 @@ toc: true
 
 如果这个插件帮到了您，请点击 Star 或者我喝一杯奶茶吧！
 
+<div>
 <img src="./assets/sponsor-chat.png" width="300px"/>
+<img src="./assets/sponsor-alipay.png" width="300px"/>
+</div>
