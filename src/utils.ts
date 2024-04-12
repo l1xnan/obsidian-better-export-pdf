@@ -66,7 +66,7 @@ export function modifyDest(doc: Document) {
   return data;
 }
 
-export function modifyAnchors(doc: Document, dest: Map<string, string>, basename: string) {
+export function fixAnchors(doc: Document, dest: Map<string, string>, basename: string) {
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
     if (anchor?.length > 0) {
@@ -127,4 +127,11 @@ export function traverseFolder(path: TFolder | TFile): TFile[] {
     arr.push(...traverseFolder(item as TFolder));
   }
   return arr;
+}
+
+// copy element attributes
+export function copyAttributes(node: HTMLElement, attributes: NamedNodeMap) {
+  Array.from(attributes).forEach((attr) => {
+    node.setAttribute(attr.name, attr.value);
+  });
 }

@@ -1,6 +1,6 @@
 import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, FrontMatterCache, TFolder } from "obsidian";
 import { TConfig } from "./modal";
-import { modifyAnchors, modifyDest, waitFor } from "./utils";
+import { copyAttributes, fixAnchors, modifyDest, waitFor } from "./utils";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -206,6 +206,7 @@ export async function renderMarkdown(
   });
   if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
     try {
+      await waitFor(() => false, 3000);
       await waitForDomChange(viewEl);
     } catch (error) {
       console.warn(error);
@@ -216,6 +217,8 @@ export async function renderMarkdown(
       }
     }
   }
+
+  fixCanvasToImage(viewEl);
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
@@ -231,25 +234,36 @@ export async function renderMarkdown(
 
 export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
-  modifyAnchors(doc, dest, title);
-  modifyEmbedSpan(doc);
+  fixAnchors(doc, dest, title);
+  fixEmbedSpan(doc);
 }
 
-export function modifyEmbedSpan(doc: Document) {
+export function fixEmbedSpan(doc: Document) {
   const spans = doc.querySelectorAll("span.markdown-embed");
 
   spans.forEach((span: HTMLElement) => {
     const newDiv = document.createElement("div");
 
-    // copy attributes
-    Array.from(span.attributes).forEach((attr) => {
-      newDiv.setAttribute(attr.name, attr.value);
-    });
+    copyAttributes(newDiv, span.attributes);
 
     newDiv.innerHTML = span.innerHTML;
 
     span.parentNode?.replaceChild(newDiv, span);
   });
+}
+
+// TODO: base64 to canvas
+// TODO: light render canvas
+export function fixCanvasToImage(el: HTMLElement) {
+  for (const canvas of Array.from(el.querySelectorAll("canvas"))) {
+    const data = canvas.toDataURL();
+    const img = document.createElement("img");
+    img.src = data;
+    copyAttributes(img, canvas.attributes);
+    img.className = "__canvas__";
+
+    canvas.replaceWith(img);
+  }
 }
 
 export function createWebview() {

@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
 import BetterExportPdfPlugin from "./main";
+
 function setAttributes(element: HTMLTextAreaElement, attributes: { [x: string]: string }) {
   for (const key in attributes) {
     element.setAttribute(key, attributes[key]);
@@ -85,8 +86,6 @@ export default class ConfigSettingTab extends PluginSettingTab {
         }),
       );
 
-
-			
     new Setting(containerEl).setName("Max headings level of the outline").addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(["1", "2", "3", "4", "5", "6"].map((level) => [level, `h${level}`])))
