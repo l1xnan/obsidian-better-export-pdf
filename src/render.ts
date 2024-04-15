@@ -206,16 +206,20 @@ export async function renderMarkdown(
   });
   if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
     try {
-      await waitFor(() => false, 3000);
-      await waitForDomChange(viewEl);
+      await waitFor(() => false, 2000);
     } catch (error) {
-      console.warn(error);
-      try {
-        await waitFor(() => false, 1000);
-      } catch (error) {
-        console.warn(error);
-      }
+      console.warn("wait 2s");
     }
+    // try {
+    //   await waitForDomChange(viewEl);
+    // } catch (error) {
+    //   console.warn(error);
+    //   try {
+    //     await waitFor(() => false, 1000);
+    //   } catch (error) {
+    //     console.warn(error);
+    //   }
+    // }
   }
 
   fixCanvasToImage(viewEl);
