@@ -145,11 +145,9 @@ This plugin takes a lot of work to maintain and continue adding features. If you
 
 <div style="text-align:center">
  <a href="https://www.buymeacoffee.com/l1xnan"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=nathangeorge&button_colour=6a8696&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00"></a>
+
+[WeChat or Alipay](./README.zh.md#赞助)
 </div>
 
 ---
 
-<div style="text-align:center">
-  <img src="./assets/sponsor-chat.png" width="150px"/>
-  <img src="./assets/sponsor-alipay.png" width="150px"/>
-</div>
