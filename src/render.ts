@@ -228,21 +228,14 @@ export async function renderMarkdown(
 export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
-  fixEmbedSpan(doc);
+  encodeEmbeds(doc);
 }
 
-export function fixEmbedSpan(doc: Document) {
-  const spans = doc.querySelectorAll("span.markdown-embed");
+export function encodeEmbeds(doc: Document) {
 
-  spans.forEach((span: HTMLElement) => {
-    const newDiv = document.createElement("div");
+  const spans = [...doc.querySelectorAll("span.markdown-embed")].reverse();
+  spans.forEach((span: HTMLElement) => span.innerHTML = btoa(span.innerHTML));  
 
-    copyAttributes(newDiv, span.attributes);
-
-    newDiv.innerHTML = span.innerHTML;
-
-    span.parentNode?.replaceChild(newDiv, span);
-  });
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
