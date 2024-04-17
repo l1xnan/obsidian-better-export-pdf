@@ -178,6 +178,7 @@ export async function renderMarkdown(
   await MarkdownRenderer.render(app, lines.join("\n"), viewEl, file.path, comp);
   // @ts-ignore
   // (app: App: param: T) => T
+  // MarkdownPostProcessorContext
   await MarkdownRenderer.postProcess(app, {
     docId: generateDocId(16),
     sourcePath: file.path,
@@ -204,22 +205,10 @@ export async function renderMarkdown(
 
     el.removeAttribute("href");
   });
-  if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
-    try {
-      await waitFor(() => false, 2000);
-    } catch (error) {
-      console.warn("wait 2s");
-    }
-    // try {
-    //   await waitForDomChange(viewEl);
-    // } catch (error) {
-    //   console.warn(error);
-    //   try {
-    //     await waitFor(() => false, 1000);
-    //   } catch (error) {
-    //     console.warn(error);
-    //   }
-    // }
+  try {
+    await fixWaitRender(data, viewEl);
+  } catch (error) {
+    console.warn("wait timeout");
   }
 
   fixCanvasToImage(viewEl);
@@ -254,6 +243,17 @@ export function fixEmbedSpan(doc: Document) {
 
     span.parentNode?.replaceChild(newDiv, span);
   });
+}
+
+export async function fixWaitRender(data: string, viewEl: HTMLElement) {
+  if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
+    await sleep(2000);
+  }
+  try {
+    await waitForDomChange(viewEl);
+  } catch (error) {
+    await sleep(1000);
+  }
 }
 
 // TODO: base64 to canvas

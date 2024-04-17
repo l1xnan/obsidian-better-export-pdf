@@ -99,13 +99,15 @@ export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
       } else if (timeout > 0 && Date.now() - startTime >= timeout) {
         reject(new Error("Timeout exceeded"));
       } else {
-        setTimeout(poll, 500);
+        setTimeout(poll, 100);
       }
     };
 
     poll();
   });
 }
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const px2mm = (px: number) => {
   return Math.round(px * 0.26458333333719);
