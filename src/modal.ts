@@ -206,9 +206,16 @@ export class ExportConfigModal extends Modal {
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
         document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
 
+				function atob_utf8(string) { 
+          const latin = atob(string); 
+          return new TextDecoder('utf-8').decode(
+            Uint8Array.from({ length: latin.length },(_, index) => latin.charCodeAt(index))
+          ) 
+        }
+
 		    function decodeBase64(encodedString) {
           try {
-            return atob(encodedString);
+            return atob_utf8(encodedString);
           } catch (e) {
             // If atob fails, it's likely not base64 encoded, so return the original string
             return encodedString;
