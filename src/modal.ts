@@ -206,9 +206,9 @@ export class ExportConfigModal extends Modal {
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
         document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
 
-				function atob_utf8(string) { 
+        function atob_utf8(string) { 
           const latin = atob(string); 
-          return new TextDecoder('utf-8').decode(
+          return new TextDecoder().decode(
             Uint8Array.from({ length: latin.length },(_, index) => latin.charCodeAt(index))
           ) 
         }
