@@ -205,7 +205,40 @@ export class ExportConfigModal extends Modal {
         await this.preview.executeJavaScript(`
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
         document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
-				
+
+				function atob_utf8(string) { 
+          const latin = atob(string); 
+          return new TextDecoder('utf-8').decode(
+            Uint8Array.from({ length: latin.length },(_, index) => latin.charCodeAt(index))
+          ) 
+        }
+
+		    function decodeBase64(encodedString) {
+          try {
+            return atob_utf8(encodedString);
+          } catch (e) {
+            // If atob fails, it's likely not base64 encoded, so return the original string
+            return encodedString;
+          }
+        }
+        
+        // Function to recursively decode and replace innerHTML of span.markdown-embed elements
+        function decodeAndReplaceEmbed(element) {
+          if (element.classList.contains("markdown-embed")) {
+            // Decode the innerHTML
+            const decodedContent = decodeBase64(element.innerHTML);
+            // Replace the innerHTML with the decoded content
+            element.innerHTML = decodedContent;
+            // Check if the new content contains further span.markdown-embed elements
+            const newEmbeds = element.querySelectorAll("span.markdown-embed");
+            newEmbeds.forEach(decodeAndReplaceEmbed);
+          }
+        }
+        
+        // Start the process with all span.markdown-embed elements in the document
+        const spans = document.querySelectorAll("span.markdown-embed");
+        spans.forEach(decodeAndReplaceEmbed);
+
         document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
         document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
         document.body.addClass("theme-light");
