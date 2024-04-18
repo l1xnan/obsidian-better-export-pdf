@@ -9,7 +9,7 @@ import { PageSize } from "./constant";
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
 export interface TConfig {
-  pageSise: PageSizeType | "Custom";
+  pageSize: PageSizeType | "Custom";
   pageWidth?: string;
   pageHeight?: string;
 
@@ -57,7 +57,7 @@ export class ExportConfigModal extends Modal {
     this.file = file;
     this.completed = false;
     this.config = {
-      pageSise: "A4",
+      pageSize: "A4",
       marginType: "1",
       showTitle: plugin.settings.showTitle ?? true,
       open: true,
@@ -149,7 +149,7 @@ export class ExportConfigModal extends Modal {
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
     const conf = config ?? this.config;
     const el = element ?? this.previewDiv;
-    const width = PageSize?.[conf["pageSise"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
+    const width = PageSize?.[conf["pageSize"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
     const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
     if (this.preview) {
       this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
@@ -173,7 +173,7 @@ export class ExportConfigModal extends Modal {
   async togglePrintSize() {
     const sizeEl = document.querySelector("#print-size") as HTMLDivElement | undefined;
     if (sizeEl) {
-      if (this.config["pageSise"] == "Custom") {
+      if (this.config["pageSize"] == "Custom") {
         sizeEl.style.visibility = "visible";
       } else {
         sizeEl.style.visibility = "hidden";
@@ -326,9 +326,9 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
-        .setValue(this.config.pageSise as string)
+        .setValue(this.config.pageSize as string)
         .onChange(async (value: string) => {
-          this.config["pageSise"] = value as PageSizeType;
+          this.config["pageSize"] = value as PageSizeType;
           if (value == "Custom") {
             sizeEl.settingEl.hidden = false;
           } else {
@@ -369,7 +369,7 @@ export class ExportConfigModal extends Modal {
           });
       });
 
-    if (this.config["pageSise"] != "Custom") {
+    if (this.config["pageSize"] != "Custom") {
       sizeEl.settingEl.hidden = true;
     }
     new Setting(contentEl)

@@ -368,8 +368,8 @@ export async function exportToPDF(
   doc: Document,
   frontMatter?: FrontMatterCache,
 ) {
-  let pageSize = config["pageSise"] as PageSizeType;
-  if (config["pageSise"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
+  let pageSize = config["pageSize"] as PageSizeType;
+  if (config["pageSize"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
     pageSize = {
       width: parseFloat(config["pageWidth"] ?? "0") / 25.4,
       height: parseFloat(config["pageHeight"] ?? "0") / 25.4,
