@@ -234,8 +234,12 @@ export function fixDoc(doc: Document, title: string) {
 export function encodeEmbeds(doc: Document) {
 
   const spans = [...doc.querySelectorAll("span.markdown-embed")].reverse();
-  spans.forEach((span: HTMLElement) => span.innerHTML = btoa(span.innerHTML));  
+  spans.forEach((span: HTMLElement) => span.innerHTML = btoa_utf8(span.innerHTML));  
 
+}
+
+function btoa_utf8(string) { 
+  return btoa( String.fromCharCode( ...new TextEncoder('utf-8').encode(string))) 
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
