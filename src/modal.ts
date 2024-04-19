@@ -470,7 +470,7 @@ export class ExportConfigModal extends Modal {
       });
     btmEl.settingEl.hidden = this.config["marginType"] != "3";
 
-    new Setting(contentEl).setName("Downscale precent").addSlider((slider) => {
+    new Setting(contentEl).setName("Downscale percent").addSlider((slider) => {
       slider
         .setLimits(0, 100, 1)
         .setValue(this.config["scale"] as number)
