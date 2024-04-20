@@ -446,11 +446,11 @@ export async function exportToPDF(
   }
 }
 
-export async function getOutputFile(filename: string) {
+export async function getOutputFile(filename: string, isTimestamp?: boolean) {
   // @ts-ignore
   const result = await electron.remote.dialog.showSaveDialog({
     title: "Export to PDF",
-    defaultPath: filename + ".pdf",
+    defaultPath: filename + (isTimestamp ? "-" + Date.now() : "") + ".pdf",
     filters: [
       { name: "All Files", extensions: ["*"] },
       { name: "PDF", extensions: ["pdf"] },

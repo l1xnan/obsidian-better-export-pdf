@@ -142,6 +142,16 @@ export default class ConfigSettingTab extends PluginSettingTab {
       this.plugin.saveSettings();
     });
 
+    new Setting(containerEl)
+      .setName("Add timestamp")
+      .setDesc("Add timestamp to output file name")
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.isTimestamp).onChange(async (value) => {
+          this.plugin.settings.isTimestamp = value;
+          await this.plugin.saveSettings();
+        });
+      });
+
     new Setting(containerEl).setName("Debug").setHeading();
     new Setting(containerEl)
       .setName("Debug mode")

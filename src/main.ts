@@ -20,6 +20,7 @@ export interface BetterExportPdfPluginSettings {
 
   displayMetadata: boolean;
 
+  isTimestamp: boolean;
   debug: boolean;
 }
 
@@ -37,6 +38,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
 
   displayMetadata: false,
   debug: false,
+  isTimestamp: false,
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
