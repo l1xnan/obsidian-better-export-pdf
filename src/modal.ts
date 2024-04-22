@@ -208,9 +208,13 @@ export class ExportConfigModal extends Modal {
         getAllStyles().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
-        if (this.config.cssSnippet) {
-          const cssSnippet = (await fs.readFile(this.config.cssSnippet, { encoding: "utf8" })) as string;
-          await this.preview.insertCSS(cssSnippet);
+        if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+          try {
+            const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+            await this.preview.insertCSS(cssSnippet);
+          } catch (error) {
+            console.warn(error);
+          }
         }
         await this.preview.executeJavaScript(`
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
