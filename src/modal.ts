@@ -5,6 +5,8 @@ import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMat
 import { exportToPDF, getOutputFile } from "./pdf";
 import { mm2px, px2mm, traverseFolder } from "./utils";
 import { PageSize } from "./constant";
+import path from "path";
+import * as fs from "fs/promises";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -25,6 +27,8 @@ export interface TConfig {
   marginBottom?: string;
   marginLeft?: string;
   marginRight?: string;
+
+  cssSnippet?: string;
 }
 
 type Callback = (conf: TConfig) => void;
@@ -69,6 +73,7 @@ export class ExportConfigModal extends Modal {
       marginRight: "10",
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
+      cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
   }
@@ -199,9 +204,14 @@ export class ExportConfigModal extends Modal {
       this.preview = e.appendChild(webview);
       this.preview.addEventListener("dom-ready", async (e) => {
         this.completed = true;
+
         getAllStyles().forEach(async (css) => {
           await this.preview.insertCSS(css);
         });
+        if (this.config.cssSnippet) {
+          const cssSnippet = (await fs.readFile(this.config.cssSnippet, { encoding: "utf8" })) as string;
+          await this.preview.insertCSS(cssSnippet);
+        }
         await this.preview.executeJavaScript(`
         document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
         document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
@@ -514,10 +524,39 @@ export class ExportConfigModal extends Modal {
           this.config["open"] = value;
         }),
     );
+
+    const snippets = this.cssSnippets();
+
+    if (Object.keys(snippets).length > 0) {
+      new Setting(contentEl).setName("CSS snippets").addDropdown((dropdown) => {
+        dropdown
+          .addOption("0", "Not select")
+          .addOptions(snippets)
+          .setValue(this.config["cssSnippet"] as string)
+          .onChange(async (value: string) => {
+            this.config["cssSnippet"] = value;
+          });
+      });
+    }
   }
 
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+  }
+
+  cssSnippets(): Record<string, string> {
+    // @ts-ignore
+    const { snippets, enabledSnippets } = this.app?.customCss ?? {};
+    // @ts-ignore
+    const basePath = this.app.vault.adapter.basePath;
+    return Object.fromEntries(
+      snippets
+        ?.filter((item: string) => !enabledSnippets.has(item))
+        .map((name: string) => {
+          const file = path.join(basePath, ".obsidian/snippets", name + ".css");
+          return [file, name];
+        }),
+    );
   }
 }
