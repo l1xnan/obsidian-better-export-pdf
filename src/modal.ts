@@ -200,6 +200,9 @@ export class ExportConfigModal extends Modal {
       if (this.config.cssSnippet && this.config.cssSnippet != "0") {
         try {
           const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+          // remove `@media print { ... }`
+          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+          await this.preview.insertCSS(printCss);
           await this.preview.insertCSS(cssSnippet);
         } catch (error) {
           console.warn(error);
