@@ -1,6 +1,6 @@
-import { MarkdownRenderer, MarkdownView, TFile, Component, Notice, App, FrontMatterCache, TFolder } from "obsidian";
+import { App, Component, FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import { TConfig } from "./modal";
-import { copyAttributes, fixAnchors, modifyDest, waitFor } from "./utils";
+import { copyAttributes, fixAnchors, modifyDest } from "./utils";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -233,7 +233,7 @@ export function fixDoc(doc: Document, title: string) {
 
 export function encodeEmbeds(doc: Document) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
-  spans.forEach((span: HTMLElement) => (span.innerHTML = btoa_utf8(span.innerHTML)));
+  spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
 }
 
 function btoa_utf8(string: string) {

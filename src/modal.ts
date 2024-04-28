@@ -1,10 +1,10 @@
-import { Modal, Setting, TFile, ButtonComponent, Notice, TFolder, FrontMatterCache, debounce } from "obsidian";
 import * as electron from "electron";
-import BetterExportPdfPlugin from "./main";
-import { renderMarkdown, getAllStyles, createWebview, getPatchStyle, getFrontMatter, fixDoc } from "./render";
-import { exportToPDF, getOutputFile } from "./pdf";
-import { mm2px, px2mm, traverseFolder } from "./utils";
+import { ButtonComponent, FrontMatterCache, Modal, Notice, Setting, TFile, TFolder, debounce } from "obsidian";
 import { PageSize } from "./constant";
+import BetterExportPdfPlugin from "./main";
+import { exportToPDF, getOutputFile } from "./pdf";
+import { createWebview, fixDoc, getAllStyles, getFrontMatter, getPatchStyle, renderMarkdown } from "./render";
+import { mm2px, px2mm, traverseFolder } from "./utils";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -226,7 +226,7 @@ export class ExportConfigModal extends Modal {
         function decodeAndReplaceEmbed(element) {
           if (element.classList.contains("markdown-embed")) {
             // Decode the innerHTML
-            const decodedContent = decodeBase64(element.innerHTML);
+            const decodedContent = decodeURIComponent(element.innerHTML);
             // Replace the innerHTML with the decoded content
             element.innerHTML = decodedContent;
             // Check if the new content contains further span.markdown-embed elements
