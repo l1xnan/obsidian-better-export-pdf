@@ -236,10 +236,6 @@ export function encodeEmbeds(doc: Document) {
   spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
 }
 
-function btoa_utf8(string: string) {
-  return btoa(String.fromCharCode(...new TextEncoder().encode(string)));
-}
-
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
   if (data.includes("```dataview") || data.includes("```gEvent") || data.includes("![[")) {
     await sleep(2000);
