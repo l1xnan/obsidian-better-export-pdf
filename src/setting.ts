@@ -152,6 +152,16 @@ export default class ConfigSettingTab extends PluginSettingTab {
         });
       });
 
+    new Setting(containerEl)
+      .setName("Select css snippets")
+      .setDesc("Select the css snippet that are not enabled")
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.enabledCss).onChange(async (value) => {
+          this.plugin.settings.enabledCss = value;
+          await this.plugin.saveSettings();
+        });
+      });
+
     new Setting(containerEl).setName("Debug").setHeading();
     new Setting(containerEl)
       .setName("Debug mode")

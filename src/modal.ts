@@ -508,7 +508,7 @@ export class ExportConfigModal extends Modal {
 
     const snippets = this.cssSnippets();
 
-    if (Object.keys(snippets).length > 0) {
+    if (Object.keys(snippets).length > 0 && this.plugin.settings.enabledCss) {
       new Setting(contentEl).setName("CSS snippets").addDropdown((dropdown) => {
         dropdown
           .addOption("0", "Not select")
