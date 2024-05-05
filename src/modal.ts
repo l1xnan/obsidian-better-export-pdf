@@ -5,6 +5,8 @@ import BetterExportPdfPlugin from "./main";
 import { exportToPDF, getOutputFile } from "./pdf";
 import { createWebview, fixDoc, getAllStyles, getFrontMatter, getPatchStyle, renderMarkdown } from "./render";
 import { mm2px, px2mm, traverseFolder } from "./utils";
+import path from "path";
+import * as fs from "fs/promises";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -25,6 +27,8 @@ export interface TConfig {
   marginBottom?: string;
   marginLeft?: string;
   marginRight?: string;
+
+  cssSnippet?: string;
 }
 
 type Callback = (conf: TConfig) => void;
@@ -69,6 +73,7 @@ export class ExportConfigModal extends Modal {
       marginRight: "10",
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
+      cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
   }
@@ -180,7 +185,56 @@ export class ExportConfigModal extends Modal {
       }
     }
   }
+  async appendWebview(e: HTMLDivElement, render = true) {
+    if (render) {
+      await this.renderFiles();
+    }
+    const webview = createWebview();
+    this.preview = e.appendChild(webview);
+    this.preview.addEventListener("dom-ready", async (e) => {
+      this.completed = true;
+      getAllStyles().forEach(async (css) => {
+        await this.preview.insertCSS(css);
+      });
+      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+        try {
+          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+          // remove `@media print { ... }`
+          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+          await this.preview.insertCSS(printCss);
+          await this.preview.insertCSS(cssSnippet);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+      await this.preview.executeJavaScript(`
+      document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
+      document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
+      
+      // Function to recursively decode and replace innerHTML of span.markdown-embed elements
+      function decodeAndReplaceEmbed(element) {
+				// Replace the innerHTML with the decoded content
+				element.innerHTML = decodeURIComponent(element.innerHTML);
+				// Check if the new content contains further span.markdown-embed elements
+				const newEmbeds = element.querySelectorAll("span.markdown-embed");
+				newEmbeds.forEach(decodeAndReplaceEmbed);
+      }
+      
+      // Start the process with all span.markdown-embed elements in the document
+      document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
 
+      document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
+      document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
+      document.body.addClass("theme-light");
+      document.body.removeClass("theme-dark");
+      document.title = \`${this.title}\`;
+      `);
+      getPatchStyle().forEach(async (css) => {
+        await this.preview.insertCSS(css);
+      });
+      this.calcWebviewSize();
+    });
+  }
   async onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
@@ -193,57 +247,16 @@ export class ExportConfigModal extends Modal {
     this.frontMatter = { title };
     this.title = title;
 
-    const appendWebview = async (e: HTMLDivElement) => {
-      await this.renderFiles();
-      const webview = createWebview();
-      this.preview = e.appendChild(webview);
-      this.preview.addEventListener("dom-ready", async (e) => {
-        this.completed = true;
-        getAllStyles().forEach(async (css) => {
-          await this.preview.insertCSS(css);
-        });
-        await this.preview.executeJavaScript(`
-        document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
-        document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
-
-        // Function to recursively decode and replace innerHTML of span.markdown-embed elements
-        function decodeAndReplaceEmbed(element) {
-          // Replace the innerHTML with the decoded content
-          element.innerHTML = decodeURIComponent(element.innerHTML);
-          // Check if the new content contains further span.markdown-embed elements
-          const newEmbeds = element.querySelectorAll("span.markdown-embed");
-          newEmbeds.forEach(decodeAndReplaceEmbed);
-        }
-        
-        // Start the process with all span.markdown-embed elements in the document
-        document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
-
-        document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
-        document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
-        document.body.addClass("theme-light");
-        document.body.removeClass("theme-dark");
-        document.title = \`${title}\`;
-        `);
-        getPatchStyle().forEach(async (css) => {
-          await this.preview.insertCSS(css);
-        });
-        this.calcWebviewSize();
-      });
-    };
-
-    const previewDiv = wrapper.createDiv({ attr: { style: "flex:auto; position:relative;" } }, async (el) => {
+    this.previewDiv = wrapper.createDiv({ attr: { style: "flex:auto; position:relative;" } }, async (el) => {
       el.empty();
       const resizeObserver = new ResizeObserver(() => {
         this.calcPageSize(el);
       });
       resizeObserver.observe(el);
-
-      await appendWebview(el);
+      await this.appendWebview(el);
     });
 
-    this.previewDiv = previewDiv;
-
-    previewDiv.createDiv({
+    this.previewDiv.createDiv({
       attr: {
         id: "print-size",
         style:
@@ -290,8 +303,8 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Refresh").onClick(async () => {
-        previewDiv.empty();
-        await appendWebview(previewDiv);
+        this.previewDiv.empty();
+        await this.appendWebview(this.previewDiv);
       });
       fullWidthButton(button);
     });
@@ -381,9 +394,8 @@ export class ExportConfigModal extends Modal {
           });
       });
 
-    if (this.config["pageSize"] != "Custom") {
-      sizeEl.settingEl.hidden = true;
-    }
+    sizeEl.settingEl.hidden = this.config["pageSize"] !== "Custom";
+
     new Setting(contentEl)
       .setName("Margin")
       .setDesc("The unit is millimeters.")
@@ -493,10 +505,41 @@ export class ExportConfigModal extends Modal {
           this.config["open"] = value;
         }),
     );
+
+    const snippets = this.cssSnippets();
+
+    if (Object.keys(snippets).length > 0) {
+      new Setting(contentEl).setName("CSS snippets").addDropdown((dropdown) => {
+        dropdown
+          .addOption("0", "Not select")
+          .addOptions(snippets)
+          .setValue(this.config["cssSnippet"] as string)
+          .onChange(async (value: string) => {
+            this.config["cssSnippet"] = value;
+            this.previewDiv.empty();
+            await this.appendWebview(this.previewDiv, false);
+          });
+      });
+    }
   }
 
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+  }
+
+  cssSnippets(): Record<string, string> {
+    // @ts-ignore
+    const { snippets, enabledSnippets } = this.app?.customCss ?? {};
+    // @ts-ignore
+    const basePath = this.app.vault.adapter.basePath;
+    return Object.fromEntries(
+      snippets
+        ?.filter((item: string) => !enabledSnippets.has(item))
+        .map((name: string) => {
+          const file = path.join(basePath, ".obsidian/snippets", name + ".css");
+          return [file, name];
+        }),
+    );
   }
 }
