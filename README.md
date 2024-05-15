@@ -143,7 +143,7 @@ In the export dialog, select `Custom` for **Page Size** and set **Margin** to `N
 
 This plugin takes a lot of work to maintain and continue adding features. If you want to fund the continued development of this plugin you can do so here:
 
-<div style="text-align:center">
+<div align="center">
  <a href="https://www.buymeacoffee.com/l1xnan"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=nathangeorge&button_colour=6a8696&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00"></a>
 
 [PayPal](https://paypal.me/l1xnan) or [WeChat or Alipay](./README.zh.md#赞助)

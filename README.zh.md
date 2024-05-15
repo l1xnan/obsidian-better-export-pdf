@@ -146,7 +146,7 @@ toc: true
 
 如果这个插件帮到了您，请点击 Star 或者我喝一杯奶茶吧！
 
-<div>
+<div align="center">
 <img src="./assets/sponsor-chat.png" width="300px"/>
 <img src="./assets/sponsor-alipay.png" width="300px"/>
 </div>
