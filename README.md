@@ -77,6 +77,10 @@ If you want to further customize the PDF export style, you can add custom CSS in
 }
 ```
 
+### Select Disabled CSS Snippts
+
+First, enable the `Select CSS snippets` option in the plugin configuration. This will allow you to see the `CSS snippets` option in the modal for exporting PDFs. From there, you can choose CSS snippets that have not been globally enabled in the `Appearance > CSS Fragments` section.
+
 ### Add PDF metadata
 
 PDF Metadata can be added to through frontMatter of the configuration document. Supported field items are:
@@ -147,7 +151,7 @@ This plugin takes a lot of work to maintain and continue adding features. If you
  <a href="https://www.buymeacoffee.com/l1xnan"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=nathangeorge&button_colour=6a8696&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00"></a>
 
 [PayPal](https://paypal.me/l1xnan) or [WeChat or Alipay](./README.zh.md#赞助)
+
 </div>
 
 ---
-
