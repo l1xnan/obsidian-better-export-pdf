@@ -71,7 +71,11 @@ If you want to further customize the PDF export style, you can add custom CSS in
 ```css
 @media print {
   body {
-    font-size: 20px !important;
+    --font-interface-override: "Times New Roman" !important;
+    --font-text-override: "Times New Roman" !important;
+    --font-print-override: "Times New Roman" !important;
+    --font-monospace-override: "Consolas" !important;
+    --font-text-size: 20px !important;
     font-family: "Times New Roman" !important;
   }
 }

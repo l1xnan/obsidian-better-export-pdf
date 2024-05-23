@@ -72,7 +72,11 @@ Better Export PDF 是一个 Obsidian PDF 导出增强插件，与官方的 PDF �
 ```css
 @media print {
   body {
-    font-size: 20px !important;
+    --font-interface-override: "霞鹜文楷" !important;
+    --font-text-override: "霞鹜文楷" !important;
+    --font-print-override: "霞鹜文楷" !important;
+    --font-monospace-override: "霞鹜文楷等宽" !important;
+    --font-text-size: 20px !important;
     font-family: "思源宋体" !important;
   }
 }
