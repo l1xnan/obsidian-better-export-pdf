@@ -1,7 +1,7 @@
-import { App, MarkdownView, Plugin, PluginManifest, TFile, TFolder, debounce } from "obsidian";
+import { App, MarkdownView, Plugin, PluginManifest, TFile, TFolder } from "obsidian";
+import i18n, { Lang } from "./i18n";
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
-import i18n, { Lang } from "./i18n";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -79,23 +79,23 @@ export default class BetterExportPdfPlugin extends Plugin {
         return true;
       },
     });
-    this.addCommand({
-      id: "better-export-pdf:with-prev-setting",
-      name: this.i18n.exportCurrentFileWithPrevious,
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const file = view?.file;
-        if (!file) {
-          return false;
-        }
-        if (checking) {
-          return true;
-        }
-        new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+    // this.addCommand({
+    //   id: "better-export-pdf:with-prev-setting",
+    //   name: this.i18n.exportCurrentFileWithPrevious,
+    //   checkCallback: (checking: boolean) => {
+    //     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    //     const file = view?.file;
+    //     if (!file) {
+    //       return false;
+    //     }
+    //     if (checking) {
+    //       return true;
+    //     }
+    //     new ExportConfigModal(this, file, this.settings?.prevConfig).open();
 
-        return true;
-      },
-    });
+    //     return true;
+    //   },
+    // });
   }
 
   registerSetting() {
