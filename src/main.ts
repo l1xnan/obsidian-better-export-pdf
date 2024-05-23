@@ -1,6 +1,7 @@
-import { MarkdownView, Plugin, TFile, TFolder } from "obsidian";
+import { App, MarkdownView, Plugin, PluginManifest, TFile, TFolder, debounce } from "obsidian";
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
+import i18n, { Lang } from "./i18n";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -45,6 +46,12 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
 
 export default class BetterExportPdfPlugin extends Plugin {
   settings: BetterExportPdfPluginSettings;
+  i18n: Lang;
+
+  constructor(app: App, manifest: PluginManifest) {
+    super(app, manifest);
+    this.i18n = i18n.current;
+  }
 
   async onload() {
     await this.loadSettings();
@@ -57,7 +64,24 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerCommand() {
     this.addCommand({
       id: "export-current-file-to-pdf",
-      name: "Export current file to PDF",
+      name: this.i18n.exportCurrentFile,
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        const file = view?.file;
+        if (!file) {
+          return false;
+        }
+        if (checking) {
+          return true;
+        }
+        new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+
+        return true;
+      },
+    });
+    this.addCommand({
+      id: "better-export-pdf:with-prev-setting",
+      name: this.i18n.exportCurrentFileWithPrevious,
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         const file = view?.file;
