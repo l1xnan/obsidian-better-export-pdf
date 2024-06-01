@@ -24,6 +24,7 @@
     "typescript": "5.4.5"
   },
   "dependencies": {
+    "deepmerge": "^4.3.1",
     "juice": "^9.1.0",
     "pdf-lib": "^1.17.1"
   }

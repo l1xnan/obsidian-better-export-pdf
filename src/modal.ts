@@ -7,6 +7,7 @@ import { createWebview, fixDoc, getAllStyles, getFrontMatter, getPatchStyle, ren
 import { mm2px, px2mm, traverseFolder } from "./utils";
 import path from "path";
 import * as fs from "fs/promises";
+import i18n, { Lang } from "./i18n";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -53,6 +54,7 @@ export class ExportConfigModal extends Modal {
   doc: Document;
   title: string;
   frontMatter: FrontMatterCache;
+  i18n: Lang;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, config?: TConfig) {
     super(plugin.app);
@@ -60,6 +62,8 @@ export class ExportConfigModal extends Modal {
     this.plugin = plugin;
     this.file = file;
     this.completed = false;
+    this.i18n = i18n.current;
+
     this.config = {
       pageSize: "A4",
       marginType: "1",
@@ -319,7 +323,7 @@ export class ExportConfigModal extends Modal {
   }
 
   private generateForm(contentEl: HTMLDivElement) {
-    new Setting(contentEl).setName("Include file name as title").addToggle((toggle) =>
+    new Setting(contentEl).setName(this.i18n.exportDialog.filenameAsTitle).addToggle((toggle) =>
       toggle
         .setTooltip("Include file name as title")
         .setValue(this.config["showTitle"])
@@ -348,7 +352,7 @@ export class ExportConfigModal extends Modal {
       "Ledger",
       "Custom",
     ];
-    new Setting(contentEl).setName("Page size").addDropdown((dropdown) => {
+    new Setting(contentEl).setName(this.i18n.exportDialog.pageSize).addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(pageSizes.map((size) => [size, size])))
         .setValue(this.config.pageSize as string)
@@ -397,7 +401,7 @@ export class ExportConfigModal extends Modal {
     sizeEl.settingEl.hidden = this.config["pageSize"] !== "Custom";
 
     new Setting(contentEl)
-      .setName("Margin")
+      .setName(this.i18n.exportDialog.margin)
       .setDesc("The unit is millimeters.")
       .addDropdown((dropdown) => {
         dropdown
@@ -461,7 +465,7 @@ export class ExportConfigModal extends Modal {
       });
     btmEl.settingEl.hidden = this.config["marginType"] != "3";
 
-    new Setting(contentEl).setName("Downscale percent").addSlider((slider) => {
+    new Setting(contentEl).setName(this.i18n.exportDialog.downscalePercent).addSlider((slider) => {
       slider
         .setLimits(0, 100, 1)
         .setValue(this.config["scale"] as number)
@@ -470,7 +474,7 @@ export class ExportConfigModal extends Modal {
           slider.showTooltip();
         });
     });
-    new Setting(contentEl).setName("Landscape").addToggle((toggle) =>
+    new Setting(contentEl).setName(this.i18n.exportDialog.landscape).addToggle((toggle) =>
       toggle
         .setTooltip("landscape")
         .setValue(this.config["landscape"])
@@ -479,7 +483,7 @@ export class ExportConfigModal extends Modal {
         }),
     );
 
-    new Setting(contentEl).setName("Display header").addToggle((toggle) =>
+    new Setting(contentEl).setName(this.i18n.exportDialog.displayHeader).addToggle((toggle) =>
       toggle
         .setTooltip("Display header")
         .setValue(this.config["displayHeader"])
@@ -488,7 +492,7 @@ export class ExportConfigModal extends Modal {
         }),
     );
 
-    new Setting(contentEl).setName("Display footer").addToggle((toggle) =>
+    new Setting(contentEl).setName(this.i18n.exportDialog.displayFooter).addToggle((toggle) =>
       toggle
         .setTooltip("Display footer")
         .setValue(this.config["displayFooter"])
@@ -497,7 +501,7 @@ export class ExportConfigModal extends Modal {
         }),
     );
 
-    new Setting(contentEl).setName("Open after export").addToggle((toggle) =>
+    new Setting(contentEl).setName(this.i18n.exportDialog.openAfterExport).addToggle((toggle) =>
       toggle
         .setTooltip("Open the exported file after exporting.")
         .setValue(this.config["open"])
@@ -509,7 +513,7 @@ export class ExportConfigModal extends Modal {
     const snippets = this.cssSnippets();
 
     if (Object.keys(snippets).length > 0 && this.plugin.settings.enabledCss) {
-      new Setting(contentEl).setName("CSS snippets").addDropdown((dropdown) => {
+      new Setting(contentEl).setName(this.i18n.exportDialog.cssSnippets).addDropdown((dropdown) => {
         dropdown
           .addOption("0", "Not select")
           .addOptions(snippets)
