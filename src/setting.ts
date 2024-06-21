@@ -1,4 +1,5 @@
 import { App, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
+import i18n, { Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 
 function setAttributes(element: HTMLTextAreaElement, attributes: { [x: string]: string }) {
@@ -20,10 +21,12 @@ export const renderBuyMeACoffeeBadge = (contentEl: HTMLElement | DocumentFragmen
 
 export default class ConfigSettingTab extends PluginSettingTab {
   plugin: BetterExportPdfPlugin;
+  i18n: Lang;
 
   constructor(app: App, plugin: BetterExportPdfPlugin) {
     super(app, plugin);
     this.plugin = plugin;
+    this.i18n = i18n.current;
   }
 
   display(): void {
@@ -38,16 +41,16 @@ export default class ConfigSettingTab extends PluginSettingTab {
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
 
-    new Setting(containerEl).setName("Add file name as title").addToggle((toggle) =>
+    new Setting(containerEl).setName(this.i18n.settings.showTitle).addToggle((toggle) =>
       toggle
-        .setTooltip("Add filename as title")
+        .setTooltip(this.i18n.settings.showTitle)
         .setValue(this.plugin.settings.showTitle)
         .onChange(async (value) => {
           this.plugin.settings.showTitle = value;
           this.plugin.saveSettings();
         }),
     );
-    new Setting(containerEl).setName("Display header").addToggle((toggle) =>
+    new Setting(containerEl).setName(this.i18n.settings.displayHeader).addToggle((toggle) =>
       toggle
         .setTooltip("Display header")
         .setValue(this.plugin.settings.displayHeader)
@@ -56,7 +59,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
           this.plugin.saveSettings();
         }),
     );
-    new Setting(containerEl).setName("Display footer").addToggle((toggle) =>
+    new Setting(containerEl).setName(this.i18n.settings.displayFooter).addToggle((toggle) =>
       toggle
         .setTooltip("Display footer")
         .setValue(this.plugin.settings.displayFooter)
@@ -67,7 +70,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     );
 
     new Setting(containerEl)
-      .setName("Print background")
+      .setName(this.i18n.settings.printBackground)
       .setDesc("Whether to print background graphics")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.printBackground).onChange(async (value) => {
@@ -78,7 +81,9 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Generate tagged PDF")
-      .setDesc("Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.")
+      .setDesc(
+        "Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.",
+      )
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.generateTaggedPDF).onChange(async (value) => {
           this.plugin.settings.generateTaggedPDF = value;
@@ -86,7 +91,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         }),
       );
 
-    new Setting(containerEl).setName("Max headings level of the outline").addDropdown((dropdown) => {
+    new Setting(containerEl).setName(this.i18n.settings.maxLevel).addDropdown((dropdown) => {
       dropdown
         .addOptions(Object.fromEntries(["1", "2", "3", "4", "5", "6"].map((level) => [level, `h${level}`])))
         .setValue(this.plugin.settings.maxLevel)
@@ -97,7 +102,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     });
 
     new Setting(containerEl)
-      .setName("PDF metadata")
+      .setName(this.i18n.settings.displayMetadata)
       .setDesc("Add frontMatter(title, author, keywords, subject creator, etc) to pdf metadata")
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.displayMetadata).onChange(async (value) => {
@@ -111,11 +116,11 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const headerContentAreaSetting = new Setting(containerEl);
     headerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
     headerContentAreaSetting
-      .setName("Header Template")
+      .setName(this.i18n.settings.headerTemplate)
       .setDesc(
         "HTML template for the print header. " +
           "Should be valid HTML markup with following classes used to inject printing values into them: " +
-          "date (formatted print date), title (document title), url (document location), pageNumber (current page number) and totalPages (total pages in the document). For example, <span class=\"title\"></span> would generate span containing the title.",
+          'date (formatted print date), title (document title), url (document location), pageNumber (current page number) and totalPages (total pages in the document). For example, <span class="title"></span> would generate span containing the title.',
       );
     const hederContentArea = new TextAreaComponent(headerContentAreaSetting.controlEl);
 
@@ -130,7 +135,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     const footerContentAreaSetting = new Setting(containerEl);
     footerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
     footerContentAreaSetting
-      .setName("Footer Template")
+      .setName(this.i18n.settings.footerTemplate)
       .setDesc("HTML template for the print footer. Should use the same format as the headerTemplate.");
     const footerContentArea = new TextAreaComponent(footerContentAreaSetting.controlEl);
 
@@ -143,7 +148,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     });
 
     new Setting(containerEl)
-      .setName("Add timestamp")
+      .setName(this.i18n.settings.isTimestamp)
       .setDesc("Add timestamp to output file name")
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.isTimestamp).onChange(async (value) => {
@@ -153,7 +158,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Select css snippets")
+      .setName(this.i18n.settings.enabledCss)
       .setDesc("Select the css snippet that are not enabled")
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.enabledCss).onChange(async (value) => {

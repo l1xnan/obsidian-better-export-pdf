@@ -12,4 +12,16 @@ export default {
     openAfterExport: "Open after export",
     cssSnippets: "CSS snippets",
   },
+  settings: {
+    showTitle: "Add file name as title",
+    displayHeader: "Display headers",
+    displayFooter: "Display footer",
+    printBackground: "Print background",
+    maxLevel: "Max headings level of the outline",
+    displayMetadata: "PDF metadata",
+    headerTemplate: "Header Template",
+    footerTemplate: "Footer Template",
+    isTimestamp: "Add timestamp",
+    enabledCss: "Enable select css snippets",
+  },
 };
