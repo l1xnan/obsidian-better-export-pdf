@@ -17,7 +17,7 @@ export default {
   },
 
   settings: {
-		showTitle: "将笔记名作为标题",
+    showTitle: "将笔记名作为标题",
     displayHeader: "显示页眉",
     displayFooter: "显示页脚",
     printBackground: "打印背景",
@@ -27,5 +27,6 @@ export default {
     footerTemplate: "页脚模板",
     isTimestamp: "文件名添加时间戳",
     enabledCss: "启用CSS片段选择",
-	},
+    debugMode: "调试模式",
+  },
 } satisfies Lang;

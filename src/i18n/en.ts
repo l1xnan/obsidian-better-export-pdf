@@ -23,5 +23,6 @@ export default {
     footerTemplate: "Footer Template",
     isTimestamp: "Add timestamp",
     enabledCss: "Enable select css snippets",
+    debugMode: "Debug Mode",
   },
 };
