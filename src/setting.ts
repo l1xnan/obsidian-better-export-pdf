@@ -169,7 +169,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName("Debug").setHeading();
     new Setting(containerEl)
-      .setName("Debug mode")
+      .setName(this.i18n.settings.debugMode)
       .setDesc("This is useful for troubleshooting.")
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.debug).onChange(async (value) => {
