@@ -68,7 +68,7 @@ export function modifyDest(doc: Document) {
 
 
 function convertMapKeysToLowercase(map: Map<string, string>) {
-  return new Map(Array.from(map).map(([key, value]) => [key.toLowerCase(), value]));
+  return new Map(Array.from(map).map(([key, value]) => [key?.toLowerCase(), value]));
 }
 
 export function fixAnchors(doc: Document, dest: Map<string, string>, basename: string) {
