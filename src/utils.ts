@@ -66,7 +66,6 @@ export function modifyDest(doc: Document) {
   return data;
 }
 
-
 function convertMapKeysToLowercase(map: Map<string, string>) {
   return new Map(Array.from(map).map(([key, value]) => [key?.toLowerCase(), value]));
 }
@@ -76,6 +75,11 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
 
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
+
+    if (anchor?.startsWith("^")) {
+      el.href = el.dataset.href?.toLowerCase() as string;
+    }
+
     if (anchor?.length > 0) {
       if (title?.length > 0 && title != basename) {
         return;
