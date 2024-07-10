@@ -174,14 +174,20 @@ export async function renderMarkdown(
     lines[idx] = `<span id="^${key}" class="blockid"></span>\n` + lines[idx];
   });
 
-  const fragment = createFragment();
+  const fragment = {
+    children: undefined,
+    appendChild(e: DocumentFragment) {
+      this.children = e?.children;
+      throw new Error("exit");
+    },
+  } as unknown as HTMLElement;
 
   const promises: AyncFnType[] = [];
   try {
     // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
     // but errors occur during recent postProcess handling, thus achieving the goal of avoiding postProcess handling.
-    await MarkdownRenderer.render(app, lines.join("\n"), fragment as unknown as HTMLElement, file.path, comp);
+    await MarkdownRenderer.render(app, lines.join("\n"), fragment, file.path, comp);
   } catch (error) {
     /* empty */
   }
