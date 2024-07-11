@@ -30,6 +30,8 @@ export interface TConfig {
   marginRight?: string;
 
   cssSnippet?: string;
+
+  multiple?: boolean;
 }
 
 type Callback = (conf: TConfig) => void;
@@ -52,6 +54,7 @@ export class ExportConfigModal extends Modal {
   previewDiv: HTMLDivElement;
   completed: boolean;
   doc: Document;
+  docs: Document[];
   title: string;
   frontMatter: FrontMatterCache;
   i18n: Lang;
@@ -63,6 +66,7 @@ export class ExportConfigModal extends Modal {
     this.file = file;
     this.completed = false;
     this.i18n = i18n.current;
+    this.docs = [];
 
     this.config = {
       pageSize: "A4",
@@ -126,33 +130,41 @@ export class ExportConfigModal extends Modal {
         await leaf.openFile(this.file);
       }
     }
-    this.doc = docs[0];
-    if (docs.length > 1) {
-      const sections = [];
-      for (const doc of docs) {
-        const element = doc.querySelector(".markdown-preview-view");
-
-        if (element) {
-          const section = this.doc.createElement("section");
-          Array.from(element.children).forEach((child) => {
-            section.appendChild(this.doc.importNode(child, true));
-          });
-
-          sections.push(section);
-        }
-      }
-      const root = this.doc.querySelector(".markdown-preview-view");
-      if (root) {
-        root.innerHTML = "";
-      }
-      sections.forEach((section) => {
-        root?.appendChild(section);
+    if (!this.config.multiple) {
+      this.mergeDoc(docs);
+    } else {
+      this.docs = docs.map((doc) => {
+        return fixDoc(doc, doc.title);
       });
     }
 
-    fixDoc(this.doc, this.title);
-
     return this.doc;
+  }
+
+  mergeDoc(docs: Document[]) {
+    this.doc = docs[0];
+    const sections = [];
+    for (const doc of docs) {
+      const element = doc.querySelector(".markdown-preview-view");
+
+      if (element) {
+        const section = this.doc.createElement("section");
+        Array.from(element.children).forEach((child) => {
+          section.appendChild(this.doc.importNode(child, true));
+        });
+
+        sections.push(section);
+      }
+    }
+    const root = this.doc.querySelector(".markdown-preview-view");
+    if (root) {
+      root.innerHTML = "";
+    }
+    sections.forEach((section) => {
+      root?.appendChild(section);
+    });
+
+    fixDoc(this.doc, this.title);
   }
 
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
@@ -189,10 +201,13 @@ export class ExportConfigModal extends Modal {
       }
     }
   }
-  async appendWebview(e: HTMLDivElement, render = true) {
-    if (render) {
-      await this.renderFiles();
-    }
+
+  /**
+   * append webview
+   * @param e HTMLDivElement
+   * @param render Rerender or not
+   */
+  async appendWebview(e: HTMLDivElement, doc: Document) {
     const webview = createWebview();
     this.preview = e.appendChild(webview);
     this.preview.addEventListener("dom-ready", async (e) => {
@@ -212,7 +227,7 @@ export class ExportConfigModal extends Modal {
         }
       }
       await this.preview.executeJavaScript(`
-      document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
+      document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
       document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
       
       // Function to recursively decode and replace innerHTML of span.markdown-embed elements
@@ -239,6 +254,13 @@ export class ExportConfigModal extends Modal {
       this.calcWebviewSize();
     });
   }
+  async appendWebviews(e: HTMLDivElement, render = true) {
+    if (render) {
+      await this.renderFiles();
+    }
+
+    this.appendWebview(e, this.doc);
+  }
   async onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
@@ -257,7 +279,7 @@ export class ExportConfigModal extends Modal {
         this.calcPageSize(el);
       });
       resizeObserver.observe(el);
-      await this.appendWebview(el);
+      await this.appendWebviews(el);
     });
 
     this.previewDiv.createDiv({
@@ -308,7 +330,7 @@ export class ExportConfigModal extends Modal {
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Refresh").onClick(async () => {
         this.previewDiv.empty();
-        await this.appendWebview(this.previewDiv);
+        await this.appendWebviews(this.previewDiv);
       });
       fullWidthButton(button);
     });
@@ -521,7 +543,7 @@ export class ExportConfigModal extends Modal {
           .onChange(async (value: string) => {
             this.config["cssSnippet"] = value;
             this.previewDiv.empty();
-            await this.appendWebview(this.previewDiv, false);
+            await this.appendWebviews(this.previewDiv, false);
           });
       });
     }

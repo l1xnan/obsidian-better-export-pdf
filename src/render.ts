@@ -254,6 +254,7 @@ export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
   encodeEmbeds(doc);
+  return doc
 }
 
 export function encodeEmbeds(doc: Document) {

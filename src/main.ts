@@ -123,6 +123,28 @@ export default class BetterExportPdfPlugin extends Plugin {
         });
       }),
     );
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
+        if (file instanceof TFolder) {
+          let title = "Export each file to PDF";
+          if (isDev) {
+            title = `${title} (dev)`;
+          }
+          menu.addItem((item) => {
+            item
+              .setTitle(title)
+              .setIcon("download")
+              .setSection("action")
+              .onClick(async () => {
+                new ExportConfigModal(this, file, {
+                  ...(this.settings?.prevConfig as TConfig),
+                  multiple: true,
+                }).open();
+              });
+          });
+        }
+      }),
+    );
   }
   onunload() {}
   async loadSettings() {
