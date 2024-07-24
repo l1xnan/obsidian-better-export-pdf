@@ -158,10 +158,9 @@ export async function renderMarkdown(
   // @ts-ignore
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
+  const title = extra?.title ?? file.basename;
   if (config.showTitle) {
-    const h = viewEl.createEl("h1", {
-      text: extra?.title ?? file.basename,
-    });
+    const h = viewEl.createEl("h1", { text: title });
     h.id = extra?.id ?? "";
   }
 
@@ -247,6 +246,7 @@ export async function renderMarkdown(
   const endTime = new Date().getTime();
 
   console.log(`render time:${endTime - startTime}ms`);
+  doc.title = title;
   return doc;
 }
 
@@ -254,7 +254,7 @@ export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
   encodeEmbeds(doc);
-  return doc
+  return doc;
 }
 
 export function encodeEmbeds(doc: Document) {

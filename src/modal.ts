@@ -1,13 +1,13 @@
 import * as electron from "electron";
+import * as fs from "fs/promises";
 import { ButtonComponent, FrontMatterCache, Modal, Notice, Setting, TFile, TFolder, debounce } from "obsidian";
+import path from "path";
 import { PageSize } from "./constant";
+import i18n, { Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 import { exportToPDF, getOutputFile } from "./pdf";
 import { createWebview, fixDoc, getAllStyles, getFrontMatter, getPatchStyle, renderMarkdown } from "./render";
 import { mm2px, px2mm, traverseFolder } from "./utils";
-import path from "path";
-import * as fs from "fs/promises";
-import i18n, { Lang } from "./i18n";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -83,6 +83,7 @@ export class ExportConfigModal extends Modal {
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
+      multiple: config?.multiple,
     } as TConfig;
   }
 
@@ -202,31 +203,8 @@ export class ExportConfigModal extends Modal {
     }
   }
 
-  /**
-   * append webview
-   * @param e HTMLDivElement
-   * @param render Rerender or not
-   */
-  async appendWebview(e: HTMLDivElement, doc: Document) {
-    const webview = createWebview();
-    this.preview = e.appendChild(webview);
-    this.preview.addEventListener("dom-ready", async (e) => {
-      this.completed = true;
-      getAllStyles().forEach(async (css) => {
-        await this.preview.insertCSS(css);
-      });
-      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
-        try {
-          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
-          // remove `@media print { ... }`
-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
-          await this.preview.insertCSS(printCss);
-          await this.preview.insertCSS(cssSnippet);
-        } catch (error) {
-          console.warn(error);
-        }
-      }
-      await this.preview.executeJavaScript(`
+  makeWebviewJs(doc: Document) {
+    return `
       document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
       document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
       
@@ -247,9 +225,36 @@ export class ExportConfigModal extends Modal {
       document.body.addClass("theme-light");
       document.body.removeClass("theme-dark");
       document.title = \`${this.title}\`;
-      `);
+      `;
+  }
+  /**
+   * append webview
+   * @param e HTMLDivElement
+   * @param render Rerender or not
+   */
+  async appendWebview(e: HTMLDivElement, doc: Document) {
+    const webview = createWebview();
+    const preview = e.appendChild(webview);
+    this.preview = preview;
+    preview.addEventListener("dom-ready", async (e) => {
+      this.completed = true;
+      getAllStyles().forEach(async (css) => {
+        await preview.insertCSS(css);
+      });
+      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+        try {
+          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+          // remove `@media print { ... }`
+          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+          await preview.insertCSS(printCss);
+          await preview.insertCSS(cssSnippet);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+      await preview.executeJavaScript(this.makeWebviewJs(doc));
       getPatchStyle().forEach(async (css) => {
-        await this.preview.insertCSS(css);
+        await preview.insertCSS(css);
       });
       this.calcWebviewSize();
     });
@@ -258,8 +263,17 @@ export class ExportConfigModal extends Modal {
     if (render) {
       await this.renderFiles();
     }
-
-    this.appendWebview(e, this.doc);
+    if (this.config.multiple) {
+      this.docs?.forEach((doc, i) => {
+        e.createDiv({
+          text: `${i}-${doc.title}`,
+          attr: { styleText: "color: gray" },
+        });
+        this.appendWebview(e, doc);
+      });
+    } else {
+      this.appendWebview(e, this.doc);
+    }
   }
   async onOpen() {
     this.contentEl.empty();
@@ -267,26 +281,43 @@ export class ExportConfigModal extends Modal {
 
     this.titleEl.setText("Export to PDF");
     const wrapper = this.contentEl.createDiv();
-    wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
+    wrapper.setAttribute("id", "better-export-pdf");
+    // wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
 
     const title = (this.file as TFile)?.basename ?? this.file?.name;
     this.frontMatter = { title };
     this.title = title;
 
-    this.previewDiv = wrapper.createDiv({ attr: { style: "flex:auto; position:relative;" } }, async (el) => {
-      el.empty();
-      const resizeObserver = new ResizeObserver(() => {
-        this.calcPageSize(el);
-      });
-      resizeObserver.observe(el);
-      await this.appendWebviews(el);
-    });
+    this.previewDiv = wrapper.createDiv(
+      {
+        attr: {
+          id: "better-export-pdf-preview",
+          // style: "flex:auto; position:relative;"
+        },
+      },
+      async (el) => {
+        el.empty();
+        const resizeObserver = new ResizeObserver(() => {
+          this.calcPageSize(el);
+        });
+        resizeObserver.observe(el);
+        await this.appendWebviews(el);
+      },
+    );
 
     this.previewDiv.createDiv({
       attr: {
         id: "print-size",
-        style:
-          "position:absolute;right:8px;top:8px;z-index:99;font-size:0.75rem;white-space:pre-wrap;text-align:right;visibility:hidden;",
+        style: `
+				position:absolute;
+				right:8px;
+				top:8px;
+				z-index:99;
+				font-size:0.75rem;
+				white-space:pre-wrap;
+				text-align:right;
+				visibility:hidden;
+					`,
       },
     });
     this.togglePrintSize();

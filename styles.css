@@ -1,3 +1,35 @@
 .markdown-preview-view > section:not(:first-child) {
   margin-top: calc(var(--p-spacing) * 2);
 }
+
+#better-export-pdf {
+  display: flex;
+  flex-direction: row;
+  height: 75vh;
+}
+
+#better-export-pdf-preview {
+  flex: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+#print-size {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 99;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  text-align: right;
+  visibility: hidden;
+}
+
+#better-export-pdf webview {
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
