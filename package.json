@@ -21,7 +21,7 @@
     "eslint": "^8.57.0",
     "obsidian": "^1.6.6",
     "tslib": "2.6.3",
-    "typescript": "5.5.3",
+    "typescript": "5.5.4",
     "typescript-eslint": "^7.16.0"
   },
   "dependencies": {
