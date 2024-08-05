@@ -61,6 +61,7 @@ export class ExportConfigModal extends Modal {
   title: string;
   frontMatter: FrontMatterCache;
   i18n: Lang;
+  scale: number;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiple?: boolean) {
     super(plugin.app);
@@ -70,6 +71,7 @@ export class ExportConfigModal extends Modal {
     this.completed = false;
     this.i18n = i18n.current;
     this.docs = [];
+    this.scale = 0.75;
     this.webviews = [];
     this.multiple = multiple;
 
@@ -170,39 +172,34 @@ export class ExportConfigModal extends Modal {
     const el = element ?? this.previewDiv;
     const width = PageSize?.[conf["pageSize"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
     const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
-    if (this.preview) {
-      this.preview.style.transform = `scale(${1 / scale},${1 / scale})`;
-      this.preview.style.width = `calc(${scale} * 100%)`;
-      this.preview.style.height = `calc(${scale} * 100%)`;
-    }
     this.webviews.forEach((wb) => {
       wb.style.transform = `scale(${1 / scale},${1 / scale})`;
       wb.style.width = `calc(${scale} * 100%)`;
       wb.style.height = `calc(${scale} * 100%)`;
     });
+    this.scale = scale;
+    return scale;
   }
 
   async calcWebviewSize() {
     await sleep(500);
-    const [width, height] = await this.preview.executeJavaScript(
-      "[document.body.offsetWidth, document.body.offsetHeight]",
-    );
-
-    const sizeEl = document.querySelector(".print-size");
-    if (sizeEl) {
-      sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
-    }
+    this.webviews.forEach(async (e, i) => {
+      const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
+      const sizeEl = e.parentNode?.querySelector(".print-size");
+      if (sizeEl) {
+        sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+      }
+    });
   }
 
   async togglePrintSize() {
-    const sizeEl = document.querySelector(".print-size") as HTMLDivElement | undefined;
-    if (sizeEl) {
+    document.querySelectorAll(".print-size")?.forEach((sizeEl: HTMLDivElement) => {
       if (this.config["pageSize"] == "Custom") {
         sizeEl.style.visibility = "visible";
       } else {
         sizeEl.style.visibility = "hidden";
       }
-    }
+    });
   }
 
   makeWebviewJs(doc: Document) {
@@ -235,7 +232,7 @@ export class ExportConfigModal extends Modal {
    * @param render Rerender or not
    */
   async appendWebview(e: HTMLDivElement, doc: Document) {
-    const webview = createWebview();
+    const webview = createWebview(this.scale);
     const preview = e.appendChild(webview);
     this.webviews.push(preview);
     this.preview = preview;
@@ -259,7 +256,6 @@ export class ExportConfigModal extends Modal {
       getPatchStyle().forEach(async (css) => {
         await preview.insertCSS(css);
       });
-      this.calcWebviewSize();
     });
   }
   async appendWebviews(e: HTMLDivElement, render = true) {
@@ -267,16 +263,20 @@ export class ExportConfigModal extends Modal {
       await this.renderFiles();
     }
     e.empty();
-    this.docs?.forEach(({ doc }, i) => {
-      if (this.multiple) {
-        e.createDiv({
-          text: `${i + 1}-${doc.title}`,
-          attr: { class: "filename" },
-        });
-      }
-      const div = e.createDiv();
-      this.appendWebview(div, doc);
-    });
+    await Promise.all(
+      this.docs?.map(async ({ doc }, i) => {
+        if (this.multiple) {
+          e.createDiv({
+            text: `${i + 1}-${doc.title}`,
+            attr: { class: "filename" },
+          });
+        }
+        const div = e.createDiv({ attr: { class: "webview-wrapper" } });
+        div.createDiv({ attr: { class: "print-size" } });
+        await this.appendWebview(div, doc);
+      }),
+    );
+    await this.calcWebviewSize();
   }
   async onOpen() {
     this.contentEl.empty();
@@ -294,10 +294,8 @@ export class ExportConfigModal extends Modal {
       });
       resizeObserver.observe(el);
       await this.appendWebviews(el);
+      this.togglePrintSize();
     });
-
-    this.previewDiv.createDiv({ attr: { class: "print-size" } });
-    this.togglePrintSize();
 
     const contentEl = wrapper.createDiv();
     contentEl.setAttribute("style", "width:320px;margin-left:16px;");

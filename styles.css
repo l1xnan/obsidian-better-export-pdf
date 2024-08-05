@@ -11,7 +11,13 @@
   flex-direction: column;
   overflow-x: hidden;
   overflow-y: scroll;
-	align-content: flex-start;
+  align-content: flex-start;
+}
+
+#better-export-pdf .pdf-preview .webview-wrapper {
+  position: relative;
+  height: 100%;
+  width: 100%;
 }
 
 #better-export-pdf .pdf-preview .print-size {

@@ -287,14 +287,14 @@ export function fixCanvasToImage(el: HTMLElement) {
   }
 }
 
-export function createWebview() {
+export function createWebview(scale = 1.25) {
   const webview = document.createElement("webview");
   webview.src = `app://obsidian.md/help.html`;
   webview.setAttribute(
     "style",
-    `height:calc(1/0.75 * 100%);
-     width: calc(1/0.75 * 100%);
-     transform: scale(0.75, 0.75);
+    `height:calc(${scale} * 100%);
+     width: calc(${scale} * 100%);
+     transform: scale(${1 / scale}, ${1 / scale});
      transform-origin: top left;
      border: 1px solid #f2f2f2;
     `,
