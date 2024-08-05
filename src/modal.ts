@@ -1,12 +1,12 @@
 import * as electron from "electron";
 import * as fs from "fs/promises";
-import { ButtonComponent, FrontMatterCache, Modal, Notice, Setting, TFile, TFolder, debounce } from "obsidian";
+import { ButtonComponent, FrontMatterCache, Modal, Setting, TFile, TFolder, debounce } from "obsidian";
 import path from "path";
 import { PageSize } from "./constant";
 import i18n, { Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
-import { exportToPDF, getOutputFile } from "./pdf";
-import { createWebview, fixDoc, getAllStyles, getFrontMatter, getPatchStyle, renderMarkdown } from "./render";
+import { exportToPDF, getOutputFile, getOutputPath } from "./pdf";
+import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown } from "./render";
 import { mm2px, px2mm, traverseFolder } from "./utils";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -34,6 +34,8 @@ export interface TConfig {
   multiple?: boolean;
 }
 
+export type DocType = { doc: Document; frontMatter?: FrontMatterCache; file: TFile };
+
 type Callback = (conf: TConfig) => void;
 
 function fullWidthButton(button: ButtonComponent) {
@@ -47,19 +49,20 @@ function setInputWidth(inputEl: HTMLInputElement) {
 export class ExportConfigModal extends Modal {
   config: TConfig;
   canceled: boolean;
+  multiple?: boolean;
   callback: Callback;
   plugin: BetterExportPdfPlugin;
   file: TFile | TFolder;
   preview: electron.WebviewTag;
+  webviews: electron.WebviewTag[];
   previewDiv: HTMLDivElement;
   completed: boolean;
-  doc: Document;
-  docs: Document[];
+  docs: DocType[];
   title: string;
   frontMatter: FrontMatterCache;
   i18n: Lang;
 
-  constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, config?: TConfig) {
+  constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiple?: boolean) {
     super(plugin.app);
     this.canceled = true;
     this.plugin = plugin;
@@ -67,6 +70,8 @@ export class ExportConfigModal extends Modal {
     this.completed = false;
     this.i18n = i18n.current;
     this.docs = [];
+    this.webviews = [];
+    this.multiple = multiple;
 
     this.config = {
       pageSize: "A4",
@@ -83,7 +88,6 @@ export class ExportConfigModal extends Modal {
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
-      multiple: config?.multiple,
     } as TConfig;
   }
 
@@ -94,25 +98,22 @@ export class ExportConfigModal extends Modal {
   async renderFiles() {
     const app = this.plugin.app;
 
-    const docs = [];
+    const docs: DocType[] = [];
     if (this.file instanceof TFolder) {
       const files = traverseFolder(this.file);
       for (const file of files) {
         docs.push(await renderMarkdown(app, file, this.config));
-        Object.assign(this.frontMatter, getFrontMatter(app, file));
       }
     } else {
-      const doc0 = await renderMarkdown(app, this.file, this.config);
-      docs.push(doc0);
-      const matter = getFrontMatter(app, this.file);
-      Object.assign(this.frontMatter, matter);
-      if (matter.toc) {
+      const { doc, frontMatter, file } = await renderMarkdown(app, this.file, this.config);
+      docs.push({ doc, frontMatter, file });
+      if (frontMatter.toc) {
         const cache = this.getFileCache(this.file as TFile);
         const files =
           cache?.links
             ?.map(({ link, displayText }) => {
               const id = crypto.randomUUID();
-              const elem = doc0.querySelector(`a[data-href="${link}"]`) as HTMLAnchorElement;
+              const elem = doc.querySelector(`a[data-href="${link}"]`) as HTMLAnchorElement;
               if (elem) {
                 elem.href = `#${id}`;
               }
@@ -125,39 +126,35 @@ export class ExportConfigModal extends Modal {
             .filter((item) => item.file instanceof TFile) ?? [];
         for (const item of files) {
           docs.push(await renderMarkdown(app, item.file, this.config, item));
-          Object.assign(this.frontMatter, getFrontMatter(app, item.file));
         }
         const leaf = this.app.workspace.getLeaf();
         await leaf.openFile(this.file);
       }
     }
-    if (!this.config.multiple) {
+    if (!this.multiple) {
       this.mergeDoc(docs);
-    } else {
-      this.docs = docs.map((doc) => {
-        return fixDoc(doc, doc.title);
-      });
     }
-
-    return this.doc;
+    this.docs = docs.map(({ doc, ...rest }) => {
+      return { ...rest, doc: fixDoc(doc, doc.title) };
+    });
   }
 
-  mergeDoc(docs: Document[]) {
-    this.doc = docs[0];
+  mergeDoc(docs: DocType[]) {
+    const { doc: doc0, frontMatter, file } = docs[0];
     const sections = [];
-    for (const doc of docs) {
+    for (const { doc } of docs) {
       const element = doc.querySelector(".markdown-preview-view");
 
       if (element) {
-        const section = this.doc.createElement("section");
+        const section = doc0.createElement("section");
         Array.from(element.children).forEach((child) => {
-          section.appendChild(this.doc.importNode(child, true));
+          section.appendChild(doc0.importNode(child, true));
         });
 
         sections.push(section);
       }
     }
-    const root = this.doc.querySelector(".markdown-preview-view");
+    const root = doc0.querySelector(".markdown-preview-view");
     if (root) {
       root.innerHTML = "";
     }
@@ -165,7 +162,7 @@ export class ExportConfigModal extends Modal {
       root?.appendChild(section);
     });
 
-    fixDoc(this.doc, this.title);
+    this.docs = [{ doc: doc0, frontMatter, file }];
   }
 
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
@@ -178,6 +175,11 @@ export class ExportConfigModal extends Modal {
       this.preview.style.width = `calc(${scale} * 100%)`;
       this.preview.style.height = `calc(${scale} * 100%)`;
     }
+    this.webviews.forEach((wb) => {
+      wb.style.transform = `scale(${1 / scale},${1 / scale})`;
+      wb.style.width = `calc(${scale} * 100%)`;
+      wb.style.height = `calc(${scale} * 100%)`;
+    });
   }
 
   async calcWebviewSize() {
@@ -186,14 +188,14 @@ export class ExportConfigModal extends Modal {
       "[document.body.offsetWidth, document.body.offsetHeight]",
     );
 
-    const sizeEl = document.querySelector("#print-size");
+    const sizeEl = document.querySelector(".print-size");
     if (sizeEl) {
       sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
     }
   }
 
   async togglePrintSize() {
-    const sizeEl = document.querySelector("#print-size") as HTMLDivElement | undefined;
+    const sizeEl = document.querySelector(".print-size") as HTMLDivElement | undefined;
     if (sizeEl) {
       if (this.config["pageSize"] == "Custom") {
         sizeEl.style.visibility = "visible";
@@ -224,7 +226,7 @@ export class ExportConfigModal extends Modal {
       document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
       document.body.addClass("theme-light");
       document.body.removeClass("theme-dark");
-      document.title = \`${this.title}\`;
+      document.title = \`${doc.title}\`;
       `;
   }
   /**
@@ -235,6 +237,7 @@ export class ExportConfigModal extends Modal {
   async appendWebview(e: HTMLDivElement, doc: Document) {
     const webview = createWebview();
     const preview = e.appendChild(webview);
+    this.webviews.push(preview);
     this.preview = preview;
     preview.addEventListener("dom-ready", async (e) => {
       this.completed = true;
@@ -263,63 +266,37 @@ export class ExportConfigModal extends Modal {
     if (render) {
       await this.renderFiles();
     }
-    if (this.config.multiple) {
-      this.docs?.forEach((doc, i) => {
+    e.empty();
+    this.docs?.forEach(({ doc }, i) => {
+      if (this.multiple) {
         e.createDiv({
-          text: `${i}-${doc.title}`,
-          attr: { styleText: "color: gray" },
+          text: `${i + 1}-${doc.title}`,
+          attr: { class: "filename" },
         });
-        this.appendWebview(e, doc);
-      });
-    } else {
-      this.appendWebview(e, this.doc);
-    }
+      }
+      const div = e.createDiv();
+      this.appendWebview(div, doc);
+    });
   }
   async onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
 
     this.titleEl.setText("Export to PDF");
-    const wrapper = this.contentEl.createDiv();
-    wrapper.setAttribute("id", "better-export-pdf");
-    // wrapper.setAttribute("style", "display: flex; flex-direction: row; height: 75vh;");
+    const wrapper = this.contentEl.createDiv({ attr: { id: "better-export-pdf" } });
 
     const title = (this.file as TFile)?.basename ?? this.file?.name;
-    this.frontMatter = { title };
-    this.title = title;
 
-    this.previewDiv = wrapper.createDiv(
-      {
-        attr: {
-          id: "better-export-pdf-preview",
-          // style: "flex:auto; position:relative;"
-        },
-      },
-      async (el) => {
-        el.empty();
-        const resizeObserver = new ResizeObserver(() => {
-          this.calcPageSize(el);
-        });
-        resizeObserver.observe(el);
-        await this.appendWebviews(el);
-      },
-    );
-
-    this.previewDiv.createDiv({
-      attr: {
-        id: "print-size",
-        style: `
-				position:absolute;
-				right:8px;
-				top:8px;
-				z-index:99;
-				font-size:0.75rem;
-				white-space:pre-wrap;
-				text-align:right;
-				visibility:hidden;
-					`,
-      },
+    this.previewDiv = wrapper.createDiv({ attr: { class: "pdf-preview" } }, async (el) => {
+      el.empty();
+      const resizeObserver = new ResizeObserver(() => {
+        this.calcPageSize(el);
+      });
+      resizeObserver.observe(el);
+      await this.appendWebviews(el);
     });
+
+    this.previewDiv.createDiv({ attr: { class: "print-size" } });
     this.togglePrintSize();
 
     const contentEl = wrapper.createDiv();
@@ -335,20 +312,28 @@ export class ExportConfigModal extends Modal {
       this.plugin.settings.prevConfig = this.config;
       await this.plugin.saveSettings();
 
-      if (this.completed) {
-        const outputFile = await getOutputFile(title, this.plugin.settings.isTimestamp);
-        if (outputFile) {
-          await exportToPDF(
-            outputFile,
-            { ...this.plugin.settings, ...this.config },
-            this.preview,
-            this.doc,
-            this.frontMatter,
+      if (this.multiple) {
+        const outputPath = await getOutputPath(title);
+        console.log("output:", outputPath);
+        if (outputPath) {
+          await Promise.all(
+            this.webviews.map(async (wb, i) => {
+              await exportToPDF(
+                `${outputPath}/${this.docs[i].file.basename}.pdf`,
+                { ...this.plugin.settings, ...this.config },
+                wb,
+                this.docs[i],
+              );
+            }),
           );
           this.close();
         }
       } else {
-        new Notice("dom not ready");
+        const outputFile = await getOutputFile(title, this.plugin.settings.isTimestamp);
+        if (outputFile) {
+          await exportToPDF(outputFile, { ...this.plugin.settings, ...this.config }, this.webviews[0], this.docs[0]);
+          this.close();
+        }
       }
     };
 
@@ -360,7 +345,6 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setHeading().addButton((button) => {
       button.setButtonText("Refresh").onClick(async () => {
-        this.previewDiv.empty();
         await this.appendWebviews(this.previewDiv);
       });
       fullWidthButton(button);
@@ -382,13 +366,14 @@ export class ExportConfigModal extends Modal {
         .setValue(this.config["showTitle"])
         .onChange(async (value) => {
           this.config["showTitle"] = value;
-
-          if (this.completed) {
-            await this.renderFiles();
-            this.preview?.executeJavaScript(`
-            document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(this.doc.body.innerHTML)}\`);
-            `);
-          }
+          this.webviews.forEach((wv) => {
+            wv.executeJavaScript(`
+              var _title = document.querySelector("h1.__title__");
+              if (_title) {
+              	_title.style.display = "${value ? "block" : "none"}"
+              }
+              `);
+          });
         }),
     );
     const pageSizes: (PageSizeType | "Custom")[] = [
@@ -573,7 +558,6 @@ export class ExportConfigModal extends Modal {
           .setValue(this.config["cssSnippet"] as string)
           .onChange(async (value: string) => {
             this.config["cssSnippet"] = value;
-            this.previewDiv.empty();
             await this.appendWebviews(this.previewDiv, false);
           });
       });

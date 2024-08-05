@@ -159,10 +159,11 @@ export async function renderMarkdown(
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
   const title = extra?.title ?? file.basename;
-  if (config.showTitle) {
-    const h = viewEl.createEl("h1", { text: title });
-    h.id = extra?.id ?? "";
-  }
+  viewEl.createEl("h1", { text: title }, (e) => {
+    e.addClass("__title__");
+    e.style.display = config.showTitle ? "block" : "none";
+    e.id = extra?.id ?? "";
+  });
 
   const cache = app.metadataCache.getFileCache(file);
 
@@ -243,11 +244,10 @@ export async function renderMarkdown(
   printEl.detach();
   comp.unload();
   printEl.remove();
-  const endTime = new Date().getTime();
-
-  console.log(`render time:${endTime - startTime}ms`);
   doc.title = title;
-  return doc;
+
+  console.log(`md render time:${new Date().getTime() - startTime}ms`);
+  return { doc, frontMatter, file };
 }
 
 export function fixDoc(doc: Document, title: string) {

@@ -1,23 +1,20 @@
-.markdown-preview-view > section:not(:first-child) {
-  margin-top: calc(var(--p-spacing) * 2);
-}
-
 #better-export-pdf {
   display: flex;
   flex-direction: row;
   height: 75vh;
 }
 
-#better-export-pdf-preview {
+#better-export-pdf .pdf-preview {
   flex: auto;
   position: relative;
   display: flex;
   flex-direction: column;
-	overflow-x: hidden;
-	overflow-y: scroll;
+  overflow-x: hidden;
+  overflow-y: scroll;
+	align-content: flex-start;
 }
 
-#print-size {
+#better-export-pdf .pdf-preview .print-size {
   position: absolute;
   right: 8px;
   top: 8px;
@@ -26,6 +23,19 @@
   white-space: pre-wrap;
   text-align: right;
   visibility: hidden;
+}
+
+#better-export-pdf .pdf-preview > div {
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
+
+#better-export-pdf .pdf-preview .filename {
+  color: var(--color-base-60);
+}
+#better-export-pdf .pdf-preview .filename:not(:first-child) {
+  padding-top: calc(var(--p-spacing));
 }
 
 #better-export-pdf webview {

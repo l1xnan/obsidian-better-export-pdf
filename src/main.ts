@@ -74,7 +74,7 @@ export default class BetterExportPdfPlugin extends Plugin {
         if (checking) {
           return true;
         }
-        new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+        new ExportConfigModal(this, file).open();
 
         return true;
       },
@@ -118,7 +118,7 @@ export default class BetterExportPdfPlugin extends Plugin {
             .setIcon("download")
             .setSection("action")
             .onClick(async () => {
-              new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+              new ExportConfigModal(this, file).open();
             });
         });
       }),
@@ -136,10 +136,7 @@ export default class BetterExportPdfPlugin extends Plugin {
               .setIcon("download")
               .setSection("action")
               .onClick(async () => {
-                new ExportConfigModal(this, file, {
-                  ...(this.settings?.prevConfig as TConfig),
-                  multiple: true,
-                }).open();
+                new ExportConfigModal(this, file, true).open();
               });
           });
         }
