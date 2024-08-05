@@ -49,7 +49,7 @@ function setInputWidth(inputEl: HTMLInputElement) {
 export class ExportConfigModal extends Modal {
   config: TConfig;
   canceled: boolean;
-  multiple?: boolean;
+  multiplePdf?: boolean;
   callback: Callback;
   plugin: BetterExportPdfPlugin;
   file: TFile | TFolder;
@@ -63,7 +63,7 @@ export class ExportConfigModal extends Modal {
   i18n: Lang;
   scale: number;
 
-  constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiple?: boolean) {
+  constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiplePdf?: boolean) {
     super(plugin.app);
     this.canceled = true;
     this.plugin = plugin;
@@ -73,7 +73,7 @@ export class ExportConfigModal extends Modal {
     this.docs = [];
     this.scale = 0.75;
     this.webviews = [];
-    this.multiple = multiple;
+    this.multiplePdf = multiplePdf;
 
     this.config = {
       pageSize: "A4",
@@ -133,7 +133,7 @@ export class ExportConfigModal extends Modal {
         await leaf.openFile(this.file);
       }
     }
-    if (!this.multiple) {
+    if (!this.multiplePdf) {
       this.mergeDoc(docs);
     }
     this.docs = docs.map(({ doc, ...rest }) => {
@@ -268,7 +268,7 @@ export class ExportConfigModal extends Modal {
     e.empty();
     await Promise.all(
       this.docs?.map(async ({ doc }, i) => {
-        if (this.multiple) {
+        if (this.multiplePdf) {
           e.createDiv({
             text: `${i + 1}-${doc.title}`,
             attr: { class: "filename" },
@@ -313,7 +313,7 @@ export class ExportConfigModal extends Modal {
       this.plugin.settings.prevConfig = this.config;
       await this.plugin.saveSettings();
 
-      if (this.multiple) {
+      if (this.multiplePdf) {
         const outputPath = await getOutputPath(title);
         console.log("output:", outputPath);
         if (outputPath) {
