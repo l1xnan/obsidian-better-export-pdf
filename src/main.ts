@@ -74,7 +74,7 @@ export default class BetterExportPdfPlugin extends Plugin {
         if (checking) {
           return true;
         }
-        new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+        new ExportConfigModal(this, file).open();
 
         return true;
       },
@@ -118,9 +118,28 @@ export default class BetterExportPdfPlugin extends Plugin {
             .setIcon("download")
             .setSection("action")
             .onClick(async () => {
-              new ExportConfigModal(this, file, this.settings?.prevConfig).open();
+              new ExportConfigModal(this, file).open();
             });
         });
+      }),
+    );
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
+        if (file instanceof TFolder) {
+          let title = "Export each file to PDF";
+          if (isDev) {
+            title = `${title} (dev)`;
+          }
+          menu.addItem((item) => {
+            item
+              .setTitle(title)
+              .setIcon("download")
+              .setSection("action")
+              .onClick(async () => {
+                new ExportConfigModal(this, file, true).open();
+              });
+          });
+        }
       }),
     );
   }

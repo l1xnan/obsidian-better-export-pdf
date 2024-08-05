@@ -158,12 +158,12 @@ export async function renderMarkdown(
   // @ts-ignore
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
-  if (config.showTitle) {
-    const h = viewEl.createEl("h1", {
-      text: extra?.title ?? file.basename,
-    });
-    h.id = extra?.id ?? "";
-  }
+  const title = extra?.title ?? file.basename;
+  viewEl.createEl("h1", { text: title }, (e) => {
+    e.addClass("__title__");
+    e.style.display = config.showTitle ? "block" : "none";
+    e.id = extra?.id ?? "";
+  });
 
   const cache = app.metadataCache.getFileCache(file);
 
@@ -244,16 +244,17 @@ export async function renderMarkdown(
   printEl.detach();
   comp.unload();
   printEl.remove();
-  const endTime = new Date().getTime();
+  doc.title = title;
 
-  console.log(`render time:${endTime - startTime}ms`);
-  return doc;
+  console.log(`md render time:${new Date().getTime() - startTime}ms`);
+  return { doc, frontMatter, file };
 }
 
 export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
   encodeEmbeds(doc);
+  return doc;
 }
 
 export function encodeEmbeds(doc: Document) {
@@ -286,14 +287,14 @@ export function fixCanvasToImage(el: HTMLElement) {
   }
 }
 
-export function createWebview() {
+export function createWebview(scale = 1.25) {
   const webview = document.createElement("webview");
   webview.src = `app://obsidian.md/help.html`;
   webview.setAttribute(
     "style",
-    `height:calc(1/0.75 * 100%);
-     width: calc(1/0.75 * 100%);
-     transform: scale(0.75, 0.75);
+    `height:calc(${scale} * 100%);
+     width: calc(${scale} * 100%);
+     transform: scale(${1 / scale}, ${1 / scale});
      transform-origin: top left;
      border: 1px solid #f2f2f2;
     `,

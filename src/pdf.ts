@@ -1,11 +1,11 @@
-import * as fs from "fs/promises";
 import electron, { WebviewTag } from "electron";
-import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFHexString, StandardFonts } from "pdf-lib";
+import * as fs from "fs/promises";
 import { FrontMatterCache } from "obsidian";
+import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
-import { TreeNode, getHeadingTree } from "./utils";
-import { PageSizeType, TConfig } from "./modal";
 import { BetterExportPdfPluginSettings } from "./main";
+import { DocType, PageSizeType, TConfig } from "./modal";
+import { TreeNode, getHeadingTree } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -365,9 +365,9 @@ export async function exportToPDF(
   outputFile: string,
   config: TConfig & BetterExportPdfPluginSettings,
   w: WebviewTag,
-  doc: Document,
-  frontMatter?: FrontMatterCache,
+  { doc, frontMatter }: DocType,
 ) {
+  console.log("output pdf:", outputFile);
   let pageSize = config["pageSize"] as PageSizeType;
   if (config["pageSize"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
     pageSize = {
@@ -462,4 +462,18 @@ export async function getOutputFile(filename: string, isTimestamp?: boolean) {
     return;
   }
   return result.filePath;
+}
+
+export async function getOutputPath(filename: string, isTimestamp?: boolean) {
+  // @ts-ignore
+  const result = await electron.remote.dialog.showOpenDialog({
+    title: "Export to PDF",
+    defaultPath: filename,
+    properties: ["openDirectory"],
+  });
+
+  if (result.canceled) {
+    return;
+  }
+  return result.filePaths[0];
 }
