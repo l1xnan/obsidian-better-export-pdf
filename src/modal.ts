@@ -168,9 +168,12 @@ export class ExportConfigModal extends Modal {
   }
 
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
-    const conf = config ?? this.config;
+    const { pageSize, pageWidth } = config ?? this.config;
     const el = element ?? this.previewDiv;
-    const width = PageSize?.[conf["pageSize"] as string]?.[0] ?? parseFloat(conf["pageWidth"] ?? "210");
+    let width = PageSize?.[pageSize as string]?.[0] ?? parseFloat(pageWidth as string);
+    if (isNaN(width)) {
+      width = 210;
+    }
     const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
     this.webviews.forEach((wb) => {
       wb.style.transform = `scale(${1 / scale},${1 / scale})`;
