@@ -38,6 +38,7 @@
 }
 
 #better-export-pdf .pdf-preview .filename {
+  font-size: 0.75rem;
   color: var(--color-base-60);
 }
 #better-export-pdf .pdf-preview .filename:not(:first-child) {
