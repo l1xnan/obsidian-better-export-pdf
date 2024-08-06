@@ -15,6 +15,7 @@ Compared to the official Export PDF feature:
 - 💥Support add PDF metadata from front matter
 - 🎇Export internal links within file
 - 🎈Export multiple Markdown files(folder or specified files) into one PDF file
+- 🌸Batch export multiple PDF files
 - 🍬Support exporting PDFs in any size, and can export all content onto a single page
 - ... ...
 
@@ -122,6 +123,10 @@ toc: true
 ```
 
 This allows the plugin to export the notes in the order of the internal links. The anchor point of the exported PDF table of contents supports clicking to jump.
+
+### Folder batch export
+
+Select the folder in the sidebar, right-click the menu `Export each file to PDF`, you can batch export each file of the entire folder to PDF file.
 
 ### Export as One Page
 
