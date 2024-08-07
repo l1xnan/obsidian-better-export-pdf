@@ -30,6 +30,9 @@ export function getHeadingTree(doc = document) {
   let prev = root;
 
   headings.forEach((heading: HTMLElement) => {
+    if (heading.style.display == "none") {
+      return;
+    }
     const level = parseInt(heading.tagName.slice(1));
 
     const link = heading.querySelector("a.md-print-anchor") as HTMLLinkElement;

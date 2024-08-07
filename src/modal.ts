@@ -367,13 +367,17 @@ export class ExportConfigModal extends Modal {
         .setValue(this.config["showTitle"])
         .onChange(async (value) => {
           this.config["showTitle"] = value;
-          this.webviews.forEach((wv) => {
+          this.webviews.forEach((wv, i) => {
             wv.executeJavaScript(`
               var _title = document.querySelector("h1.__title__");
               if (_title) {
-              	_title.style.display = "${value ? "block" : "none"}"
+              	_title.style.display = "${value ? "block" : "none"}";
               }
               `);
+            const _title = this.docs[i]?.doc?.querySelector("h1.__title__") as HTMLHeadingElement;
+            if (_title) {
+              _title.style.display = value ? "block" : "none";
+            }
           });
         }),
     );
