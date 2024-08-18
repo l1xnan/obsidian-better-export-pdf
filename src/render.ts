@@ -167,11 +167,25 @@ export async function renderMarkdown(
 
   const cache = app.metadataCache.getFileCache(file);
 
-  const lines = data?.split("\n") ?? [];
+  // const lines = data?.split("\n") ?? [];
+  // Object.entries(cache?.blocks ?? {}).forEach(([key, c]) => {
+  //   const idx = c.position.end.line;
+  //   lines[idx] = `<span id="^${key}" class="blockid"></span>\n` + lines[idx];
+  // });
 
-  Object.entries(cache?.blocks ?? {}).forEach(([key, c]) => {
-    const idx = c.position.end.line;
-    lines[idx] = `<span id="^${key}" class="blockid"></span>\n` + lines[idx];
+  const blocks = new Map(Object.entries(cache?.blocks ?? {}));
+  const lines = (data?.split("\n") ?? []).map((line, i) => {
+    for (const {
+      id,
+      position: { start, end },
+    } of blocks.values()) {
+      const blockid = `^${id}`;
+      if (line.includes(blockid) && i >= start.line && i <= end.line) {
+        blocks.delete(id);
+        return line.replace(blockid, `<span id="${blockid}" class="blockid"></span> ${blockid}`);
+      }
+    }
+    return line;
   });
 
   const fragment = {
