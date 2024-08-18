@@ -188,6 +188,11 @@ export async function renderMarkdown(
     return line;
   });
 
+  [...blocks.values()].forEach(({ id, position: { start, end } }) => {
+    const idx = start.line;
+    lines[idx] = `<span id="^${id}" class="blockid"></span>\n\n` + lines[idx];
+  });
+
   const fragment = {
     children: undefined,
     appendChild(e: DocumentFragment) {
