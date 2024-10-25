@@ -1,4 +1,4 @@
-import { App, MarkdownView, Plugin, PluginManifest, TFile, TFolder } from "obsidian";
+import { App, MarkdownView, Menu, Plugin, PluginManifest, TFile, TFolder } from "obsidian";
 import i18n, { Lang } from "./i18n";
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
@@ -126,18 +126,28 @@ export default class BetterExportPdfPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
         if (file instanceof TFolder) {
-          let title = "Export each file to PDF";
+          let title = "Export to PDF...";
           if (isDev) {
             title = `${title} (dev)`;
           }
           menu.addItem((item) => {
-            item
-              .setTitle(title)
-              .setIcon("download")
-              .setSection("action")
-              .onClick(async () => {
-                new ExportConfigModal(this, file, true).open();
-              });
+            item.setTitle(title).setIcon("lucide-folder-down").setSection("action");
+            // @ts-ignore
+            const subMenu: Menu = item.setSubmenu();
+            subMenu.addItem((item) =>
+              item
+                .setTitle("Export each file to PDF")
+                .setIcon("lucide-file-stack")
+                .onClick(async () => {
+                  new ExportConfigModal(this, file, true).open();
+                }),
+            );
+            subMenu.addItem((item) =>
+              item
+                .setTitle("Generate TOC.md file")
+                .setIcon("lucide-file-text")
+                .onClick(() => {}),
+            );
           });
         }
       }),
