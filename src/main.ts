@@ -163,7 +163,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     // @ts-ignore
     const basePath = this.app.vault.adapter.basePath;
     const toc = path.join(basePath, root.path, "_TOC_.md");
-    const content = `---\ntoc: true\n---\n`;
+    const content = `---\ntoc: true\ntitle: ${root.name}\n---\n`;
     await fs.writeFile(toc, content);
     if (root instanceof TFolder) {
       const files = traverseFolder(root);

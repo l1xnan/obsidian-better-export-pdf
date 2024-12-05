@@ -158,7 +158,7 @@ export async function renderMarkdown(
   // @ts-ignore
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
 
-  const title = extra?.title ?? file.basename;
+  const title = extra?.title ?? frontMatter?.title ?? file.basename;
   viewEl.createEl("h1", { text: title }, (e) => {
     e.addClass("__title__");
     e.style.display = config.showTitle ? "block" : "none";
