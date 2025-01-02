@@ -69,6 +69,11 @@ body {
     break-after: auto;
   }
 }
+
+img.__canvas__ {
+  width: 100% !important;
+  height: 100% !important;
+}
 `;
 
 export function getPatchStyle() {
