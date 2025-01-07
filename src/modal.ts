@@ -300,8 +300,7 @@ export class ExportConfigModal extends Modal {
       this.togglePrintSize();
     });
 
-    const contentEl = wrapper.createDiv();
-    contentEl.setAttribute("style", "width:320px;margin-left:16px;");
+    const contentEl = wrapper.createDiv({ attr: { class: "setting-wrapper" } });
     contentEl.addEventListener("keyup", (event) => {
       if (event.key === "Enter") {
         handleExport();

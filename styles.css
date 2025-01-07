@@ -50,3 +50,12 @@
   height: 100%;
   width: 100%;
 }
+
+#better-export-pdf .setting-wrapper {
+  width: 320px;
+  margin-left: 16px;
+}
+
+#better-export-pdf .setting-wrapper .setting-item[hidden] {
+  display: none;
+}
