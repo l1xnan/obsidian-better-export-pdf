@@ -2,6 +2,9 @@ import { App, MarkdownView, Menu, Plugin, PluginManifest, TFile, TFolder } from 
 import i18n, { Lang } from "./i18n";
 import { ExportConfigModal, TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
+import { traverseFolder } from "./utils";
+import * as fs from "fs/promises";
+import path from "path";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -146,13 +149,33 @@ export default class BetterExportPdfPlugin extends Plugin {
               item
                 .setTitle("Generate TOC.md file")
                 .setIcon("lucide-file-text")
-                .onClick(() => {}),
+                .onClick(async () => {
+                  await this.generateToc(file);
+                }),
             );
           });
         }
       }),
     );
   }
+
+  async generateToc(root: TFolder | TFile) {
+    // @ts-ignore
+    const basePath = this.app.vault.adapter.basePath;
+    const toc = path.join(basePath, root.path, "_TOC_.md");
+    const content = `---\ntoc: true\ntitle: ${root.name}\n---\n`;
+    await fs.writeFile(toc, content);
+    if (root instanceof TFolder) {
+      const files = traverseFolder(root);
+      for (const file of files) {
+        if (file.name == "_TOC_.md") {
+          continue;
+        }
+        await fs.appendFile(toc, `[[${file.path}]]\n`);
+      }
+    }
+  }
+
   onunload() {}
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

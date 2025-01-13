@@ -100,7 +100,7 @@ export class ExportConfigModal extends Modal {
   async renderFiles() {
     const app = this.plugin.app;
 
-    const docs: DocType[] = [];
+    let docs: DocType[] = [];
     if (this.file instanceof TFolder) {
       const files = traverseFolder(this.file);
       for (const file of files) {
@@ -134,7 +134,7 @@ export class ExportConfigModal extends Modal {
       }
     }
     if (!this.multiplePdf) {
-      this.mergeDoc(docs);
+      docs = this.mergeDoc(docs);
     }
     this.docs = docs.map(({ doc, ...rest }) => {
       return { ...rest, doc: fixDoc(doc, doc.title) };
@@ -164,7 +164,7 @@ export class ExportConfigModal extends Modal {
       root?.appendChild(section);
     });
 
-    this.docs = [{ doc: doc0, frontMatter, file }];
+    return [{ doc: doc0, frontMatter, file }];
   }
 
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
@@ -300,8 +300,7 @@ export class ExportConfigModal extends Modal {
       this.togglePrintSize();
     });
 
-    const contentEl = wrapper.createDiv();
-    contentEl.setAttribute("style", "width:320px;margin-left:16px;");
+    const contentEl = wrapper.createDiv({ attr: { class: "setting-wrapper" } });
     contentEl.addEventListener("keyup", (event) => {
       if (event.key === "Enter") {
         handleExport();

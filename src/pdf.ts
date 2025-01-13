@@ -347,7 +347,11 @@ export function setMetadata(
     pdfDoc.setTitle(title, { showInWindowTitleBar: true });
   }
   if (author) {
-    pdfDoc.setAuthor(author);
+    if (Array.isArray(author)) {
+      pdfDoc.setAuthor(author.join(", "));
+    } else {
+      pdfDoc.setAuthor(author.toString());
+    }
   }
   if (keywords) {
     pdfDoc.setKeywords(typeof keywords == "string" ? [keywords] : keywords);
