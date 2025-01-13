@@ -376,12 +376,16 @@ export async function exportToPDF(
     };
   }
 
+  let scale = config?.["scale"] ?? 100;
+  if (scale > 200 || scale < 10) {
+    scale = 100;
+  }
   const printOptions: electron.PrintToPDFOptions = {
     landscape: config?.["landscape"],
     printBackground: config?.["printBackground"],
     generateTaggedPDF: config?.["generateTaggedPDF"],
     pageSize,
-    scale: config["scale"] / 100,
+    scale: scale / 100,
     margins: {
       marginType: "default",
     },
