@@ -7,7 +7,7 @@ import i18n, { Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 import { exportToPDF, getOutputFile, getOutputPath } from "./pdf";
 import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown } from "./render";
-import { mm2px, px2mm, traverseFolder } from "./utils";
+import { isNumber, mm2px, px2mm, traverseFolder } from "./utils";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
@@ -311,6 +311,12 @@ export class ExportConfigModal extends Modal {
     const handleExport = async () => {
       this.plugin.settings.prevConfig = this.config;
       await this.plugin.saveSettings();
+      if (this.config["pageSize"] == "Custom") {
+        if (!isNumber(this.config["pageWidth"] ?? "") || !isNumber(this.config["pageHeight"] ?? "")) {
+          alert("When the page size is Custom, the Width/Height cannot be empty.");
+          return;
+        }
+      }
 
       if (this.multiplePdf) {
         const outputPath = await getOutputPath(title);
