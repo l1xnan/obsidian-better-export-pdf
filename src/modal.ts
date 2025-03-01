@@ -97,37 +97,24 @@ export class ExportConfigModal extends Modal {
     return this.app.metadataCache.getFileCache(file);
   }
 
-  async renderFiles() {
+  async renderFiles(el: HTMLDivElement) {
     const app = this.plugin.app;
 
     let docs: DocType[] = [];
     if (this.file instanceof TFolder) {
       const files = traverseFolder(this.file);
       for (const file of files) {
+        el.createDiv({attr:{class: "progress"},  text: `${file.name}` });
         docs.push(await renderMarkdown(app, file, this.config));
       }
     } else {
       const { doc, frontMatter, file } = await renderMarkdown(app, this.file, this.config);
       docs.push({ doc, frontMatter, file });
       if (frontMatter.toc) {
-        const cache = this.getFileCache(this.file as TFile);
-        const files =
-          cache?.links
-            ?.map(({ link, displayText }) => {
-              const id = crypto.randomUUID();
-              const elem = doc.querySelector(`a[data-href="${link}"]`) as HTMLAnchorElement;
-              if (elem) {
-                elem.href = `#${id}`;
-              }
-              return {
-                title: displayText,
-                file: this.app.metadataCache.getFirstLinkpathDest(link, this.file.path) as TFile,
-                id,
-              };
-            })
-            .filter((item) => item.file instanceof TFile) ?? [];
+        const files = this.parseToc(doc);
         for (const item of files) {
           docs.push(await renderMarkdown(app, item.file, this.config, item));
+          console.log(item.file);
         }
         const leaf = this.app.workspace.getLeaf();
         await leaf.openFile(this.file);
@@ -139,6 +126,26 @@ export class ExportConfigModal extends Modal {
     this.docs = docs.map(({ doc, ...rest }) => {
       return { ...rest, doc: fixDoc(doc, doc.title) };
     });
+  }
+
+  private parseToc(doc: Document) {
+    const cache = this.getFileCache(this.file as TFile);
+    const files =
+      cache?.links
+        ?.map(({ link, displayText }) => {
+          const id = crypto.randomUUID();
+          const elem = doc.querySelector(`a[data-href="${link}"]`) as HTMLAnchorElement;
+          if (elem) {
+            elem.href = `#${id}`;
+          }
+          return {
+            title: displayText,
+            file: this.app.metadataCache.getFirstLinkpathDest(link, this.file.path) as TFile,
+            id,
+          };
+        })
+        .filter((item) => item.file instanceof TFile) ?? [];
+    return files;
   }
 
   mergeDoc(docs: DocType[]) {
@@ -261,20 +268,21 @@ export class ExportConfigModal extends Modal {
       });
     });
   }
-  async appendWebviews(e: HTMLDivElement, render = true) {
+  async appendWebviews(el: HTMLDivElement, render = true) {
+    el.empty();
     if (render) {
-      await this.renderFiles();
+      await this.renderFiles(el);
     }
-    e.empty();
+    el.empty();
     await Promise.all(
       this.docs?.map(async ({ doc }, i) => {
         if (this.multiplePdf) {
-          e.createDiv({
+          el.createDiv({
             text: `${i + 1}-${doc.title}`,
             attr: { class: "filename" },
           });
         }
-        const div = e.createDiv({ attr: { class: "webview-wrapper" } });
+        const div = el.createDiv({ attr: { class: "webview-wrapper" } });
         div.createDiv({ attr: { class: "print-size" } });
         await this.appendWebview(div, doc);
       }),
