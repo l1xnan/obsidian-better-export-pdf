@@ -166,6 +166,17 @@ export default class ConfigSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
+  
+    new Setting(containerEl)
+      .setName(this.i18n.settings.concurrency)
+      .setDesc("Limit the number of concurrent renders")
+      .addText((cb) => {
+        const concurrency = this.plugin.settings?.concurrency;
+        cb.setValue(concurrency?.length > 0 ? concurrency : "5").onChange(async (value) => {
+          this.plugin.settings.concurrency = value;
+          await this.plugin.saveSettings();
+        });
+      });
 
     new Setting(containerEl).setName("Debug").setHeading();
     new Setting(containerEl)

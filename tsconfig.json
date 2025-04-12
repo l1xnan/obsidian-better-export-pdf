@@ -12,7 +12,9 @@
     "isolatedModules": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "lib": ["DOM", "ES2021"]
+    "lib": ["DOM", "ES2021"],
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "**/*.svelte"]
 }

@@ -159,3 +159,20 @@ export function render(tpl: string, data: Record<string, string>) {
 export function isNumber(str: string) {
   return !isNaN(parseFloat(str));
 }
+
+export function safeParseInt(str?: string, default_ = 0) {
+  try {
+    const num = parseInt(String(str));
+    return isNaN(num) ? default_ : num;
+  } catch (e) {
+    return default_;
+  }
+}
+export function safeParseFloat(str?: string, default_ = 0.0) {
+  try {
+    const num = parseFloat(String(str));
+    return isNaN(num) ? default_ : num;
+  } catch (e) {
+    return default_;
+  }
+}

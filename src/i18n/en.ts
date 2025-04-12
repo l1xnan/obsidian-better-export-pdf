@@ -23,6 +23,7 @@ export default {
     footerTemplate: "Footer Template",
     isTimestamp: "Add timestamp",
     enabledCss: "Enable select css snippets",
+    concurrency: "Limit concurrency",
     debugMode: "Debug Mode",
   },
 };
