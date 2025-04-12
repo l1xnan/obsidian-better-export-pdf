@@ -302,7 +302,6 @@ export class ExportConfigModal extends Modal {
         target: el,
         props: {
           startCount: 5,
-          self: this,
         },
       });
       const { data, docs } = await this.getAllFiles();
