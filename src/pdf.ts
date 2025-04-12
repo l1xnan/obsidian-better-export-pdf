@@ -1,10 +1,10 @@
-import electron, { WebviewTag } from "electron";
+import electron, { type WebviewTag } from "electron";
 import * as fs from "fs/promises";
-import { FrontMatterCache } from "obsidian";
+import { type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
-import { BetterExportPdfPluginSettings } from "./main";
-import { DocType, PageSizeType, TConfig } from "./modal";
+import type { BetterExportPdfPluginSettings } from "./main";
+import type { DocType, PageSizeType, TConfig } from "./modal";
 import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt } from "./utils";
 
 interface TPosition {

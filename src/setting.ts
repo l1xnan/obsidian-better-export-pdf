@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
-import i18n, { Lang } from "./i18n";
+import i18n, { type Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 
 function setAttributes(element: HTMLTextAreaElement, attributes: { [x: string]: string }) {
@@ -166,7 +166,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
-  
+
     new Setting(containerEl)
       .setName(this.i18n.settings.concurrency)
       .setDesc("Limit the number of concurrent renders")

@@ -298,6 +298,7 @@ export class ExportConfigModal extends Modal {
     el.empty();
     if (render) {
       // await this.renderFiles(el);
+      // @ts-ignore
       this.svelte = mount(Progress, {
         target: el,
         props: {
