@@ -136,7 +136,7 @@ In the export dialog, select `Custom` for **Page Size** and set **Margin** to `N
 
 ---
 
-Note: You can adjust the concurrency number during the rendering phase when exporting multiple files via `Plugin Settings > Limit Concurrency`. This can help reduce resource consumption or increase the speed. The default value is 5.
+**Note:** You can adjust the concurrency number during the rendering phase when exporting multiple files via `Plugin Settings > Limit Concurrency`. This can help reduce resource consumption or increase the speed. The default value is 5.
 
 ## Preview
 
