@@ -5,7 +5,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, Standard
 
 import type { BetterExportPdfPluginSettings } from "./main";
 import type { DocType, PageSizeType, TConfig } from "./modal";
-import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt } from "./utils";
+import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, render } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -395,10 +395,10 @@ export async function exportToPDF(
     },
     displayHeaderFooter: config["displayHeader"] || config["displayFooter"],
     headerTemplate: config["displayHeader"]
-      ? frontMatter?.["headerTemplate"] ?? config["headerTemplate"]
+      ? render(frontMatter?.["headerTemplate"] ?? config["headerTemplate"], frontMatter ?? {})
       : "<span></span>",
     footerTemplate: config["displayFooter"]
-      ? frontMatter?.["footerTemplate"] ?? config["footerTemplate"]
+      ? render(frontMatter?.["footerTemplate"] ?? config["footerTemplate"], frontMatter ?? {})
       : "<span></span>",
   };
 
