@@ -124,9 +124,7 @@ toc: true
 
 This allows the plugin to export the notes in the order of the internal links. The anchor point of the exported PDF table of contents supports clicking to jump.
 
-
 **Note**: When exporting with a Table of Contents file, right click on that toc-file and select `Better Export PDF`. Do not use `Export Folder to PDF`.
-
 
 ### Folder batch export
 
@@ -135,6 +133,10 @@ Select the folder in the sidebar, right-click the menu `Export each file to PDF`
 ### Export as One Page
 
 In the export dialog, select `Custom` for **Page Size** and set **Margin** to `None`. Set the page size according to the document's requirements.
+
+---
+
+**Note:** You can adjust the concurrency number during the rendering phase when exporting multiple files via `Plugin Settings > Limit Concurrency`. This can help reduce resource consumption or increase the speed. The default value is 5.
 
 ## Preview
 

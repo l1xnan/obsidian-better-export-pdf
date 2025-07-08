@@ -1,6 +1,6 @@
-import { App, MarkdownView, Menu, Plugin, PluginManifest, TFile, TFolder } from "obsidian";
-import i18n, { Lang } from "./i18n";
-import { ExportConfigModal, TConfig } from "./modal";
+import { App, MarkdownView, Menu, Plugin, type PluginManifest, TFile, TFolder } from "obsidian";
+import i18n, { type Lang } from "./i18n";
+import { ExportConfigModal, type TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
 import { traverseFolder } from "./utils";
 import * as fs from "fs/promises";
@@ -27,6 +27,7 @@ export interface BetterExportPdfPluginSettings {
   isTimestamp: boolean;
   debug: boolean;
   enabledCss: boolean;
+  concurrency: string;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
@@ -45,6 +46,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   debug: false,
   isTimestamp: false,
   enabledCss: false,
+  concurrency: "5",
 };
 
 export default class BetterExportPdfPlugin extends Plugin {

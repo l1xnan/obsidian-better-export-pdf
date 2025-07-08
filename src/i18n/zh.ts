@@ -27,6 +27,7 @@ export default {
     footerTemplate: "页脚模板",
     isTimestamp: "文件名添加时间戳",
     enabledCss: "启用CSS片段选择",
+    concurrency: "限制并发数",
     debugMode: "调试模式",
   },
 } satisfies Lang;

@@ -1,5 +1,5 @@
-import { App, Component, FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
-import { TConfig } from "./modal";
+import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
+import type { TConfig } from "./modal";
 import { copyAttributes, fixAnchors, modifyDest } from "./utils";
 
 export function getAllStyles() {
@@ -111,27 +111,34 @@ export function getFrontMatter(app: App, file: TFile) {
   return cache?.frontmatter ?? ({} as FrontMatterCache);
 }
 
-// 逆向原生打印函数
-export async function renderMarkdown(
-  app: App,
-  file: TFile,
-  config: TConfig,
+export type ParamType = {
+  app: App;
+  file: TFile;
+  config: TConfig;
   extra?: {
     title?: string;
     file: TFile;
     id?: string;
-  },
-) {
+  };
+};
+
+// 逆向原生打印函数
+export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const startTime = new Date().getTime();
 
   const ws = app.workspace;
-  if (ws.getActiveFile()?.path != file.path) {
-    const leaf = ws.getLeaf();
-    await leaf.openFile(file);
-  }
-  const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
+  // if (ws.getActiveFile()?.path != file.path) {
+  //   const leaf = ws.getLeaf(true);
+  //   console.log(file, leaf);
+  //   await leaf.openFile(file);
+  // }
+  // const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
+
+  const leaf = ws.getLeaf(true);
+  await leaf.openFile(file);
+  const view = leaf.view as MarkdownView;
   // @ts-ignore
-  const data = view?.data ?? ws?.getActiveFileView()?.data ?? ws.activeEditor?.data;
+  const data: string = view?.data ?? ws?.getActiveFileView()?.data ?? ws.activeEditor?.data;
   if (!data) {
     new Notice("data is empty!");
   }
@@ -269,7 +276,7 @@ export async function renderMarkdown(
   comp.unload();
   printEl.remove();
   doc.title = title;
-
+  leaf.detach();
   console.log(`md render time:${new Date().getTime() - startTime}ms`);
   return { doc, frontMatter, file };
 }

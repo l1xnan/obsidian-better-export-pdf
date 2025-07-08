@@ -1,11 +1,11 @@
-import electron, { WebviewTag } from "electron";
+import electron, { type WebviewTag } from "electron";
 import * as fs from "fs/promises";
-import { FrontMatterCache } from "obsidian";
+import { type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
-import { BetterExportPdfPluginSettings } from "./main";
-import { DocType, PageSizeType, TConfig } from "./modal";
-import { TreeNode, getHeadingTree, render } from "./utils";
+import type { BetterExportPdfPluginSettings } from "./main";
+import type { DocType, PageSizeType, TConfig } from "./modal";
+import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, render } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -375,8 +375,8 @@ export async function exportToPDF(
   let pageSize = config["pageSize"] as PageSizeType;
   if (config["pageSize"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
     pageSize = {
-      width: parseFloat(config["pageWidth"] ?? "210") / 25.4,
-      height: parseFloat(config["pageHeight"] ?? "297") / 25.4,
+      width: safeParseFloat(config["pageWidth"], 210) / 25.4,
+      height: safeParseFloat(config["pageHeight"], 297) / 25.4,
     };
   }
 
@@ -426,10 +426,10 @@ export async function exportToPDF(
     // Custom Margin
     printOptions["margins"] = {
       marginType: "custom",
-      top: parseFloat(config["marginTop"] ?? "0") / 25.4,
-      bottom: parseFloat(config["marginBottom"] ?? "0") / 25.4,
-      left: parseFloat(config["marginLeft"] ?? "0") / 25.4,
-      right: parseFloat(config["marginRight"] ?? "0") / 25.4,
+      top: safeParseFloat(config["marginTop"], 0) / 25.4,
+      bottom: safeParseFloat(config["marginBottom"], 0) / 25.4,
+      left: safeParseFloat(config["marginLeft"], 0) / 25.4,
+      right: safeParseFloat(config["marginRight"], 0) / 25.4,
     };
   }
 
@@ -440,7 +440,7 @@ export async function exportToPDF(
       headings: getHeadingTree(doc),
       frontMatter,
       displayMetadata: config?.displayMetadata,
-      maxLevel: parseInt(config?.maxLevel ?? "6"),
+      maxLevel: safeParseInt(config?.maxLevel, 6),
     });
 
     await fs.writeFile(outputFile, data);

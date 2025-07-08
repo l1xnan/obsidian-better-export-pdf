@@ -1,14 +1,16 @@
 import * as electron from "electron";
 import * as fs from "fs/promises";
-import { ButtonComponent, FrontMatterCache, Modal, Setting, TFile, TFolder, debounce } from "obsidian";
+import { ButtonComponent, type FrontMatterCache, Modal, Setting, TFile, TFolder, debounce } from "obsidian";
 import path from "path";
 import { PageSize } from "./constant";
-import i18n, { Lang } from "./i18n";
+import i18n, { type Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 import { exportToPDF, getOutputFile, getOutputPath } from "./pdf";
-import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown } from "./render";
-import { isNumber, mm2px, px2mm, traverseFolder } from "./utils";
-
+import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown, type ParamType } from "./render";
+import { isNumber, mm2px, px2mm, safeParseFloat, safeParseInt, traverseFolder } from "./utils";
+import Progress from "./Progress.svelte";
+import { mount, unmount } from "svelte";
+import pLimit from "p-limit";
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
 export interface TConfig {
@@ -62,6 +64,8 @@ export class ExportConfigModal extends Modal {
   frontMatter: FrontMatterCache;
   i18n: Lang;
   scale: number;
+  // @ts-ignore
+  svelte: Progress;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiplePdf?: boolean) {
     super(plugin.app);
@@ -97,38 +101,63 @@ export class ExportConfigModal extends Modal {
     return this.app.metadataCache.getFileCache(file);
   }
 
-  async renderFiles(el: HTMLDivElement) {
+  async getAllFiles() {
     const app = this.plugin.app;
-
-    let docs: DocType[] = [];
+    const data: ParamType[] = [];
+    const docs: DocType[] = [];
     if (this.file instanceof TFolder) {
       const files = traverseFolder(this.file);
       for (const file of files) {
-        el.createDiv({attr:{class: "progress"},  text: `${file.name}` });
-        docs.push(await renderMarkdown(app, file, this.config));
+        data.push({
+          app,
+          file,
+          config: this.config,
+        });
       }
     } else {
-      const { doc, frontMatter, file } = await renderMarkdown(app, this.file, this.config);
+      const { doc, frontMatter, file } = await renderMarkdown({ app, file: this.file, config: this.config });
       docs.push({ doc, frontMatter, file });
       if (frontMatter.toc) {
         const files = this.parseToc(doc);
         for (const item of files) {
-          docs.push(await renderMarkdown(app, item.file, this.config, item));
-          console.log(item.file);
+          data.push({
+            app,
+            file: item.file,
+            config: this.config,
+            extra: item,
+          });
         }
-        const leaf = this.app.workspace.getLeaf();
-        await leaf.openFile(this.file);
       }
     }
-    if (!this.multiplePdf) {
-      docs = this.mergeDoc(docs);
+    return { data, docs };
+  }
+
+  async renderFiles(data: ParamType[], docs?: DocType[], cb?: (i: number) => void) {
+    const concurrency = safeParseInt(this.plugin.settings.concurrency) || 5;
+    const limit = pLimit(concurrency);
+
+    const inputs = data.map((param, i) =>
+      limit(async () => {
+        const res = await renderMarkdown(param);
+        cb?.(i);
+        return res;
+      }),
+    );
+    let _docs = [...(docs ?? []), ...(await Promise.all(inputs))];
+
+    if (this.file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf();
+      await leaf.openFile(this.file);
     }
-    this.docs = docs.map(({ doc, ...rest }) => {
+
+    if (!this.multiplePdf) {
+      _docs = this.mergeDoc(_docs);
+    }
+    this.docs = _docs.map(({ doc, ...rest }) => {
       return { ...rest, doc: fixDoc(doc, doc.title) };
     });
   }
-
-  private parseToc(doc: Document) {
+  parseToc(doc: Document) {
     const cache = this.getFileCache(this.file as TFile);
     const files =
       cache?.links
@@ -177,10 +206,7 @@ export class ExportConfigModal extends Modal {
   calcPageSize(element?: HTMLDivElement, config?: TConfig) {
     const { pageSize, pageWidth } = config ?? this.config;
     const el = element ?? this.previewDiv;
-    let width = PageSize?.[pageSize as string]?.[0] ?? parseFloat(pageWidth as string);
-    if (isNaN(width)) {
-      width = 210;
-    }
+    const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
     const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
     this.webviews.forEach((wb) => {
       wb.style.transform = `scale(${1 / scale},${1 / scale})`;
@@ -271,7 +297,17 @@ export class ExportConfigModal extends Modal {
   async appendWebviews(el: HTMLDivElement, render = true) {
     el.empty();
     if (render) {
-      await this.renderFiles(el);
+      // await this.renderFiles(el);
+      // @ts-ignore
+      this.svelte = mount(Progress, {
+        target: el,
+        props: {
+          startCount: 5,
+        },
+      });
+      const { data, docs } = await this.getAllFiles();
+      this.svelte.initRenderStates(data);
+      await this.renderFiles(data, docs, this.svelte.updateRenderStates);
     }
     el.empty();
     await Promise.all(
@@ -585,6 +621,10 @@ export class ExportConfigModal extends Modal {
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+    if (this.svelte) {
+      // Remove the Counter from the ItemView.
+      unmount(this.svelte);
+    }
   }
 
   cssSnippets(): Record<string, string> {
