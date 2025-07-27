@@ -55,6 +55,7 @@ export function getHeadingTree(doc = document) {
 }
 
 // modify heading/block, and get heading/block flag
+// Enhanced to support both Obsidian wikilinks and standard markdown anchor links
 export function modifyDest(doc: Document) {
   const data = new Map();
   doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
@@ -63,7 +64,35 @@ export function modifyDest(doc: Document) {
     link.href = `af://${flag}`;
     link.className = "md-print-anchor";
     heading.appendChild(link);
-    data.set(heading.dataset.heading, flag);
+
+    // Map both the dataset.heading and the text content for different link types
+    if (heading.dataset.heading) {
+      data.set(heading.dataset.heading, flag);
+    }
+
+    // Also map the heading text content (for standard markdown links)
+    const headingText = heading.textContent?.trim();
+    if (headingText) {
+      data.set(headingText, flag);
+      // Also map URL-encoded version and common variations
+      data.set(encodeURIComponent(headingText), flag);
+      // Map space-to-dash version (common in many markdown processors)
+      data.set(headingText.replace(/\s+/g, '-'), flag);
+      // Map space-to-dash-lowercase version
+      data.set(headingText.toLowerCase().replace(/\s+/g, '-'), flag);
+      // Map version with special characters removed (common in some processors)
+      const cleanText = headingText.replace(/[^\w\s-]/g, '').trim();
+      if (cleanText && cleanText !== headingText) {
+        data.set(cleanText, flag);
+        data.set(cleanText.replace(/\s+/g, '-'), flag);
+        data.set(cleanText.toLowerCase().replace(/\s+/g, '-'), flag);
+      }
+    }
+
+    // Map the heading ID if it exists
+    if (heading.id) {
+      data.set(heading.id, flag);
+    }
   });
 
   return data;
@@ -76,6 +105,7 @@ function convertMapKeysToLowercase(map: Map<string, string>) {
 export function fixAnchors(doc: Document, dest: Map<string, string>, basename: string) {
   const lowerDest = convertMapKeysToLowercase(dest);
 
+  // Handle Obsidian internal links (wikilink-style)
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
@@ -92,6 +122,45 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
       if (flag && !anchor.startsWith("^")) {
         el.href = `an://${flag}`;
       }
+    }
+  });
+
+  // Handle standard markdown anchor links like [text](#heading)
+  doc.querySelectorAll("a[href^='#']").forEach((el: HTMLAnchorElement) => {
+    const href = el.getAttribute("href");
+    if (!href) return;
+
+    // Extract the anchor part (without the #)
+    const anchor = href.substring(1);
+    if (!anchor) return;
+
+    // Skip if this is already an internal-link (already processed above)
+    if (el.classList.contains("internal-link")) return;
+
+    // Skip block references (they start with ^)
+    if (anchor.startsWith("^")) return;
+
+    // Try multiple variations of the anchor text to find a match
+    const variations = [
+      anchor,                                    // Original anchor
+      decodeURIComponent(anchor),               // URL decoded
+      anchor.replace(/-/g, ' '),                // Dash to space
+      decodeURIComponent(anchor).replace(/-/g, ' '), // Both
+      anchor.toLowerCase(),                     // Lowercase
+      decodeURIComponent(anchor).toLowerCase(), // URL decoded + lowercase
+      anchor.toLowerCase().replace(/-/g, ' '),  // Lowercase + dash to space
+      decodeURIComponent(anchor).toLowerCase().replace(/-/g, ' '), // All transformations
+    ];
+
+    // Try to find a matching heading using any of the variations
+    let flag = null;
+    for (const variation of variations) {
+      flag = dest.get(variation) || lowerDest.get(variation.toLowerCase());
+      if (flag) break;
+    }
+
+    if (flag) {
+      el.href = `an://${flag}`;
     }
   });
 }
