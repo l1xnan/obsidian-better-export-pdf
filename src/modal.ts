@@ -559,7 +559,7 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setName(this.i18n.exportDialog.downscalePercent).addSlider((slider) => {
       slider
-        .setLimits(0, 100, 1)
+        .setLimits(0, 200, 1)
         .setValue(this.config["scale"] as number)
         .onChange(async (value) => {
           this.config["scale"] = value;
