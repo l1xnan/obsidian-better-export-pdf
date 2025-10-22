@@ -1,3 +1,7 @@
+---
+feature: Sandbox/Obsidian/obsidian-better-export-pdf-master/obsidian-better-export-pdf/assets/preview0.png
+thumbnail: thumbnails/resized/2b17fb1487bf572eea648d04ece340ec_86cf658e.webp
+---
 # Obsidian Better Export PDF
 
 [English](./README.md) | 中文

@@ -66,6 +66,9 @@ export class ExportConfigModal extends Modal {
   scale: number;
   // @ts-ignore
   svelte: Progress;
+  errorNoticeEl?: HTMLDivElement;
+  loadingIndicatorEl?: HTMLDivElement;
+  isLoading: boolean;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiplePdf?: boolean) {
     super(plugin.app);
@@ -78,6 +81,7 @@ export class ExportConfigModal extends Modal {
     this.scale = 0.75;
     this.webviews = [];
     this.multiplePdf = multiplePdf;
+    this.isLoading = false;
 
     this.config = {
       pageSize: "A4",
@@ -95,6 +99,129 @@ export class ExportConfigModal extends Modal {
       cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
+  }
+
+  /**
+   * Display error notification at top of modal (only in debug mode)
+   * @param error Error message or Error object
+   * @param details Optional detailed error information
+   */
+  displayError(error: Error | string, details?: string) {
+    if (!this.plugin.settings.debug) return;
+
+    if (!this.errorNoticeEl) {
+      // Create error notice container at the top of contentEl
+      this.errorNoticeEl = this.contentEl.createDiv({
+        cls: "better-export-pdf-error-notice",
+      });
+      this.errorNoticeEl.style.cssText = `
+        background-color: var(--background-modifier-error);
+        border: 1px solid var(--background-modifier-error-border);
+        border-radius: 4px;
+        padding: 12px;
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      `;
+      // Insert at the beginning
+      this.contentEl.insertBefore(this.errorNoticeEl, this.contentEl.firstChild);
+    }
+
+    this.errorNoticeEl.empty();
+
+    const errorText = error instanceof Error ? error.message : error;
+    const header = this.errorNoticeEl.createDiv({
+      cls: "error-header",
+    });
+    header.style.cssText = "display: flex; justify-content: space-between; align-items: center;";
+
+    header.createEl("strong", {
+      text: "⚠️ Error: " + errorText,
+    }).style.color = "var(--text-error)";
+
+    const dismissBtn = header.createEl("button", {
+      text: "×",
+    });
+    dismissBtn.style.cssText = "background: none; border: none; font-size: 20px; cursor: pointer;";
+    dismissBtn.onclick = () => {
+      this.clearError();
+    };
+
+    if (details) {
+      const detailsToggle = this.errorNoticeEl.createEl("details");
+      detailsToggle.style.cssText = "cursor: pointer; margin-top: 4px;";
+
+      detailsToggle.createEl("summary", {
+        text: "View more details",
+      }).style.cssText = "color: var(--text-muted); font-size: 0.9em;";
+
+      const pre = detailsToggle.createEl("pre", {
+        text: details,
+      });
+      pre.style.cssText = `
+        margin-top: 8px;
+        padding: 8px;
+        background: var(--background-primary-alt);
+        border-radius: 4px;
+        font-size: 0.85em;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      `;
+    }
+
+    this.errorNoticeEl.style.display = "block";
+  }
+
+  /**
+   * Clear error notification
+   */
+  clearError() {
+    if (this.errorNoticeEl) {
+      this.errorNoticeEl.remove();
+      this.errorNoticeEl = undefined;
+    }
+  }
+
+  /**
+   * Show loading indicator
+   * @param message Loading message to display
+   */
+  showLoadingIndicator(message = "Loading preview...") {
+    if (!this.loadingIndicatorEl) {
+      this.loadingIndicatorEl = this.previewDiv?.createDiv({
+        cls: "better-export-pdf-loading",
+      });
+      if (this.loadingIndicatorEl) {
+        this.loadingIndicatorEl.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: var(--background-primary);
+          padding: 20px 40px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          z-index: 1000;
+          text-align: center;
+        `;
+      }
+    }
+    if (this.loadingIndicatorEl) {
+      this.loadingIndicatorEl.setText(message);
+      this.loadingIndicatorEl.style.display = "block";
+    }
+    this.isLoading = true;
+  }
+
+  /**
+   * Hide loading indicator
+   */
+  hideLoadingIndicator() {
+    if (this.loadingIndicatorEl) {
+      this.loadingIndicatorEl.style.display = "none";
+    }
+    this.isLoading = false;
   }
 
   getFileCache(file: TFile) {
@@ -218,14 +345,31 @@ export class ExportConfigModal extends Modal {
   }
 
   async calcWebviewSize() {
-    await sleep(500);
-    this.webviews.forEach(async (e, i) => {
-      const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
-      const sizeEl = e.parentNode?.querySelector(".print-size");
-      if (sizeEl) {
-        sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+    try {
+      this.clearError(); // Clear any previous errors
+      // Fix: No sleep needed - WebViews are guaranteed to be ready by the time this is called
+      // Fix: Use Promise.all instead of forEach to properly await all size calculations
+      await Promise.all(
+        this.webviews.map(async (e, i) => {
+          const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
+          const sizeEl = e.parentNode?.querySelector(".print-size");
+          if (sizeEl) {
+            sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+          }
+        })
+      );
+    } catch (error) {
+      if (this.plugin.settings.debug) {
+        const errorDetails = error instanceof Error
+          ? `${error.name}: ${error.message}\n\nStack trace:\n${error.stack}`
+          : String(error);
+        this.displayError(
+          "Failed to calculate WebView sizes",
+          errorDetails
+        );
       }
-    });
+      throw error; // Re-throw to maintain existing behavior
+    }
   }
 
   async togglePrintSize() {
@@ -265,65 +409,97 @@ export class ExportConfigModal extends Modal {
   /**
    * append webview
    * @param e HTMLDivElement
-   * @param render Rerender or not
+   * @param doc Document to render in the webview
+   * @returns Promise that resolves to the WebviewTag when fully initialized
    */
-  async appendWebview(e: HTMLDivElement, doc: Document) {
+  async appendWebview(e: HTMLDivElement, doc: Document): Promise<electron.WebviewTag> {
     const webview = createWebview(this.scale);
     const preview = e.appendChild(webview);
     this.webviews.push(preview);
     this.preview = preview;
-    preview.addEventListener("dom-ready", async (e) => {
-      this.completed = true;
-      getAllStyles().forEach(async (css) => {
-        await preview.insertCSS(css);
-      });
-      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+
+    return new Promise<electron.WebviewTag>((resolve, reject) => {
+      // Add timeout protection to prevent infinite waits
+      const timeout = setTimeout(() => {
+        reject(new Error("WebView initialization timeout after 10 seconds"));
+      }, 10000);
+
+      preview.addEventListener("dom-ready", async () => {
         try {
-          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
-          // remove `@media print { ... }`
-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
-          await preview.insertCSS(printCss);
-          await preview.insertCSS(cssSnippet);
+          clearTimeout(timeout);
+          this.completed = true;
+
+          // Fix: Use Promise.all instead of forEach to properly await all CSS insertions
+          await Promise.all(
+            getAllStyles().map((css) => preview.insertCSS(css))
+          );
+
+          if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+            try {
+              const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+              // remove `@media print { ... }`
+              const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+              await preview.insertCSS(printCss);
+              await preview.insertCSS(cssSnippet);
+            } catch (error) {
+              console.warn("Failed to load CSS snippet:", error);
+              if (this.plugin.settings.debug) {
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                this.displayError("Failed to load CSS snippet", errorMsg);
+              }
+            }
+          }
+
+          await preview.executeJavaScript(this.makeWebviewJs(doc));
+
+          // Fix: Use Promise.all instead of forEach to properly await all CSS insertions
+          await Promise.all(
+            getPatchStyle().map((css) => preview.insertCSS(css))
+          );
+
+          resolve(preview);
         } catch (error) {
-          console.warn(error);
+          clearTimeout(timeout);
+          reject(error);
         }
-      }
-      await preview.executeJavaScript(this.makeWebviewJs(doc));
-      getPatchStyle().forEach(async (css) => {
-        await preview.insertCSS(css);
       });
     });
   }
   async appendWebviews(el: HTMLDivElement, render = true) {
-    el.empty();
-    if (render) {
-      // await this.renderFiles(el);
-      // @ts-ignore
-      this.svelte = mount(Progress, {
-        target: el,
-        props: {
-          startCount: 5,
-        },
-      });
-      const { data, docs } = await this.getAllFiles();
-      this.svelte.initRenderStates(data);
-      await this.renderFiles(data, docs, this.svelte.updateRenderStates);
+    this.showLoadingIndicator("Initializing preview...");
+    try {
+      el.empty();
+      if (render) {
+        // await this.renderFiles(el);
+        // @ts-ignore
+        this.svelte = mount(Progress, {
+          target: el,
+          props: {
+            startCount: 5,
+          },
+        });
+        const { data, docs } = await this.getAllFiles();
+        this.svelte.initRenderStates(data);
+        await this.renderFiles(data, docs, this.svelte.updateRenderStates);
+      }
+      el.empty();
+      await Promise.all(
+        this.docs?.map(async ({ doc }, i) => {
+          if (this.multiplePdf) {
+            el.createDiv({
+              text: `${i + 1}-${doc.title}`,
+              attr: { class: "filename" },
+            });
+          }
+          const div = el.createDiv({ attr: { class: "webview-wrapper" } });
+          div.createDiv({ attr: { class: "print-size" } });
+          await this.appendWebview(div, doc);
+        }),
+      );
+      await this.calcWebviewSize();
+    } finally {
+      this.hideLoadingIndicator();
     }
-    el.empty();
-    await Promise.all(
-      this.docs?.map(async ({ doc }, i) => {
-        if (this.multiplePdf) {
-          el.createDiv({
-            text: `${i + 1}-${doc.title}`,
-            attr: { class: "filename" },
-          });
-        }
-        const div = el.createDiv({ attr: { class: "webview-wrapper" } });
-        div.createDiv({ attr: { class: "print-size" } });
-        await this.appendWebview(div, doc);
-      }),
-    );
-    await this.calcWebviewSize();
   }
   async onOpen() {
     this.contentEl.empty();
