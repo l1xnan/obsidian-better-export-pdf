@@ -10,6 +10,7 @@ export default {
     displayHeader: "Display Header",
     displayFooter: "Display Footer",
     openAfterExport: "Open after export",
+    copyNonMarkdownFiles: "Copy non-markdown files",
     cssSnippets: "CSS snippets",
   },
   settings: {

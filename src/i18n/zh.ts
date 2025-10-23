@@ -13,6 +13,7 @@ export default {
     displayHeader: "页眉",
     displayFooter: "页脚",
     openAfterExport: "导出后打开",
+    copyNonMarkdownFiles: "复制非Markdown文件",
     cssSnippets: "CSS代码片段",
   },
 
