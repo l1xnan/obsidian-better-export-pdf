@@ -262,6 +262,74 @@ export class ExportConfigModal extends Modal {
       document.title = \`${doc.title}\`;
       `;
   }
+
+  private extractPrintCss(source: string) {
+    const blocks: string[] = [];
+    const regex = /@media\s+print\s*\{/gi;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(source))) {
+      let depth = 1;
+      let index = regex.lastIndex;
+      const start = index;
+      while (index < source.length && depth > 0) {
+        const char = source[index];
+        if (char === "{") {
+          depth++;
+        } else if (char === "}") {
+          depth--;
+        }
+        index++;
+      }
+      blocks.push(source.slice(start, index - 1).trim());
+      regex.lastIndex = index;
+    }
+    return blocks.join("\n\n");
+  }
+
+  private async whenWebviewReady(preview: electron.WebviewTag, doc: Document) {
+    const injectContent = async () => {
+      this.completed = true;
+      for (const css of getAllStyles()) {
+        await preview.insertCSS(css);
+      }
+      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+        try {
+          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+          const printCss = this.extractPrintCss(cssSnippet);
+          if (printCss) {
+            await preview.insertCSS(printCss);
+          }
+          await preview.insertCSS(cssSnippet);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+      await preview.executeJavaScript(this.makeWebviewJs(doc));
+      for (const css of getPatchStyle()) {
+        await preview.insertCSS(css);
+      }
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      const handleDomReady = async () => {
+        preview.removeEventListener("dom-ready", handleDomReady);
+        preview.removeEventListener("did-fail-load", handleDidFailLoad);
+        try {
+          await injectContent();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+      const handleDidFailLoad = (event: any) => {
+        preview.removeEventListener("dom-ready", handleDomReady);
+        preview.removeEventListener("did-fail-load", handleDidFailLoad);
+        reject(new Error(`Webview failed to load: ${event?.errorDescription ?? "unknown error"}`));
+      };
+      preview.addEventListener("dom-ready", handleDomReady);
+      preview.addEventListener("did-fail-load", handleDidFailLoad);
+    });
+  }
   /**
    * append webview
    * @param e HTMLDivElement
@@ -270,32 +338,13 @@ export class ExportConfigModal extends Modal {
   async appendWebview(e: HTMLDivElement, doc: Document) {
     const webview = createWebview(this.scale);
     const preview = e.appendChild(webview);
-    this.webviews.push(preview);
     this.preview = preview;
-    preview.addEventListener("dom-ready", async (e) => {
-      this.completed = true;
-      getAllStyles().forEach(async (css) => {
-        await preview.insertCSS(css);
-      });
-      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
-        try {
-          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
-          // remove `@media print { ... }`
-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
-          await preview.insertCSS(printCss);
-          await preview.insertCSS(cssSnippet);
-        } catch (error) {
-          console.warn(error);
-        }
-      }
-      await preview.executeJavaScript(this.makeWebviewJs(doc));
-      getPatchStyle().forEach(async (css) => {
-        await preview.insertCSS(css);
-      });
-    });
+    this.webviews.push(preview);
+    await this.whenWebviewReady(preview, doc);
   }
   async appendWebviews(el: HTMLDivElement, render = true) {
     el.empty();
+    this.webviews = [];
     if (render) {
       // await this.renderFiles(el);
       // @ts-ignore
@@ -559,7 +608,7 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setName(this.i18n.exportDialog.downscalePercent).addSlider((slider) => {
       slider
-        .setLimits(0, 200, 1)
+        .setLimits(0, 100, 1)
         .setValue(this.config["scale"] as number)
         .onChange(async (value) => {
           this.config["scale"] = value;
