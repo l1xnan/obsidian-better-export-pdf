@@ -13,6 +13,7 @@ export default {
     displayHeader: "页眉",
     displayFooter: "页脚",
     openAfterExport: "导出后打开",
+    preserveFolderStructure: "保持文件夹结构",
     cssSnippets: "CSS代码片段",
   },
 
