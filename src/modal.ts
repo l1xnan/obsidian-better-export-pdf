@@ -10,7 +10,6 @@ import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown, typ
 import { isNumber, mm2px, px2mm, safeParseFloat, safeParseInt, traverseFolder } from "./utils";
 import Progress from "./Progress.svelte";
 import { mount, unmount } from "svelte";
-import pLimit from "p-limit";
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
 export interface TConfig {
@@ -46,6 +45,42 @@ function fullWidthButton(button: ButtonComponent) {
 
 function setInputWidth(inputEl: HTMLInputElement) {
   inputEl.setAttribute("style", `width: 100px;`);
+}
+
+function createConcurrencyLimiter(concurrency: number) {
+  const limit = Math.max(1, concurrency);
+  let active = 0;
+  const queue: Array<() => void> = [];
+
+  const next = () => {
+    if (queue.length === 0 || active >= limit) {
+      return;
+    }
+    const task = queue.shift();
+    if (task) {
+      task();
+    }
+  };
+
+  return async function <T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const runTask = () => {
+        active++;
+        task()
+          .then(resolve, reject)
+          .finally(() => {
+            active--;
+            next();
+          });
+      };
+
+      if (active < limit) {
+        runTask();
+      } else {
+        queue.push(runTask);
+      }
+    });
+  };
 }
 
 export class ExportConfigModal extends Modal {
@@ -134,7 +169,7 @@ export class ExportConfigModal extends Modal {
 
   async renderFiles(data: ParamType[], docs?: DocType[], cb?: (i: number) => void) {
     const concurrency = safeParseInt(this.plugin.settings.concurrency) || 5;
-    const limit = pLimit(concurrency);
+    const limit = createConcurrencyLimiter(concurrency);
 
     const inputs = data.map((param, i) =>
       limit(async () => {
