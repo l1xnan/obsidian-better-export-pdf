@@ -381,7 +381,8 @@ export async function exportToPDF(
   }
 
   let scale = config?.["scale"] ?? 100;
-  if (scale > 200 || scale < 10) {
+  // Chromium requires 10–200; UI caps at 100 to avoid upscaling
+  if (scale > 100 || scale < 10) {
     scale = 100;
   }
   const printOptions: electron.PrintToPDFOptions = {

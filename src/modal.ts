@@ -25,6 +25,11 @@ export interface TConfig {
   showTitle: boolean;
   displayHeader: boolean;
   displayFooter: boolean;
+  // Automatic page break options
+  autoPageBreak?: boolean;
+  breakBefore?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  // Image downscale percent
+  imageScale?: number;
 
   marginTop?: string;
   marginBottom?: string;
@@ -92,6 +97,9 @@ export class ExportConfigModal extends Modal {
       marginRight: "10",
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
+      autoPageBreak: false,
+      breakBefore: "h1",
+      imageScale: 100,
       cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
@@ -292,6 +300,21 @@ export class ExportConfigModal extends Modal {
       getPatchStyle().forEach(async (css) => {
         await preview.insertCSS(css);
       });
+      // Inject automatic page break CSS last to override other styles
+      if (this.config.autoPageBreak && this.config.breakBefore) {
+        const lvl = this.config.breakBefore;
+        const reset = `.markdown-preview-view h1, .markdown-preview-view h2, .markdown-preview-view h3, .markdown-preview-view h4, .markdown-preview-view h5, .markdown-preview-view h6 { break-before: auto !important; page-break-before: auto !important; }`;
+        const rule = `.markdown-preview-view ${lvl} { break-before: page !important; page-break-before: always !important; }`;
+        const first = `.markdown-preview-view ${lvl}:first-of-type { break-before: auto !important; page-break-before: auto !important; }`;
+        const css = `@media print { ${reset} ${rule} ${first} }`;
+        await preview.insertCSS(css);
+      }
+      // Inject image downscale CSS
+      if (this.config.imageScale != null) {
+        const percent = Math.max(0, Math.min(100, this.config.imageScale));
+        const imgCss = `@media print, screen { .markdown-preview-view img { height: auto !important; max-width: ${percent}%; } }`;
+        await preview.insertCSS(imgCss);
+      }
     });
   }
   async appendWebviews(el: HTMLDivElement, render = true) {
@@ -559,11 +582,28 @@ export class ExportConfigModal extends Modal {
 
     new Setting(contentEl).setName(this.i18n.exportDialog.downscalePercent).addSlider((slider) => {
       slider
-        .setLimits(0, 200, 1)
+        .setLimits(10, 100, 1)
         .setValue(this.config["scale"] as number)
         .onChange(async (value) => {
           this.config["scale"] = value;
           slider.showTooltip();
+        });
+    });
+
+    // Image Downscale (%)
+    new Setting(contentEl).setName(this.i18n.exportDialog.imageDownscalePercent ?? "Image Downscale (%)").addSlider((slider) => {
+      slider
+        .setLimits(0, 100, 1)
+        .setValue(this.config["imageScale"] ?? 100)
+        .onChange(async (value) => {
+          this.config["imageScale"] = value;
+          slider.showTooltip();
+          // Apply to all active previews via CSS injection
+          this.webviews.forEach(async (wv) => {
+            const percent = Math.max(0, Math.min(100, value));
+            const imgCss = `@media print, screen { .markdown-preview-view img { height: auto !important; max-width: ${percent}%; } }`;
+            await wv.insertCSS(imgCss);
+          });
         });
     });
     new Setting(contentEl).setName(this.i18n.exportDialog.landscape).addToggle((toggle) =>
@@ -575,6 +615,38 @@ export class ExportConfigModal extends Modal {
         }),
     );
 
+    // Automatic Page Break section (placed above Display Header)
+    let breakBeforeSetting: Setting;
+    new Setting(contentEl).setName("Automatic Page Break").addToggle((toggle) =>
+      toggle
+        .setTooltip("Insert page breaks before selected heading level when exporting")
+        .setValue(this.config.autoPageBreak ?? false)
+        .onChange(async (value) => {
+          this.config.autoPageBreak = value;
+          if (breakBeforeSetting) breakBeforeSetting.settingEl.hidden = !value;
+          await this.appendWebviews(this.previewDiv, false);
+          await this.calcWebviewSize();
+        }),
+    );
+
+    breakBeforeSetting = new Setting(contentEl)
+      .setName("Break before:")
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOptions({ h1: "h1", h2: "h2", h3: "h3", h4: "h4", h5: "h5", h6: "h6" })
+          .setValue(this.config.breakBefore ?? "h1")
+          .onChange(async (value: string) => {
+            this.config.breakBefore = value as TConfig["breakBefore"];
+            await this.appendWebviews(this.previewDiv, false);
+            await this.calcWebviewSize();
+          });
+      });
+    // Visually associate "Break before" with the toggle above
+    breakBeforeSetting.settingEl.style.borderTop = "none";
+    breakBeforeSetting.settingEl.style.paddingLeft = "16px";
+    breakBeforeSetting.settingEl.hidden = !(this.config.autoPageBreak ?? false);
+
+    // Display Header follows the page break section
     new Setting(contentEl).setName(this.i18n.exportDialog.displayHeader).addToggle((toggle) =>
       toggle
         .setTooltip("Display header")
