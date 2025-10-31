@@ -95,6 +95,26 @@ export function modifyDest(doc: Document) {
     }
   });
 
+  // Process block IDs and add position markers
+  doc.querySelectorAll("span.blockid").forEach((blockSpan: HTMLElement, i) => {
+    const blockId = blockSpan.id; // e.g., "^ref-6-return"
+    if (blockId) {
+      const link = document.createElement("a") as HTMLAnchorElement;
+      const flag = `block-${i}`;
+      link.href = `af://${flag}`;
+      link.className = "md-print-anchor";
+      blockSpan.appendChild(link);
+
+      // Map the block ID (with the ^ prefix)
+      data.set(blockId, flag);
+      // Also map without ^ prefix for lookups
+      data.set(blockId.substring(1), flag);
+      // Map lowercase versions for case-insensitive matching
+      data.set(blockId.toLowerCase(), flag);
+      data.set(blockId.substring(1).toLowerCase(), flag);
+    }
+  });
+
   return data;
 }
 
@@ -109,17 +129,15 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
   doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
-    if (anchor?.startsWith("^")) {
-      el.href = el.dataset.href?.toLowerCase() as string;
-    }
-
     if (anchor?.length > 0) {
+      // Skip links to other files (not same file or empty title)
       if (title?.length > 0 && title != basename) {
         return;
       }
 
+      // Look up the anchor in the destination map (works for both headings and blocks)
       const flag = dest.get(anchor) || lowerDest.get(anchor?.toLowerCase());
-      if (flag && !anchor.startsWith("^")) {
+      if (flag) {
         el.href = `an://${flag}`;
       }
     }
