@@ -77,15 +77,15 @@ export function modifyDest(doc: Document) {
       // Also map URL-encoded version and common variations
       data.set(encodeURIComponent(headingText), flag);
       // Map space-to-dash version (common in many markdown processors)
-      data.set(headingText.replace(/\s+/g, '-'), flag);
+      data.set(headingText.replace(/\s+/g, "-"), flag);
       // Map space-to-dash-lowercase version
-      data.set(headingText.toLowerCase().replace(/\s+/g, '-'), flag);
+      data.set(headingText.toLowerCase().replace(/\s+/g, "-"), flag);
       // Map version with special characters removed (common in some processors)
-      const cleanText = headingText.replace(/[^\w\s-]/g, '').trim();
+      const cleanText = headingText.replace(/[^\w\s-]/g, "").trim();
       if (cleanText && cleanText !== headingText) {
         data.set(cleanText, flag);
-        data.set(cleanText.replace(/\s+/g, '-'), flag);
-        data.set(cleanText.toLowerCase().replace(/\s+/g, '-'), flag);
+        data.set(cleanText.replace(/\s+/g, "-"), flag);
+        data.set(cleanText.toLowerCase().replace(/\s+/g, "-"), flag);
       }
     }
 
@@ -126,7 +126,7 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
   const lowerDest = convertMapKeysToLowercase(dest);
 
   // Handle Obsidian internal links (wikilink-style)
-  doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
+  doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, _i) => {
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
     if (anchor?.length > 0) {
@@ -160,14 +160,14 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
 
     // Try multiple variations of the anchor text to find a match
     const variations = [
-      anchor,                                    // Original anchor
-      decodeURIComponent(anchor),               // URL decoded
-      anchor.replace(/-/g, ' '),                // Dash to space
-      decodeURIComponent(anchor).replace(/-/g, ' '), // Both
-      anchor.toLowerCase(),                     // Lowercase
+      anchor, // Original anchor
+      decodeURIComponent(anchor), // URL decoded
+      anchor.replace(/-/g, " "), // Dash to space
+      decodeURIComponent(anchor).replace(/-/g, " "), // Both
+      anchor.toLowerCase(), // Lowercase
       decodeURIComponent(anchor).toLowerCase(), // URL decoded + lowercase
-      anchor.toLowerCase().replace(/-/g, ' '),  // Lowercase + dash to space
-      decodeURIComponent(anchor).toLowerCase().replace(/-/g, ' '), // All transformations
+      anchor.toLowerCase().replace(/-/g, " "), // Lowercase + dash to space
+      decodeURIComponent(anchor).toLowerCase().replace(/-/g, " "), // All transformations
     ];
 
     // Try to find a matching heading using any of the variations
@@ -251,7 +251,7 @@ export function safeParseInt(str?: string, default_ = 0) {
   try {
     const num = parseInt(String(str));
     return isNaN(num) ? default_ : num;
-  } catch (e) {
+  } catch {
     return default_;
   }
 }
@@ -259,7 +259,7 @@ export function safeParseFloat(str?: string, default_ = 0.0) {
   try {
     const num = parseFloat(String(str));
     return isNaN(num) ? default_ : num;
-  } catch (e) {
+  } catch {
     return default_;
   }
 }
