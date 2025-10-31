@@ -472,7 +472,7 @@ export async function getOutputFile(filename: string, isTimestamp?: boolean) {
   return result.filePath;
 }
 
-export async function getOutputPath(filename: string, isTimestamp?: boolean) {
+export async function getOutputPath(filename: string, _isTimestamp?: boolean) {
   // @ts-ignore
   const result = await electron.remote.dialog.showOpenDialog({
     title: "Export to PDF",
