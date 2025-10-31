@@ -200,14 +200,15 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
     return line;
   });
 
-  [...blocks.values()].forEach(({ id, position: { start, end } }) => {
+  [...blocks.values()].forEach(({ id, position: { start } }) => {
     const idx = start.line;
     lines[idx] = `<span id="^${id}" class="blockid"></span>\n\n` + lines[idx];
   });
 
   const fragment = {
-    children: undefined,
+    children: undefined as HTMLCollection | undefined,
     appendChild(e: DocumentFragment) {
+      // @ts-expect-error: this has children property but TypeScript doesn't know
       this.children = e?.children;
       throw new Error("exit");
     },
@@ -252,7 +253,8 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   });
   await Promise.all(promises);
 
-  printEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
+  printEl.findAll("a.internal-link").forEach((element) => {
+    const el = element as HTMLAnchorElement;
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
     if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
@@ -290,7 +292,10 @@ export function fixDoc(doc: Document, title: string) {
 
 export function encodeEmbeds(doc: Document) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
-  spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
+  spans.forEach((element) => {
+    const span = element as HTMLElement;
+    span.innerHTML = encodeURIComponent(span.innerHTML);
+  });
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
@@ -337,7 +342,7 @@ export function createWebview(scale = 1.25) {
 function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): Promise<boolean> {
   return new Promise((resolve, reject) => {
     let timer: NodeJS.Timeout;
-    const observer = new MutationObserver((m) => {
+    const observer = new MutationObserver(() => {
       clearTimeout(timer);
       timer = setTimeout(() => {
         observer.disconnect();

@@ -1,4 +1,4 @@
-import { MarkdownView, App, MarkdownRenderer } from "obsidian";
+import type { MarkdownView, App, MarkdownRenderer } from "obsidian";
 
 export type SelectionType = {
   rendered: boolean;

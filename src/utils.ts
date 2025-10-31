@@ -6,7 +6,7 @@ export class TreeNode {
   title: string;
   level: number;
   children: TreeNode[] = [];
-  parent: TreeNode;
+  parent!: TreeNode; // Will be assigned after construction
   constructor(key: string, title: string, level: number) {
     this.key = key;
     this.title = title;
@@ -29,7 +29,8 @@ export function getHeadingTree(doc = document) {
   const root = new TreeNode("", "Root", 0);
   let prev = root;
 
-  headings.forEach((heading: HTMLElement) => {
+  headings.forEach((element) => {
+    const heading = element as HTMLElement;
     if (heading.style.display == "none") {
       return;
     }
@@ -58,7 +59,8 @@ export function getHeadingTree(doc = document) {
 // Enhanced to support both Obsidian wikilinks and standard markdown anchor links
 export function modifyDest(doc: Document) {
   const data = new Map();
-  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
+  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((element, i) => {
+    const heading = element as HTMLElement;
     const link = document.createElement("a") as HTMLAnchorElement;
     const flag = `${heading.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
@@ -77,21 +79,42 @@ export function modifyDest(doc: Document) {
       // Also map URL-encoded version and common variations
       data.set(encodeURIComponent(headingText), flag);
       // Map space-to-dash version (common in many markdown processors)
-      data.set(headingText.replace(/\s+/g, '-'), flag);
+      data.set(headingText.replace(/\s+/g, "-"), flag);
       // Map space-to-dash-lowercase version
-      data.set(headingText.toLowerCase().replace(/\s+/g, '-'), flag);
+      data.set(headingText.toLowerCase().replace(/\s+/g, "-"), flag);
       // Map version with special characters removed (common in some processors)
-      const cleanText = headingText.replace(/[^\w\s-]/g, '').trim();
+      const cleanText = headingText.replace(/[^\w\s-]/g, "").trim();
       if (cleanText && cleanText !== headingText) {
         data.set(cleanText, flag);
-        data.set(cleanText.replace(/\s+/g, '-'), flag);
-        data.set(cleanText.toLowerCase().replace(/\s+/g, '-'), flag);
+        data.set(cleanText.replace(/\s+/g, "-"), flag);
+        data.set(cleanText.toLowerCase().replace(/\s+/g, "-"), flag);
       }
     }
 
     // Map the heading ID if it exists
     if (heading.id) {
       data.set(heading.id, flag);
+    }
+  });
+
+  // Process block IDs and add position markers
+  doc.querySelectorAll("span.blockid").forEach((element, i) => {
+    const blockSpan = element as HTMLElement;
+    const blockId = blockSpan.id; // e.g., "^ref-6-return"
+    if (blockId) {
+      const link = document.createElement("a") as HTMLAnchorElement;
+      const flag = `block-${i}`;
+      link.href = `af://${flag}`;
+      link.className = "md-print-anchor";
+      blockSpan.appendChild(link);
+
+      // Map the block ID (with the ^ prefix)
+      data.set(blockId, flag);
+      // Also map without ^ prefix for lookups
+      data.set(blockId.substring(1), flag);
+      // Map lowercase versions for case-insensitive matching
+      data.set(blockId.toLowerCase(), flag);
+      data.set(blockId.substring(1).toLowerCase(), flag);
     }
   });
 
@@ -106,27 +129,27 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
   const lowerDest = convertMapKeysToLowercase(dest);
 
   // Handle Obsidian internal links (wikilink-style)
-  doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
+  doc.querySelectorAll("a.internal-link").forEach((element) => {
+    const el = element as HTMLAnchorElement;
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
-    if (anchor?.startsWith("^")) {
-      el.href = el.dataset.href?.toLowerCase() as string;
-    }
-
     if (anchor?.length > 0) {
+      // Skip links to other files (not same file or empty title)
       if (title?.length > 0 && title != basename) {
         return;
       }
 
+      // Look up the anchor in the destination map (works for both headings and blocks)
       const flag = dest.get(anchor) || lowerDest.get(anchor?.toLowerCase());
-      if (flag && !anchor.startsWith("^")) {
+      if (flag) {
         el.href = `an://${flag}`;
       }
     }
   });
 
   // Handle standard markdown anchor links like [text](#heading)
-  doc.querySelectorAll("a[href^='#']").forEach((el: HTMLAnchorElement) => {
+  doc.querySelectorAll("a[href^='#']").forEach((element) => {
+    const el = element as HTMLAnchorElement;
     const href = el.getAttribute("href");
     if (!href) return;
 
@@ -142,14 +165,14 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
 
     // Try multiple variations of the anchor text to find a match
     const variations = [
-      anchor,                                    // Original anchor
-      decodeURIComponent(anchor),               // URL decoded
-      anchor.replace(/-/g, ' '),                // Dash to space
-      decodeURIComponent(anchor).replace(/-/g, ' '), // Both
-      anchor.toLowerCase(),                     // Lowercase
+      anchor, // Original anchor
+      decodeURIComponent(anchor), // URL decoded
+      anchor.replace(/-/g, " "), // Dash to space
+      decodeURIComponent(anchor).replace(/-/g, " "), // Both
+      anchor.toLowerCase(), // Lowercase
       decodeURIComponent(anchor).toLowerCase(), // URL decoded + lowercase
-      anchor.toLowerCase().replace(/-/g, ' '),  // Lowercase + dash to space
-      decodeURIComponent(anchor).toLowerCase().replace(/-/g, ' '), // All transformations
+      anchor.toLowerCase().replace(/-/g, " "), // Lowercase + dash to space
+      decodeURIComponent(anchor).toLowerCase().replace(/-/g, " "), // All transformations
     ];
 
     // Try to find a matching heading using any of the variations
@@ -222,7 +245,7 @@ export function copyAttributes(node: HTMLElement, attributes: NamedNodeMap) {
 }
 
 export function render(tpl: string, data: Record<string, string>) {
-  return tpl.replace(/\{\{(.*?)\}\}/g, (match, key) => data[key.trim()]);
+  return tpl.replace(/\{\{(.*?)\}\}/g, (_match, key) => data[key.trim()]);
 }
 
 export function isNumber(str: string) {
@@ -233,7 +256,7 @@ export function safeParseInt(str?: string, default_ = 0) {
   try {
     const num = parseInt(String(str));
     return isNaN(num) ? default_ : num;
-  } catch (e) {
+  } catch {
     return default_;
   }
 }
@@ -241,7 +264,7 @@ export function safeParseFloat(str?: string, default_ = 0.0) {
   try {
     const num = parseFloat(String(str));
     return isNaN(num) ? default_ : num;
-  } catch (e) {
+  } catch {
     return default_;
   }
 }

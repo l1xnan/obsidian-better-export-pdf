@@ -1,0 +1,6 @@
+main.js
+node_modules/
+dist/
+*.md
+package-lock.json
+src/Progress.svelte

@@ -6,15 +6,19 @@
     "module": "ESNext",
     "target": "es2018",
     "allowJs": true,
-    "noImplicitAny": true,
     "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
-    "strictNullChecks": true,
     "esModuleInterop": true,
     "lib": ["DOM", "ES2021"],
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    // Strict type checking options
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["**/*.ts", "**/*.svelte"]
 }
