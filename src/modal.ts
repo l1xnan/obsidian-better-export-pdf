@@ -52,16 +52,16 @@ export class ExportConfigModal extends Modal {
   config: TConfig;
   canceled: boolean;
   multiplePdf?: boolean;
-  callback: Callback;
+  callback!: Callback; // Assigned in methods
   plugin: BetterExportPdfPlugin;
   file: TFile | TFolder;
-  preview: electron.WebviewTag;
+  preview!: electron.WebviewTag; // Assigned in methods
   webviews: electron.WebviewTag[];
-  previewDiv: HTMLDivElement;
+  previewDiv!: HTMLDivElement; // Assigned in methods
   completed: boolean;
   docs: DocType[];
-  title: string;
-  frontMatter: FrontMatterCache;
+  title!: string; // Assigned in methods
+  frontMatter!: FrontMatterCache; // Assigned in methods
   i18n: Lang;
   scale: number;
   // @ts-ignore
@@ -219,7 +219,7 @@ export class ExportConfigModal extends Modal {
 
   async calcWebviewSize() {
     await sleep(500);
-    this.webviews.forEach(async (e, i) => {
+    this.webviews.forEach(async (e) => {
       const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
       const sizeEl = e.parentNode?.querySelector(".print-size");
       if (sizeEl) {
@@ -229,7 +229,8 @@ export class ExportConfigModal extends Modal {
   }
 
   async togglePrintSize() {
-    document.querySelectorAll(".print-size")?.forEach((sizeEl: HTMLDivElement) => {
+    document.querySelectorAll(".print-size")?.forEach((element) => {
+      const sizeEl = element as HTMLDivElement;
       if (this.config["pageSize"] == "Custom") {
         sizeEl.style.visibility = "visible";
       } else {
@@ -272,7 +273,7 @@ export class ExportConfigModal extends Modal {
     const preview = e.appendChild(webview);
     this.webviews.push(preview);
     this.preview = preview;
-    preview.addEventListener("dom-ready", async (e) => {
+    preview.addEventListener("dom-ready", async () => {
       this.completed = true;
       getAllStyles().forEach(async (css) => {
         await preview.insertCSS(css);

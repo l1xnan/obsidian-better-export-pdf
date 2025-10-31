@@ -50,7 +50,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
-  settings: BetterExportPdfPluginSettings;
+  settings!: BetterExportPdfPluginSettings; // Assigned in onload
   i18n: Lang;
 
   constructor(app: App, manifest: PluginManifest) {
@@ -111,6 +111,7 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerEvents() {
     // Register the Export As HTML button in the file menu
     this.registerEvent(
+      // @ts-expect-error: file-menu is a valid event but not in Obsidian types
       this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
         let title = file instanceof TFolder ? "Export folder to PDF" : "Better Export PDF";
         if (isDev) {
@@ -129,6 +130,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       }),
     );
     this.registerEvent(
+      // @ts-expect-error: file-menu is a valid event but not in Obsidian types
       this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
         if (file instanceof TFolder) {
           let title = "Export to PDF...";
