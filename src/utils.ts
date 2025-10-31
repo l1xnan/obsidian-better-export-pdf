@@ -6,7 +6,7 @@ export class TreeNode {
   title: string;
   level: number;
   children: TreeNode[] = [];
-  parent: TreeNode;
+  parent!: TreeNode; // Will be assigned after construction
   constructor(key: string, title: string, level: number) {
     this.key = key;
     this.title = title;
@@ -29,7 +29,8 @@ export function getHeadingTree(doc = document) {
   const root = new TreeNode("", "Root", 0);
   let prev = root;
 
-  headings.forEach((heading: HTMLElement) => {
+  headings.forEach((element) => {
+    const heading = element as HTMLElement;
     if (heading.style.display == "none") {
       return;
     }
@@ -58,7 +59,8 @@ export function getHeadingTree(doc = document) {
 // Enhanced to support both Obsidian wikilinks and standard markdown anchor links
 export function modifyDest(doc: Document) {
   const data = new Map();
-  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
+  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((element, i) => {
+    const heading = element as HTMLElement;
     const link = document.createElement("a") as HTMLAnchorElement;
     const flag = `${heading.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
@@ -96,7 +98,8 @@ export function modifyDest(doc: Document) {
   });
 
   // Process block IDs and add position markers
-  doc.querySelectorAll("span.blockid").forEach((blockSpan: HTMLElement, i) => {
+  doc.querySelectorAll("span.blockid").forEach((element, i) => {
+    const blockSpan = element as HTMLElement;
     const blockId = blockSpan.id; // e.g., "^ref-6-return"
     if (blockId) {
       const link = document.createElement("a") as HTMLAnchorElement;
@@ -126,7 +129,8 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
   const lowerDest = convertMapKeysToLowercase(dest);
 
   // Handle Obsidian internal links (wikilink-style)
-  doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, _i) => {
+  doc.querySelectorAll("a.internal-link").forEach((element) => {
+    const el = element as HTMLAnchorElement;
     const [title, anchor] = el.dataset.href?.split("#") ?? [];
 
     if (anchor?.length > 0) {
@@ -144,7 +148,8 @@ export function fixAnchors(doc: Document, dest: Map<string, string>, basename: s
   });
 
   // Handle standard markdown anchor links like [text](#heading)
-  doc.querySelectorAll("a[href^='#']").forEach((el: HTMLAnchorElement) => {
+  doc.querySelectorAll("a[href^='#']").forEach((element) => {
+    const el = element as HTMLAnchorElement;
     const href = el.getAttribute("href");
     if (!href) return;
 
@@ -240,7 +245,7 @@ export function copyAttributes(node: HTMLElement, attributes: NamedNodeMap) {
 }
 
 export function render(tpl: string, data: Record<string, string>) {
-  return tpl.replace(/\{\{(.*?)\}\}/g, (match, key) => data[key.trim()]);
+  return tpl.replace(/\{\{(.*?)\}\}/g, (_match, key) => data[key.trim()]);
 }
 
 export function isNumber(str: string) {
