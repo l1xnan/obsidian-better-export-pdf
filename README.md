@@ -137,6 +137,15 @@ When batch exporting files from a folder, you can choose to preserve the origina
 - **Enabled**: Files are exported to subdirectories that match your vault structure (e.g., `folder/subfolder/file.pdf`)
 - **Disabled**: All files are exported to a flat directory structure (default behavior)
 
+#### Copy non-markdown files
+
+When exporting folders, you can also copy non-markdown files (images, PDFs, attachments, etc.) alongside the exported PDFs. Enable the "Copy non-markdown files" option in the export dialog to copy all files to the output directory.
+
+- **Enabled**: Non-markdown files are copied to the output directory alongside the exported PDFs
+- **Disabled**: Only PDF exports are created (default behavior)
+
+This feature is particularly useful when your markdown files reference images or other assets that you want to keep together with the exported PDFs.
+
 ### Export as One Page
 
 In the export dialog, select `Custom` for **Page Size** and set **Margin** to `None`. Set the page size according to the document's requirements.

@@ -11,6 +11,7 @@ export default {
     displayFooter: "Display Footer",
     openAfterExport: "Open after export",
     preserveFolderStructure: "Preserve folder structure",
+    copyNonMarkdownFiles: "Copy non-markdown files",
     cssSnippets: "CSS snippets",
   },
   settings: {
