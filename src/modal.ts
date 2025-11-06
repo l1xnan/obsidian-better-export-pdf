@@ -34,6 +34,8 @@ export interface TConfig {
   cssSnippet?: string;
 
   multiple?: boolean;
+  preserveFolderStructure?: boolean;
+  copyNonMarkdownFiles?: boolean;
 }
 
 export type DocType = { doc: Document; frontMatter?: FrontMatterCache; file: TFile };
@@ -93,6 +95,8 @@ export class ExportConfigModal extends Modal {
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
+      preserveFolderStructure: false,
+      copyNonMarkdownFiles: false,
       ...(plugin.settings?.prevConfig ?? {}),
     } as TConfig;
   }
@@ -242,7 +246,7 @@ export class ExportConfigModal extends Modal {
     return `
       document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
       document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
-      
+
       // Function to recursively decode and replace innerHTML of span.markdown-embed elements
       function decodeAndReplaceEmbed(element) {
 				// Replace the innerHTML with the decoded content
@@ -251,7 +255,7 @@ export class ExportConfigModal extends Modal {
 				const newEmbeds = element.querySelectorAll("span.markdown-embed");
 				newEmbeds.forEach(decodeAndReplaceEmbed);
       }
-      
+
       // Start the process with all span.markdown-embed elements in the document
       document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
 
@@ -366,16 +370,55 @@ export class ExportConfigModal extends Modal {
         const outputPath = await getOutputPath(title);
         console.log("output:", outputPath);
         if (outputPath) {
+          // Export PDF files
           await Promise.all(
             this.webviews.map(async (wb, i) => {
-              await exportToPDF(
-                `${outputPath}/${this.docs[i].file.basename}.pdf`,
-                { ...this.plugin.settings, ...this.config },
-                wb,
-                this.docs[i],
-              );
+              let outputFilePath: string;
+
+              if (this.config.preserveFolderStructure && this.file instanceof TFolder) {
+                // Calculate relative path from root folder to maintain structure
+                const relativePath = path.relative(this.file.path, this.docs[i].file.path);
+                const fileDir = path.dirname(relativePath);
+                const fileName = path.basename(relativePath, path.extname(relativePath)) + ".pdf";
+
+                // Create full output path maintaining folder structure
+                outputFilePath = path.join(outputPath, fileDir, fileName);
+
+                // Ensure directory exists
+                const outputDir = path.dirname(outputFilePath);
+                await fs.mkdir(outputDir, { recursive: true });
+              } else {
+                // Use flat structure (original behavior)
+                outputFilePath = `${outputPath}/${this.docs[i].file.basename}.pdf`;
+              }
+
+              await exportToPDF(outputFilePath, { ...this.plugin.settings, ...this.config }, wb, this.docs[i]);
             }),
           );
+
+          // Copy non-markdown files if option is enabled
+          if (this.config.copyNonMarkdownFiles && this.file instanceof TFolder) {
+            // Get all files and filter out markdown files
+            const allFiles = traverseFolder(this.file, []);
+            const nonMarkdownFiles = allFiles.filter((file) => file.extension !== "md");
+
+            // @ts-ignore
+            const basePath = this.plugin.app.vault.adapter.basePath;
+
+            await Promise.all(
+              nonMarkdownFiles.map(async (file) => {
+                const sourceFilePath = path.join(basePath, file.path);
+                const destFilePath = path.join(outputPath, file.name);
+
+                try {
+                  await fs.copyFile(sourceFilePath, destFilePath);
+                } catch (error) {
+                  console.warn(`Failed to copy file ${file.path}:`, error);
+                }
+              }),
+            );
+          }
+
           this.close();
         }
       } else {
@@ -601,6 +644,30 @@ export class ExportConfigModal extends Modal {
           this.config["open"] = value;
         }),
     );
+
+    // Only show preserve folder structure option for multiple PDF exports
+    if (this.multiplePdf) {
+      new Setting(contentEl).setName(this.i18n.exportDialog.preserveFolderStructure).addToggle((toggle) =>
+        toggle
+          .setTooltip("Maintain the original folder structure when exporting multiple files.")
+          .setValue(this.config["preserveFolderStructure"] ?? false)
+          .onChange(async (value) => {
+            this.config["preserveFolderStructure"] = value;
+          }),
+      );
+    }
+    
+    // Only show file copying option for multiple PDF exports
+    if (this.multiplePdf) {
+      new Setting(contentEl).setName(this.i18n.exportDialog.copyNonMarkdownFiles).addToggle((toggle) =>
+        toggle
+          .setTooltip("Copy non-markdown files (images, PDFs, etc.) alongside exported PDFs.")
+          .setValue(this.config["copyNonMarkdownFiles"] ?? false)
+          .onChange(async (value) => {
+            this.config["copyNonMarkdownFiles"] = value;
+          }),
+      );
+    }
 
     const snippets = this.cssSnippets();
 
