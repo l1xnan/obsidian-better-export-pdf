@@ -12,6 +12,7 @@ export interface BetterExportPdfPluginSettings {
   prevConfig?: TConfig;
 
   showTitle: boolean;
+  includeComments: boolean;
   maxLevel: string;
 
   displayHeader: boolean;
@@ -32,6 +33,7 @@ export interface BetterExportPdfPluginSettings {
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   showTitle: true,
+  includeComments: false,
   maxLevel: "6",
 
   displayHeader: true,

@@ -23,6 +23,7 @@ export interface TConfig {
   landscape: boolean;
   scale: number;
   showTitle: boolean;
+  includeComments: boolean;
   displayHeader: boolean;
   displayFooter: boolean;
 
@@ -83,6 +84,7 @@ export class ExportConfigModal extends Modal {
       pageSize: "A4",
       marginType: "1",
       showTitle: plugin.settings.showTitle ?? true,
+      includeComments: plugin.settings.includeComments ?? false,
       open: true,
       scale: 100,
       landscape: false,
@@ -428,6 +430,14 @@ export class ExportConfigModal extends Modal {
               _title.style.display = value ? "block" : "none";
             }
           });
+        }),
+    );
+    new Setting(contentEl).setName(this.i18n.exportDialog.includeComments).addToggle((toggle) =>
+      toggle
+        .setTooltip("Include %%comments%% in the exported PDF")
+        .setValue(this.config["includeComments"] ?? false)
+        .onChange(async (value) => {
+          this.config["includeComments"] = value;
         }),
     );
     const pageSizes: (PageSizeType | "Custom")[] = [

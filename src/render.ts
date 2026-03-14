@@ -219,12 +219,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
     // but errors occur during recent postProcess handling, thus achieving the goal of avoiding postProcess handling.
     const markdown = config["includeComments"]
-      ? lines.join("\n").replace(/%%(.+?)%%/gs, (_, content) => [
-          `\n<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:8pt 12pt;margin:8pt 0;page-break-inside:avoid;">`,
-          `<p style="font-size:0.7em;font-weight:700;letter-spacing:0.08em;color:#b45309;margin:0 0 4pt 0;">COMMENT</p>`,
-          `\n\n${content.trim()}\n\n`,
-          `</div>\n`,
-        ].join(""))
+      ? lines.join("\n").replace(/%%(.+?)%%/gs, (_, content) => content)
       : lines.join("\n");
     await MarkdownRenderer.render(app, markdown, fragment, file.path, comp);
   } catch (error) {
