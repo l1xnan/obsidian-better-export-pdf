@@ -8,6 +8,7 @@ export default {
     downscalePercent: "Downscale Percent",
     landscape: "Landscape",
     displayHeader: "Display Header",
+    skipFirstPageHeader: "Skip header on first page",
     displayFooter: "Display Footer",
     openAfterExport: "Open after export",
     cssSnippets: "CSS snippets",
@@ -15,6 +16,7 @@ export default {
   settings: {
     showTitle: "Add file name as title",
     displayHeader: "Display headers",
+    skipFirstPageHeader: "Skip header on first page",
     displayFooter: "Display footer",
     printBackground: "Print background",
     maxLevel: "Max headings level of the outline",

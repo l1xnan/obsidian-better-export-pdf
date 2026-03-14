@@ -434,7 +434,20 @@ export async function exportToPDF(
   }
 
   try {
-    let data = await w.printToPDF(printOptions);
+    let data: Uint8Array;
+    if (config["skipFirstPageHeader"] && config["displayHeader"]) {
+      // Two-pass merge: print twice, replace page 1 with a headerless version
+      const fullData = await w.printToPDF(printOptions);
+      const noHdrData = await w.printToPDF({ ...printOptions, headerTemplate: "<span></span>" });
+      const fullPdf = await PDFDocument.load(fullData);
+      const noHdrPdf = await PDFDocument.load(noHdrData);
+      const [cleanPage] = await fullPdf.copyPages(noHdrPdf, [0]);
+      fullPdf.removePage(0);
+      fullPdf.insertPage(0, cleanPage);
+      data = await fullPdf.save();
+    } else {
+      data = await w.printToPDF(printOptions);
+    }
 
     data = await editPDF(data, {
       headings: getHeadingTree(doc),

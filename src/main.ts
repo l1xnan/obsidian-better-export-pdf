@@ -15,6 +15,7 @@ export interface BetterExportPdfPluginSettings {
   maxLevel: string;
 
   displayHeader: boolean;
+  skipFirstPageHeader: boolean;
   displayFooter: boolean;
   headerTemplate: string;
   footerTemplate: string;
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   maxLevel: "6",
 
   displayHeader: true,
+  skipFirstPageHeader: false,
   displayFooter: true,
   headerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="title"></span></div>`,
   footerTemplate: `<div style="width: 100vw;font-size:10px;text-align:center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>`,

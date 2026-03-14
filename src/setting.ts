@@ -59,6 +59,18 @@ export default class ConfigSettingTab extends PluginSettingTab {
           this.plugin.saveSettings();
         }),
     );
+    new Setting(containerEl)
+      .setName(this.i18n.settings.skipFirstPageHeader)
+      .setDesc("Hide the header on the first page (header appears on all subsequent pages)")
+      .addToggle((toggle) =>
+        toggle
+          .setTooltip("Hide header on first page")
+          .setValue(this.plugin.settings.skipFirstPageHeader ?? false)
+          .onChange(async (value) => {
+            this.plugin.settings.skipFirstPageHeader = value;
+            this.plugin.saveSettings();
+          }),
+      );
     new Setting(containerEl).setName(this.i18n.settings.displayFooter).addToggle((toggle) =>
       toggle
         .setTooltip("Display footer")
