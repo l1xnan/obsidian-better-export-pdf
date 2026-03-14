@@ -24,6 +24,7 @@ export interface TConfig {
   scale: number;
   showTitle: boolean;
   displayHeader: boolean;
+  skipFirstPageHeader: boolean;
   displayFooter: boolean;
 
   marginTop?: string;
@@ -91,6 +92,7 @@ export class ExportConfigModal extends Modal {
       marginLeft: "10",
       marginRight: "10",
       displayHeader: plugin.settings.displayHeader ?? true,
+      skipFirstPageHeader: plugin.settings.skipFirstPageHeader ?? false,
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
       ...(plugin.settings?.prevConfig ?? {}),
@@ -581,6 +583,15 @@ export class ExportConfigModal extends Modal {
         .setValue(this.config["displayHeader"])
         .onChange(async (value) => {
           this.config["displayHeader"] = value;
+        }),
+    );
+
+    new Setting(contentEl).setName(this.i18n.exportDialog.skipFirstPageHeader).addToggle((toggle) =>
+      toggle
+        .setTooltip("Hide header on first page")
+        .setValue(this.config["skipFirstPageHeader"] ?? false)
+        .onChange(async (value) => {
+          this.config["skipFirstPageHeader"] = value;
         }),
     );
 

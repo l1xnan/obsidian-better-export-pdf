@@ -11,6 +11,7 @@ export default {
     downscalePercent: "缩放",
     landscape: "横向打印",
     displayHeader: "页眉",
+    skipFirstPageHeader: "跳过首页页眉",
     displayFooter: "页脚",
     openAfterExport: "导出后打开",
     cssSnippets: "CSS代码片段",
@@ -19,6 +20,7 @@ export default {
   settings: {
     showTitle: "将笔记名作为标题",
     displayHeader: "显示页眉",
+    skipFirstPageHeader: "跳过首页页眉",
     displayFooter: "显示页脚",
     printBackground: "打印背景",
     maxLevel: "最大标题级别",
