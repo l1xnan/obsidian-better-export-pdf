@@ -279,9 +279,21 @@ export class ExportConfigModal extends Modal {
       });
       if (this.config.cssSnippet && this.config.cssSnippet != "0") {
         try {
-          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
-          // remove `@media print { ... }`
-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+          const snippetsDir = path.dirname(this.config.cssSnippet);
+          let cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
+          // Resolve @import statements so modular snippet files are inlined
+          const importMatches = [...cssSnippet.matchAll(/@import\s+["']([^"']+)["']\s*;/g)];
+          for (const [match, importFile] of importMatches) {
+            const absPath = path.join(snippetsDir, importFile);
+            try {
+              const imported = await fs.readFile(absPath, { encoding: "utf8" });
+              cssSnippet = cssSnippet.replace(match, imported);
+            } catch (importErr) {
+              console.warn("better-export-pdf: could not resolve @import:", absPath, importErr);
+            }
+          }
+          // remove `@media print { ... }` — multiline flag handles multi-rule blocks
+          const printCss = cssSnippet.replace(/@media print\s*\{([\s\S]*)\}\s*$/, "$1");
           await preview.insertCSS(printCss);
           await preview.insertCSS(cssSnippet);
         } catch (error) {
