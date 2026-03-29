@@ -6,6 +6,7 @@ export default {
 
   exportDialog: {
     filenameAsTitle: "将笔记名作为标题",
+    includeComments: "包含注释",
     pageSize: "纸张尺寸",
     margin: "页边距",
     downscalePercent: "缩放",
@@ -18,6 +19,7 @@ export default {
 
   settings: {
     showTitle: "将笔记名作为标题",
+    includeComments: "包含注释",
     displayHeader: "显示页眉",
     displayFooter: "显示页脚",
     printBackground: "打印背景",

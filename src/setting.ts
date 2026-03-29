@@ -50,6 +50,18 @@ export default class ConfigSettingTab extends PluginSettingTab {
           this.plugin.saveSettings();
         }),
     );
+    new Setting(containerEl)
+      .setName(this.i18n.settings.includeComments)
+      .setDesc("Include %%comments%% in the exported PDF")
+      .addToggle((toggle) =>
+        toggle
+          .setTooltip("Include comments")
+          .setValue(this.plugin.settings.includeComments ?? false)
+          .onChange(async (value) => {
+            this.plugin.settings.includeComments = value;
+            this.plugin.saveSettings();
+          }),
+      );
     new Setting(containerEl).setName(this.i18n.settings.displayHeader).addToggle((toggle) =>
       toggle
         .setTooltip("Display header")

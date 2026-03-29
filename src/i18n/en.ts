@@ -3,6 +3,7 @@ export default {
   exportCurrentFileWithPrevious: "Export to PDF with previous Settings",
   exportDialog: {
     filenameAsTitle: "Include file name as title",
+    includeComments: "Include comments",
     pageSize: "Page Size",
     margin: "Margin",
     downscalePercent: "Downscale Percent",
@@ -14,6 +15,7 @@ export default {
   },
   settings: {
     showTitle: "Add file name as title",
+    includeComments: "Include comments",
     displayHeader: "Display headers",
     displayFooter: "Display footer",
     printBackground: "Print background",

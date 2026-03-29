@@ -218,7 +218,10 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
     // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
     // but errors occur during recent postProcess handling, thus achieving the goal of avoiding postProcess handling.
-    await MarkdownRenderer.render(app, lines.join("\n"), fragment, file.path, comp);
+    const markdown = config["includeComments"]
+      ? lines.join("\n").replace(/%%(.+?)%%/gs, (_, content) => content)
+      : lines.join("\n");
+    await MarkdownRenderer.render(app, markdown, fragment, file.path, comp);
   } catch (error) {
     /* empty */
   }
