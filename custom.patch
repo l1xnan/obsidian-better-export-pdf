@@ -1,0 +1,26 @@
+--- /Users/grahamsmale/Library/Mobile Documents/iCloud~md~obsidian/Documents/GHSNotes/.obsidian/plugins/better-export-pdf/main.js	2025-04-23 10:25:43
++++ /Users/grahamsmale/Library/Mobile Documents/iCloud~md~obsidian/Documents/GHSNotes/.obsidian/plugins/better-export-pdf-custom/main.js	2026-03-13 10:43:22
+@@ -25276,8 +25276,21 @@
+       });
+       if (this.config.cssSnippet && this.config.cssSnippet != "0") {
+         try {
+-          const cssSnippet = await fs2.readFile(this.config.cssSnippet, { encoding: "utf8" });
+-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
++          // CUSTOM: resolve @import statements before injecting
++          const snippetsDir = import_path.default.dirname(this.config.cssSnippet);
++          let cssSnippet = await fs2.readFile(this.config.cssSnippet, { encoding: "utf8" });
++          const importMatches = [...cssSnippet.matchAll(/@import\s+["']([^"']+)["']\s*;/g)];
++          for (const [match, importFile] of importMatches) {
++            const absPath = import_path.default.join(snippetsDir, importFile);
++            try {
++              const imported = await fs2.readFile(absPath, { encoding: "utf8" });
++              cssSnippet = cssSnippet.replace(match, imported);
++            } catch (importErr) {
++              console.warn("better-export-pdf-custom: could not resolve @import:", absPath, importErr);
++            }
++          }
++          // CUSTOM: fixed regex — use greedy [\s\S]* to handle nested braces correctly
++          const printCss = cssSnippet.replace(/@media print\s*\{([\s\S]*)\}\s*$/, "$1");
+           await preview.insertCSS(printCss);
+           await preview.insertCSS(cssSnippet);
+         } catch (error2) {
