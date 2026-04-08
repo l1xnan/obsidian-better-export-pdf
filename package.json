@@ -16,22 +16,22 @@
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^20.14.10",
     "builtin-modules": "3.3.0",
-    "electron": "32.2.5",
-    "esbuild": "0.25.2",
-    "esbuild-svelte": "^0.9.2",
+    "electron": "39.8.3",
+    "esbuild": "0.28.0",
+    "esbuild-svelte": "^0.9.4",
     "eslint": "^8.57.0",
-    "obsidian": "^1.8.7",
-    "svelte": "^5.26.1",
-    "svelte-check": "^4.1.4",
+    "obsidian": "^1.12.3",
+    "svelte": "^5.55.2",
+    "svelte-check": "^4.4.6",
     "svelte-preprocess": "^6.0.3",
     "tslib": "2.6.3",
-    "typescript": "5.8.3",
-    "typescript-eslint": "^7.16.0"
+    "typescript": "6.0.2",
+    "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
-    "@lucide/svelte": "^0.487.0",
+    "@lucide/svelte": "^1.7.0",
     "deepmerge": "^4.3.1",
-    "p-limit": "^6.2.0",
+    "p-limit": "^7.3.0",
     "pdf-lib": "^1.17.1"
   }
 }
