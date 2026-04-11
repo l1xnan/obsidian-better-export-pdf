@@ -1,5 +1,5 @@
 import electron, { type WebviewTag } from "electron";
-import * as fs from "fs/promises";
+const fs = require("fs").promises;
 import { type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 

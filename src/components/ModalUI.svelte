@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type BetterExportPdfPlugin from "../main";
-  import type { TConfig, SvelteModal } from "./SvelteModal";
+  import type { TConfig, ExportConfigModal } from "../modal";
+  import { TFile } from "obsidian";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText, icon } from "../actions";
   import { getAllStyles, getPatchStyle, type ParamType } from "../render";
+  import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { PageSize } from "../constant";
-  import { mm2px, safeParseFloat, px2mm } from "../utils";
+  import * as electron from "electron";
+  import { mm2px, safeParseFloat, px2mm, isNumber } from "../utils";
   const fs = require("fs").promises;
 
   let {
@@ -13,10 +16,15 @@
     plugin,
     config = $bindable(),
   }: {
-    modal: SvelteModal;
+    modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
     config: TConfig;
   } = $props();
+
+  // Webview state
+  let webviews = $state<electron.WebviewTag[]>([]);
+  let lastPreview = $state<electron.WebviewTag | null>(null);
+  let completed = $state(false);
 
   const i18n = $derived(plugin.i18n);
   const settings = $derived(plugin.settings);
@@ -36,7 +44,6 @@
     if (!el) return;
     const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
     scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
-    console.log(scale);
   }
 
   export function initRenderStates(data: ParamType[]) {
@@ -52,12 +59,10 @@
   export async function calcWebviewSize() {
     // @ts-ignore
     await sleep(500);
-    modal.webviews.forEach(async (e) => {
+
+    webviews.forEach(async (e, i) => {
       const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
-      const sizeEl = e.parentNode?.querySelector(".print-size");
-      if (sizeEl) {
-        sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
-      }
+      docs[i].printSize = `${width}×${height}px²\n${px2mm(width)}×${px2mm(height)}mm²`;
     });
   }
 
@@ -70,7 +75,8 @@
       await modal.renderFiles(data, allDocs, (i) => updateRenderStates(i));
     }
 
-    modal.webviews = [];
+    webviews = [];
+    lastPreview = null;
 
     const promises = modal.docs.map((docItem) => {
       return new Promise<void>((resolve) => {
@@ -86,12 +92,72 @@
     await calcWebviewSize();
   }
 
+  function toggleTitle(value: boolean) {
+    webviews.forEach((wv, i) => {
+      wv.executeJavaScript(`
+        var _title = document.querySelector("h1.__title__");
+        if (_title) {
+          _title.style.display = "${value ? "block" : "none"}";
+        }
+      `);
+      const _title = modal.docs[i]?.doc?.querySelector("h1.__title__") as HTMLHeadingElement;
+      if (_title) {
+        _title.style.display = value ? "block" : "none";
+      }
+    });
+  }
+
+  export async function onCssSnippetChange() {
+    await renderPreview(false);
+  }
+
+  export async function refreshPreview() {
+    await renderPreview(true);
+  }
+
+  export async function handleExport() {
+    plugin.settings.prevConfig = config;
+    await plugin.saveSettings();
+
+    if (config["pageSize"] == "Custom") {
+      if (!isNumber(config["pageWidth"] ?? "") || !isNumber(config["pageHeight"] ?? "")) {
+        alert("When the page size is Custom, the Width/Height cannot be empty.");
+        return;
+      }
+    }
+
+    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+
+    if (modal.multiplePdf) {
+      const outputPath = await getOutputPath(title);
+      if (outputPath) {
+        await Promise.all(
+          webviews.map(async (wb, i) => {
+            await exportToPDF(
+              `${outputPath}/${modal.docs[i].file.basename}.pdf`,
+              { ...plugin.settings, ...config },
+              wb,
+              modal.docs[i],
+            );
+          }),
+        );
+        modal.close();
+      }
+    } else {
+      const outputFile = await getOutputFile(title, plugin.settings.isTimestamp);
+      if (outputFile) {
+        await exportToPDF(outputFile, { ...plugin.settings, ...config }, webviews[0], modal.docs[0]);
+        modal.close();
+      }
+    }
+  }
+
   function initWebviewEvents(preview: any, docObj: any) {
-    modal.webviews.push(preview);
-    modal.preview = preview; // keep track of the latest one
+    webviews.push(preview);
+    lastPreview = preview; // keep track of the latest one
 
     const handler = async () => {
-      modal.completed = true;
+      completed = true;
       getAllStyles().forEach(async (css) => {
         await preview.insertCSS(css);
       });
@@ -143,9 +209,6 @@
   let previewEl: HTMLDivElement;
 
   onMount(() => {
-    // Bind previewDiv on the modal so external logic can reference it
-    modal.previewDiv = previewEl;
-
     const resizeObserver = new ResizeObserver(() => {
       calcPageSize(previewEl);
     });
@@ -161,7 +224,7 @@
 
   function handleKeyup(event: KeyboardEvent) {
     if (event.key === "Enter") {
-      modal.handleExport();
+      handleExport();
     }
   }
 </script>
@@ -190,7 +253,9 @@
           <div class="filename">{i + 1}-{item.doc.title}</div>
         {/if}
         <div class="webview-wrapper">
-          <div class="print-size" style:visibility={config.pageSize === "Custom" ? "visible" : "hidden"}></div>
+          <div class="print-size" style:visibility={config.pageSize === "Custom" ? "visible" : "hidden"}>
+            {item.printSize ?? ""}
+          </div>
           <webview
             src="app://obsidian.md/help.html"
             nodeintegration={true}
@@ -214,7 +279,7 @@
         value: config.showTitle,
         onChange: (value) => {
           config.showTitle = value;
-          modal.toggleTitle(value);
+          toggleTitle(value);
         },
       }}
     ></div>
@@ -398,7 +463,7 @@
       use:settingButton={{
         text: "Export",
         cta: true,
-        onClick: () => modal.handleExport(),
+        onClick: () => handleExport(),
       }}
     ></div>
 
@@ -406,9 +471,7 @@
     <div
       use:settingButton={{
         text: "Refresh",
-        onClick: () => {
-          renderPreview(true);
-        },
+        onClick: () => refreshPreview(),
       }}
     ></div>
 
@@ -417,7 +480,7 @@
       use:settingButton={{
         text: "Debug",
         hidden: !settings?.debug,
-        onClick: () => modal.preview?.openDevTools(),
+        onClick: () => lastPreview?.openDevTools(),
       }}
     ></div>
   </div>

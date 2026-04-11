@@ -3,7 +3,7 @@ import i18n, { type Lang } from "./i18n";
 import { ExportConfigModal, type TConfig } from "./modal";
 import ConfigSettingTab from "./setting";
 import { traverseFolder } from "./utils";
-import * as fs from "fs/promises";
+const fs = require("fs").promises;
 import path from "path";
 
 const isDev = process.env.NODE_ENV === "development";
