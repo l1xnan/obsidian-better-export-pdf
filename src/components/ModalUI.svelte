@@ -66,7 +66,7 @@
   }
 
   async function renderFiles(data: ParamType[], docs?: any[], cb?: (i: number) => void) {
-    const concurrency = safeParseInt(plugin.settings.concurrency) || 5;
+    const concurrency = safeParseInt(settings.concurrency) || 5;
     const limit = pLimit(concurrency);
 
     const inputs = data.map((param, i) =>
@@ -154,20 +154,15 @@
       if (outputPath) {
         await Promise.all(
           webviews.map(async (wb, i) => {
-            await exportToPDF(
-              `${outputPath}/${docs[i].file.basename}.pdf`,
-              { ...plugin.settings, ...config },
-              wb,
-              docs[i],
-            );
+            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i]);
           }),
         );
         modal.close();
       }
     } else {
-      const outputFile = await getOutputFile(title, plugin.settings.isTimestamp);
+      const outputFile = await getOutputFile(title, settings.isTimestamp);
       if (outputFile) {
-        await exportToPDF(outputFile, { ...plugin.settings, ...config }, webviews[0], docs[0]);
+        await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0]);
         modal.close();
       }
     }

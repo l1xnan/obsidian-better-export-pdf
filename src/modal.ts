@@ -77,7 +77,7 @@ export class ExportConfigModal extends Modal {
   onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
-    this.titleEl.setText("Export to PDF2");
+    this.titleEl.setText("Export to PDF");
 
     this.component = mount(ModalUI, {
       target: this.contentEl,
