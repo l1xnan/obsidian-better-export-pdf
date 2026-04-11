@@ -3,12 +3,10 @@ const fs = require("fs").promises;
 import { type FrontMatterCache, Modal, TFile, TFolder } from "obsidian";
 import path from "path";
 import { mount, unmount } from "svelte";
-import pLimit from "p-limit";
-
 import i18n, { type Lang } from "./i18n";
 import type BetterExportPdfPlugin from "./main";
-import { fixDoc, renderMarkdown, type ParamType } from "./render";
-import { safeParseInt, traverseFolder } from "./utils";
+import { renderMarkdown, type ParamType } from "./render";
+import { traverseFolder } from "./utils";
 import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -44,7 +42,6 @@ export class ExportConfigModal extends Modal {
   file: TFile | TFolder;
   multiplePdf?: boolean;
 
-  docs: DocType[];
   i18n: Lang;
 
   // Svelte component instance
@@ -55,7 +52,6 @@ export class ExportConfigModal extends Modal {
     this.plugin = plugin;
     this.file = file;
     this.i18n = i18n.current;
-    this.docs = [];
     this.multiplePdf = multiplePdf;
 
     this.config = {
@@ -126,32 +122,6 @@ export class ExportConfigModal extends Modal {
       }
     }
     return { data, docs };
-  }
-
-  async renderFiles(data: ParamType[], docs?: DocType[], cb?: (i: number) => void) {
-    const concurrency = safeParseInt(this.plugin.settings.concurrency) || 5;
-    const limit = pLimit(concurrency);
-
-    const inputs = data.map((param, i) =>
-      limit(async () => {
-        const res = await renderMarkdown(param);
-        cb?.(i);
-        return res;
-      }),
-    );
-    let _docs = [...(docs ?? []), ...(await Promise.all(inputs))];
-
-    if (this.file instanceof TFile) {
-      const leaf = this.app.workspace.getLeaf();
-      await leaf.openFile(this.file);
-    }
-
-    if (!this.multiplePdf) {
-      _docs = this.mergeDoc(_docs);
-    }
-    this.docs = _docs.map(({ doc, ...rest }) => {
-      return { ...rest, doc: fixDoc(doc, doc.title) };
-    });
   }
 
   parseToc(doc: Document) {

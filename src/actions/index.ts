@@ -32,6 +32,27 @@ interface BaseSetting {
   tooltip?: string;
 }
 
+type SettingBuilder = (setting: Setting) => void;
+
+// Svelte Action：use:obsidianSetting={builder}
+export const obsidianSetting: Action<HTMLElement, SettingBuilder> = (node, builder) => {
+  let setting = new Setting(node);
+  builder(setting);
+
+  return {
+    // builder 函数变化时重建
+    update(newBuilder) {
+      node.empty();
+      setting = new Setting(node);
+      newBuilder(setting);
+    },
+    // 组件卸载时清理
+    destroy() {
+      setting.settingEl.remove();
+    },
+  };
+};
+
 // Toggle Action
 export const settingToggle: Action<HTMLElement, BaseSetting & { value: boolean; onChange: (v: boolean) => void }> = (
   node,

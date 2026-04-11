@@ -4,11 +4,13 @@
   import type { TConfig, ExportConfigModal } from "../modal";
   import { TFile } from "obsidian";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText, icon } from "../actions";
-  import { getAllStyles, getPatchStyle, type ParamType } from "../render";
+  import { getAllStyles, getPatchStyle, renderMarkdown, type ParamType } from "../render";
   import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { PageSize } from "../constant";
   import * as electron from "electron";
-  import { mm2px, safeParseFloat, px2mm, isNumber } from "../utils";
+  import { mm2px, safeParseFloat, px2mm, isNumber, safeParseInt } from "../utils";
+  import { fixDoc } from "../render";
+  import pLimit from "p-limit";
   const fs = require("fs").promises;
 
   let {
@@ -52,9 +54,6 @@
   export function updateRenderStates(i: number) {
     renderStates[i].status = 1;
   }
-  export function setDocs(newDocs: any[]) {
-    docs = newDocs;
-  }
 
   export async function calcWebviewSize() {
     // @ts-ignore
@@ -66,26 +65,48 @@
     });
   }
 
-  // ── Webview render logic ───────────────────────────────
+  async function renderFiles(data: ParamType[], docs?: any[], cb?: (i: number) => void) {
+    const concurrency = safeParseInt(plugin.settings.concurrency) || 5;
+    const limit = pLimit(concurrency);
+
+    const inputs = data.map((param, i) =>
+      limit(async () => {
+        const res = await renderMarkdown(param);
+        cb?.(i);
+        return res;
+      }),
+    );
+    let _docs = [...(docs ?? []), ...(await Promise.all(inputs))];
+
+    if (modal.file instanceof TFile) {
+      const leaf = modal.app.workspace.getLeaf();
+      await leaf.openFile(modal.file);
+    }
+
+    if (!modal.multiplePdf) {
+      _docs = modal.mergeDoc(_docs);
+    }
+    return _docs.map(({ doc, ...rest }) => {
+      return { ...rest, doc: fixDoc(doc, doc.title) };
+    });
+  }
 
   export async function renderPreview(render = true) {
     if (render) {
       const { data, docs: allDocs } = await modal.getAllFiles();
       initRenderStates(data);
-      await modal.renderFiles(data, allDocs, (i) => updateRenderStates(i));
+      docs = await renderFiles(data, allDocs, (i) => updateRenderStates(i));
     }
 
     webviews = [];
     lastPreview = null;
 
-    const promises = modal.docs.map((docItem) => {
+    const promises = docs.map((docItem) => {
       return new Promise<void>((resolve) => {
         // @ts-ignore
         docItem.resolve = resolve;
       });
     });
-
-    docs = modal.docs;
 
     await Promise.all(promises);
     calcPageSize();
@@ -100,7 +121,7 @@
           _title.style.display = "${value ? "block" : "none"}";
         }
       `);
-      const _title = modal.docs[i]?.doc?.querySelector("h1.__title__") as HTMLHeadingElement;
+      const _title = docs[i]?.doc?.querySelector("h1.__title__") as HTMLHeadingElement;
       if (_title) {
         _title.style.display = value ? "block" : "none";
       }
@@ -134,10 +155,10 @@
         await Promise.all(
           webviews.map(async (wb, i) => {
             await exportToPDF(
-              `${outputPath}/${modal.docs[i].file.basename}.pdf`,
+              `${outputPath}/${docs[i].file.basename}.pdf`,
               { ...plugin.settings, ...config },
               wb,
-              modal.docs[i],
+              docs[i],
             );
           }),
         );
@@ -146,7 +167,7 @@
     } else {
       const outputFile = await getOutputFile(title, plugin.settings.isTimestamp);
       if (outputFile) {
-        await exportToPDF(outputFile, { ...plugin.settings, ...config }, webviews[0], modal.docs[0]);
+        await exportToPDF(outputFile, { ...plugin.settings, ...config }, webviews[0], docs[0]);
         modal.close();
       }
     }
