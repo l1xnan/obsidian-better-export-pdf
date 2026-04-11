@@ -2,7 +2,8 @@
   import { onMount } from "svelte";
   import type BetterExportPdfPlugin from "../main";
   import type { TConfig, SvelteModal } from "./SvelteModal";
-  import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText } from "../actions";
+  import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText, icon } from "../actions";
+  import type { ParamType } from "../render";
 
   let {
     modal,
@@ -20,6 +21,20 @@
   // ── Derived visibility states ──────────────────────────
   let showCustomSize = $state(config.pageSize === "Custom");
   let showCustomMargin = $state(config.marginType === "3");
+
+  // Progress
+  let renderStates = $state<{ filename: string; status: number }[]>([]);
+
+  export function initRenderStates(data: ParamType[]) {
+    data.forEach((param) => {
+      renderStates.push({ status: 0, filename: param.file.name });
+    });
+  }
+  export function updateRenderStates(i: number) {
+    renderStates[i].status = 1;
+
+    console.log("renderStates:", renderStates);
+  }
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
@@ -68,7 +83,24 @@
 
 <div id="better-export-pdf">
   <!-- PDF Preview Area -->
-  <div class="pdf-preview" bind:this={previewEl}></div>
+  <div class="pdf-preview">
+    <div class="progress">
+      {#if renderStates.length > 0 && !renderStates.every((item) => item.status)}
+        <div>Rendering...</div>
+        {#each renderStates as item}
+          <div>
+            {#if item.status}
+              <span use:icon={"check"}></span>
+            {:else}
+              <span use:icon={"loader"}></span>
+            {/if}
+            {item.filename}
+          </div>
+        {/each}
+      {/if}
+    </div>
+    <div bind:this={previewEl}></div>
+  </div>
 
   <!-- Settings Sidebar -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

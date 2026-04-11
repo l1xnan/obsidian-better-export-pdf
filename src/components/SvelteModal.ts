@@ -55,11 +55,7 @@ export class SvelteModal extends Modal {
   scale: number;
 
   // Svelte component instance
-  private component?: Record<string, any>;
-
-  // Render progress callback — will be set by Svelte component
-  initRenderStates?: (data: ParamType[]) => void;
-  updateRenderStates?: (i: number) => void;
+  private component?: ModalUI;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiplePdf?: boolean) {
     super(plugin.app);
@@ -95,7 +91,7 @@ export class SvelteModal extends Modal {
   onOpen() {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
-    this.titleEl.setText("Export to PDF");
+    this.titleEl.setText("Export to PDF2");
 
     this.component = mount(ModalUI, {
       target: this.contentEl,
@@ -138,6 +134,8 @@ export class SvelteModal extends Modal {
         for (const item of files) {
           data.push({ app, file: item.file, config: this.config, extra: item });
         }
+      } else {
+        data.push({ app, file: file, config: this.config });
       }
     }
     return { data, docs };
@@ -301,8 +299,8 @@ export class SvelteModal extends Modal {
     el.empty();
     if (render) {
       const { data, docs } = await this.getAllFiles();
-      this.initRenderStates?.(data);
-      await this.renderFiles(data, docs, this.updateRenderStates);
+      this.component?.initRenderStates?.(data);
+      await this.renderFiles(data, docs, this.component?.updateRenderStates);
     }
     el.empty();
     await Promise.all(
