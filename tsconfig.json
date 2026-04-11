@@ -15,5 +15,5 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
   },
-  "include": ["**/*.ts", "**/*.svelte"]
+  "include": ["**/*.ts", "**/*.svelte", "vite.config.mjs"]
 }
