@@ -5,12 +5,11 @@ import path from "path";
 import { mount, unmount } from "svelte";
 import pLimit from "p-limit";
 
-import { PageSize } from "../constant";
 import i18n, { type Lang } from "../i18n";
 import type BetterExportPdfPlugin from "../main";
 import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
-import { createWebview, fixDoc, getAllStyles, getPatchStyle, renderMarkdown, type ParamType } from "../render";
-import { isNumber, mm2px, px2mm, safeParseFloat, safeParseInt, traverseFolder } from "../utils";
+import { fixDoc, renderMarkdown, type ParamType } from "../render";
+import { isNumber, safeParseInt, traverseFolder } from "../utils";
 import ModalUI from "./ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -52,7 +51,6 @@ export class SvelteModal extends Modal {
   completed: boolean;
   docs: DocType[];
   i18n: Lang;
-  scale: number;
 
   // Svelte component instance
   private component?: ModalUI;
@@ -64,7 +62,6 @@ export class SvelteModal extends Modal {
     this.completed = false;
     this.i18n = i18n.current;
     this.docs = [];
-    this.scale = 0.75;
     this.webviews = [];
     this.multiplePdf = multiplePdf;
 
@@ -212,37 +209,6 @@ export class SvelteModal extends Modal {
 
   // ── Webview management ──────────────────────────────────
 
-  calcPageSize(element?: HTMLDivElement, config?: TConfig) {
-    const { pageSize, pageWidth } = config ?? this.config;
-    const el = element ?? this.previewDiv;
-    const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
-    const scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
-    this.webviews.forEach((wb) => {
-      wb.style.transform = `scale(${1 / scale},${1 / scale})`;
-      wb.style.width = `calc(${scale} * 100%)`;
-      wb.style.height = `calc(${scale} * 100%)`;
-    });
-    this.scale = scale;
-    return scale;
-  }
-
-  async calcWebviewSize() {
-    await sleep(500);
-    this.webviews.forEach(async (e) => {
-      const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
-      const sizeEl = e.parentNode?.querySelector(".print-size");
-      if (sizeEl) {
-        sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
-      }
-    });
-  }
-
-  async togglePrintSize() {
-    document.querySelectorAll(".print-size")?.forEach((sizeEl: HTMLDivElement) => {
-      sizeEl.style.visibility = this.config["pageSize"] == "Custom" ? "visible" : "hidden";
-    });
-  }
-
   makeWebviewJs(doc: Document) {
     return `
       document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
@@ -268,57 +234,6 @@ export class SvelteModal extends Modal {
       `;
   }
 
-  async appendWebview(e: HTMLDivElement, doc: Document) {
-    const webview = createWebview(this.scale);
-    const preview = e.appendChild(webview);
-    this.webviews.push(preview);
-    this.preview = preview;
-    preview.addEventListener("dom-ready", async () => {
-      this.completed = true;
-      getAllStyles().forEach(async (css) => {
-        await preview.insertCSS(css);
-      });
-      if (this.config.cssSnippet && this.config.cssSnippet != "0") {
-        try {
-          const cssSnippet = await fs.readFile(this.config.cssSnippet, { encoding: "utf8" });
-          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
-          await preview.insertCSS(printCss);
-          await preview.insertCSS(cssSnippet);
-        } catch (error) {
-          console.warn(error);
-        }
-      }
-      await preview.executeJavaScript(this.makeWebviewJs(doc));
-      getPatchStyle().forEach(async (css) => {
-        await preview.insertCSS(css);
-      });
-    });
-  }
-
-  async appendWebviews(el: HTMLDivElement, render = true) {
-    el.empty();
-    if (render) {
-      const { data, docs } = await this.getAllFiles();
-      this.component?.initRenderStates?.(data);
-      await this.renderFiles(data, docs, this.component?.updateRenderStates);
-    }
-    el.empty();
-    await Promise.all(
-      this.docs?.map(async ({ doc }, i) => {
-        if (this.multiplePdf) {
-          el.createDiv({
-            text: `${i + 1}-${doc.title}`,
-            attr: { class: "filename" },
-          });
-        }
-        const div = el.createDiv({ attr: { class: "webview-wrapper" } });
-        div.createDiv({ attr: { class: "print-size" } });
-        await this.appendWebview(div, doc);
-      }),
-    );
-    await this.calcWebviewSize();
-  }
-
   // ── Title toggle (called from Svelte UI) ───────────────
 
   toggleTitle(value: boolean) {
@@ -334,26 +249,6 @@ export class SvelteModal extends Modal {
         _title.style.display = value ? "block" : "none";
       }
     });
-  }
-
-  // ── Page size change (called from Svelte UI) ───────────
-
-  async onPageSizeChange() {
-    this.togglePrintSize();
-    this.calcPageSize();
-    await this.calcWebviewSize();
-  }
-
-  // ── CSS Snippet change (called from Svelte UI) ─────────
-
-  async onCssSnippetChange() {
-    await this.appendWebviews(this.previewDiv, false);
-  }
-
-  // ── Refresh preview (called from Svelte UI) ────────────
-
-  async refreshPreview() {
-    await this.appendWebviews(this.previewDiv);
   }
 
   // ── Export (called from Svelte UI) ─────────────────────

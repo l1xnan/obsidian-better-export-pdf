@@ -3,7 +3,10 @@
   import type BetterExportPdfPlugin from "../main";
   import type { TConfig, SvelteModal } from "./SvelteModal";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText, icon } from "../actions";
-  import type { ParamType } from "../render";
+  import { getAllStyles, getPatchStyle, type ParamType } from "../render";
+  import { PageSize } from "../constant";
+  import { mm2px, safeParseFloat, px2mm } from "../utils";
+  const fs = require("fs").promises;
 
   let {
     modal,
@@ -24,16 +27,100 @@
 
   // Progress
   let renderStates = $state<{ filename: string; status: number }[]>([]);
+  let docs = $state<any[]>([]);
+  let scale = $state(0.75);
+
+  export function calcPageSize(element?: HTMLDivElement) {
+    const { pageSize, pageWidth } = config;
+    const el = element ?? previewEl;
+    if (!el) return;
+    const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
+    scale = Math.floor((mm2px(width) / el.offsetWidth) * 100) / 100;
+    console.log(scale);
+  }
 
   export function initRenderStates(data: ParamType[]) {
-    data.forEach((param) => {
-      renderStates.push({ status: 0, filename: param.file.name });
-    });
+    renderStates = data.map((param) => ({ status: 0, filename: param.file.name }));
   }
   export function updateRenderStates(i: number) {
     renderStates[i].status = 1;
+  }
+  export function setDocs(newDocs: any[]) {
+    docs = newDocs;
+  }
 
-    console.log("renderStates:", renderStates);
+  export async function calcWebviewSize() {
+    // @ts-ignore
+    await sleep(500);
+    modal.webviews.forEach(async (e) => {
+      const [width, height] = await e.executeJavaScript("[document.body.offsetWidth, document.body.offsetHeight]");
+      const sizeEl = e.parentNode?.querySelector(".print-size");
+      if (sizeEl) {
+        sizeEl.innerHTML = `${width}×${height}px\n${px2mm(width)}×${px2mm(height)}mm`;
+      }
+    });
+  }
+
+  // ── Webview render logic ───────────────────────────────
+
+  export async function renderPreview(render = true) {
+    if (render) {
+      const { data, docs: allDocs } = await modal.getAllFiles();
+      initRenderStates(data);
+      await modal.renderFiles(data, allDocs, (i) => updateRenderStates(i));
+    }
+
+    modal.webviews = [];
+
+    const promises = modal.docs.map((docItem) => {
+      return new Promise<void>((resolve) => {
+        // @ts-ignore
+        docItem.resolve = resolve;
+      });
+    });
+
+    docs = modal.docs;
+
+    await Promise.all(promises);
+    calcPageSize();
+    await calcWebviewSize();
+  }
+
+  function initWebviewEvents(preview: any, docObj: any) {
+    modal.webviews.push(preview);
+    modal.preview = preview; // keep track of the latest one
+
+    const handler = async () => {
+      modal.completed = true;
+      getAllStyles().forEach(async (css) => {
+        await preview.insertCSS(css);
+      });
+      if (config.cssSnippet && config.cssSnippet != "0") {
+        try {
+          const cssSnippet = await fs.readFile(config.cssSnippet, { encoding: "utf8" });
+          const printCss = cssSnippet.replaceAll(/@media print\s*{([^}]+)}/g, "$1");
+          await preview.insertCSS(printCss);
+          await preview.insertCSS(cssSnippet);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+      await preview.executeJavaScript(modal.makeWebviewJs(docObj.doc));
+      getPatchStyle().forEach(async (css) => {
+        await preview.insertCSS(css);
+      });
+      if (docObj.resolve) {
+        docObj.resolve();
+      }
+    };
+
+    preview.addEventListener("dom-ready", handler);
+
+    return {
+      destroy() {
+        preview.removeEventListener("dom-ready", handler);
+      },
+    };
   }
 
   // ── Page sizes ─────────────────────────────────────────
@@ -60,14 +147,12 @@
     modal.previewDiv = previewEl;
 
     const resizeObserver = new ResizeObserver(() => {
-      modal.calcPageSize(previewEl);
+      calcPageSize(previewEl);
     });
     resizeObserver.observe(previewEl);
 
     // Initial render
-    modal.appendWebviews(previewEl).then(() => {
-      modal.togglePrintSize();
-    });
+    renderPreview(true);
 
     return () => {
       resizeObserver.disconnect();
@@ -99,7 +184,23 @@
         {/each}
       {/if}
     </div>
-    <div bind:this={previewEl}></div>
+    <div bind:this={previewEl}>
+      {#each docs as item, i}
+        {#if modal.multiplePdf}
+          <div class="filename">{i + 1}-{item.doc.title}</div>
+        {/if}
+        <div class="webview-wrapper">
+          <div class="print-size" style:visibility={config.pageSize === "Custom" ? "visible" : "hidden"}></div>
+          <webview
+            src="app://obsidian.md/help.html"
+            nodeintegration={true}
+            class="pdf-preview-webview"
+            style="--modal-scale: {scale};"
+            use:initWebviewEvents={item}
+          ></webview>
+        </div>
+      {/each}
+    </div>
   </div>
 
   <!-- Settings Sidebar -->
@@ -127,7 +228,8 @@
         onChange: async (value) => {
           config.pageSize = value as TConfig["pageSize"];
           showCustomSize = value === "Custom";
-          await modal.onPageSizeChange();
+          calcPageSize();
+          await calcWebviewSize();
         },
       }}
     ></div>
@@ -143,8 +245,8 @@
             isDebounce: true,
             onChange: async (value) => {
               config.pageWidth = value;
-              modal.calcPageSize();
-              await modal.calcWebviewSize();
+              calcPageSize();
+              await calcWebviewSize();
             },
           },
           input2: {
@@ -285,7 +387,7 @@
           value: config.cssSnippet ?? "0",
           onChange: async (value) => {
             config.cssSnippet = value;
-            await modal.onCssSnippetChange();
+            await renderPreview(false);
           },
         }}
       ></div>
@@ -304,7 +406,9 @@
     <div
       use:settingButton={{
         text: "Refresh",
-        onClick: () => modal.refreshPreview(),
+        onClick: () => {
+          renderPreview(true);
+        },
       }}
     ></div>
 
