@@ -11,7 +11,7 @@ import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
 
-export interface TConfig {
+export interface ExportConfigType {
   pageSize: PageSizeType | "Custom";
   pageWidth?: string;
   pageHeight?: string;
@@ -32,12 +32,24 @@ export interface TConfig {
   cssSnippet?: string;
 
   multiple?: boolean;
+  pdfPreview?: boolean;
 }
 
 export type DocType = { doc: Document; frontMatter?: FrontMatterCache; file: TFile };
+export type DocV2Type = {
+  doc: HTMLDivElement;
+  frontMatter: FrontMatterCache;
+  file: TFile;
+  cleanup: () => void;
+};
+
+export type FileListType = {
+  file: TFile;
+  toc?: boolean;
+}[];
 
 export class ExportConfigModal extends Modal {
-  config: TConfig;
+  defaultConfig: ExportConfigType;
   plugin: BetterExportPdfPlugin;
   file: TFile | TFolder;
   multiplePdf?: boolean;
@@ -54,7 +66,7 @@ export class ExportConfigModal extends Modal {
     this.i18n = i18n.current;
     this.multiplePdf = multiplePdf;
 
-    this.config = {
+    this.defaultConfig = {
       pageSize: "A4",
       marginType: "1",
       showTitle: plugin.settings.showTitle ?? true,
@@ -69,7 +81,7 @@ export class ExportConfigModal extends Modal {
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
       ...(plugin.settings.prevConfig ?? {}),
-    } as TConfig;
+    } as ExportConfigType;
   }
 
   // ── Lifecycle ───────────────────────────────────────────
@@ -84,7 +96,6 @@ export class ExportConfigModal extends Modal {
       props: {
         modal: this,
         plugin: this.plugin,
-        config: this.config,
       },
     });
   }
@@ -95,6 +106,7 @@ export class ExportConfigModal extends Modal {
       this.component = undefined;
     }
     this.contentEl.empty();
+    document.querySelectorAll(".print").forEach((el) => el.remove());
   }
 
   // ── File rendering ──────────────────────────────────────
@@ -109,19 +121,41 @@ export class ExportConfigModal extends Modal {
     if (this.file instanceof TFolder) {
       const files = traverseFolder(this.file);
       for (const file of files) {
-        data.push({ app, file, config: this.config });
+        data.push({ app, file });
       }
     } else {
-      const { doc, frontMatter, file } = await renderMarkdown({ app, file: this.file, config: this.config });
+      const { doc, frontMatter, file } = await renderMarkdown({ app, file: this.file, config: this.defaultConfig });
       docs.push({ doc, frontMatter, file });
       if (frontMatter.toc) {
         const files = this.parseToc(doc);
         for (const item of files) {
-          data.push({ app, file: item.file, config: this.config, extra: item });
+          data.push({ app, file: item.file, extra: item });
         }
       }
     }
     return { data, docs };
+  }
+
+  async getAllFilesV2() {
+    const data: FileListType = [];
+    if (this.file instanceof TFolder) {
+      const files = traverseFolder(this.file);
+      for (const file of files) {
+        data.push({ file });
+      }
+    } else {
+      const { frontmatter, links } = this.getFileCache(this.file) ?? {};
+      data.push({ file: this.file, toc: frontmatter?.toc });
+      if (frontmatter?.toc && links) {
+        for (const link of links) {
+          const file = this.app.metadataCache.getFirstLinkpathDest(link.link, this.file.path) as TFile;
+          if (file instanceof TFile) {
+            data.push({ file });
+          }
+        }
+      }
+    }
+    return { data, multiplePdf: this.multiplePdf };
   }
 
   parseToc(doc: Document) {
@@ -164,7 +198,28 @@ export class ExportConfigModal extends Modal {
     sections.forEach((section) => {
       root?.appendChild(section);
     });
-    return [{ doc: doc0, frontMatter, file }];
+    return [{ doc: doc0, frontMatter, file, node: root }];
+  }
+
+  mergeDocV2(docs: DocV2Type[]): DocV2Type[] {
+    const sections = [];
+    const printEl = document.body.createDiv("print");
+    const viewEl = printEl.createDiv({
+      cls: "markdown-preview-view markdown-rendered",
+    });
+    for (const { doc } of docs) {
+      const element = doc.querySelector(".markdown-preview-view");
+      if (element) {
+        const section = viewEl.createDiv("section");
+        // section.appendChild(element);
+        Array.from(element.children).forEach((child) => {
+          section.appendChild(child);
+        });
+        sections.push(section);
+      }
+      document.body.removeChild(doc);
+    }
+    return [{ ...docs[0], doc: printEl }];
   }
 
   // ── Webview management ──────────────────────────────────

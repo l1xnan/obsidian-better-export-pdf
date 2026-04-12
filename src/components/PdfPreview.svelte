@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type BetterExportPdfPlugin from "../main";
-  import type { TConfig, ExportConfigModal } from "../modal";
+  import type { ExportConfigType, ExportConfigModal, DocType } from "../modal";
   import { TFile } from "obsidian";
   import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
   import { PageSize } from "../constant";
@@ -16,24 +16,21 @@
   let {
     modal,
     plugin,
-    config,
-    webviews = $bindable([]),
-    docs = $bindable([]),
+    config = $bindable(),
     lastPreview = $bindable(null),
-    completed = $bindable(false),
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
-    config: TConfig;
-    webviews?: electron.WebviewTag[];
-    docs?: any[];
+    config: ExportConfigType;
     lastPreview?: electron.WebviewTag | null;
-    completed?: boolean;
   } = $props();
 
   const settings = $derived(plugin.settings);
 
   // Progress
+  let completed = $state(false);
+  let docs = $state<DocType[]>([]);
+  let webviews = $state<electron.WebviewTag[]>([]);
   let renderStates = $state<{ filename: string; status: number }[]>([]);
   let scale = $state(0.75);
   let previewEl = $state<HTMLDivElement>();
@@ -66,9 +63,14 @@
     const concurrency = safeParseInt(settings.concurrency) || 5;
     const limit = pLimit(concurrency);
 
+    const currentConfig = $state.snapshot(config);
+
+    console.log("file list data:", data, currentConfig);
+
     const inputs = data.map((param, i) =>
       limit(async () => {
-        const res = await renderMarkdown(param);
+        const option = { ...param, config: currentConfig };
+        const res = await renderMarkdown(option);
         cb?.(i);
         return res;
       }),

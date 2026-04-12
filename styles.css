@@ -2,16 +2,19 @@
   display: flex;
   flex-direction: row;
   height: 75vh;
-}
-
-#better-export-pdf .pdf-preview {
-  flex: auto;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  align-content: flex-start;
+  .pdf-preview {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+  }
+  .setting-wrapper {
+    width: 320px;
+    margin-left: 16px;
+  }
 }
 
 #better-export-pdf .pdf-preview .webview-wrapper {
@@ -28,7 +31,7 @@
   font-size: 0.6rem;
   white-space: pre-wrap;
   text-align: right;
-  visibility: hidden;
+  /* visibility: hidden; */
 }
 
 #better-export-pdf .pdf-preview > div {
@@ -61,11 +64,19 @@
   border: 1px solid var(--background-modifier-border, #f2f2f2);
 }
 
-#better-export-pdf .setting-wrapper {
-  width: 320px;
-  margin-left: 16px;
-}
-
 #better-export-pdf .setting-wrapper .setting-item[hidden] {
   display: none;
+}
+
+#better-export-pdf {
+  .pdf-canvas-container {
+    width: 100%;
+    margin: 20px 10px;
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  .pdf-canvas-container :global(canvas) {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
 }

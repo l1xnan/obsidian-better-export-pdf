@@ -4,7 +4,7 @@ import { type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
 import type { BetterExportPdfPluginSettings } from "./main";
-import type { DocType, PageSizeType, TConfig } from "./modal";
+import type { DocType, PageSizeType, ExportConfigType } from "./modal";
 import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, render } from "./utils";
 
 interface TPosition {
@@ -367,7 +367,7 @@ export function setMetadata(
 
 export async function exportToPDF(
   outputFile: string,
-  config: TConfig & BetterExportPdfPluginSettings,
+  config: ExportConfigType & BetterExportPdfPluginSettings,
   w: WebviewTag,
   { doc, frontMatter }: DocType,
 ) {

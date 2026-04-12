@@ -1,30 +1,26 @@
 <script lang="ts">
   import type BetterExportPdfPlugin from "../main";
-  import type { TConfig, ExportConfigModal } from "../modal";
+  import type { ExportConfigType, ExportConfigModal } from "../modal";
   import * as electron from "electron";
   import { isNumber } from "../utils";
   import ExportSettings from "./ExportSettings.svelte";
+  import { untrack } from "svelte";
   import PdfPreview from "./PdfPreview.svelte";
+  import PdfPreview2 from "./PdfPreviewV2.svelte";
 
   let {
     modal,
     plugin,
-    config = $bindable(),
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
-    config: TConfig;
   } = $props();
 
-  // Webview state
-  let webviews = $state<electron.WebviewTag[]>([]);
+  let config = $state<ExportConfigType>(untrack(() => $state.snapshot(modal.defaultConfig)));
+
   let lastPreview = $state<electron.WebviewTag | null>(null);
-  let completed = $state(false);
-  let docs = $state<any[]>([]);
 
   let pdfPreview = $state<PdfPreview | null>(null);
-
-  const settings = $derived(plugin.settings);
 
   export async function onCssSnippetChange() {
     await pdfPreview?.renderPreview(false);
@@ -47,22 +43,17 @@
 
     await pdfPreview?.handlePrintToPDF();
 
-        modal.close();
+    modal.close();
   }
 </script>
 
 <div id="better-export-pdf">
   <!-- PDF Preview Area -->
-  <PdfPreview
-    {modal}
-    {plugin}
-    {config}
-    bind:webviews
-    bind:docs
-    bind:lastPreview
-    bind:completed
-    bind:this={pdfPreview}
-  />
+  {#if plugin.settings?.version == "v1"}
+    <PdfPreview {modal} {plugin} {config} bind:lastPreview bind:this={pdfPreview} />
+  {:else}
+    <PdfPreview2 {modal} {plugin} {config} bind:this={pdfPreview} />
+  {/if}
 
   <!-- Settings Sidebar -->
   <ExportSettings {modal} {plugin} bind:config {pdfPreview} {lastPreview} {handleExport} {refreshPreview} />

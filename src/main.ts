@@ -1,6 +1,6 @@
 import { App, MarkdownView, Menu, Plugin, type PluginManifest, TFile, TFolder } from "obsidian";
 import i18n, { type Lang } from "./i18n";
-import { ExportConfigModal, type TConfig } from "./modal";
+import { ExportConfigModal, type ExportConfigType } from "./modal";
 import ConfigSettingTab from "./setting";
 import { traverseFolder } from "./utils";
 const fs = require("fs").promises;
@@ -9,7 +9,7 @@ import path from "path";
 const isDev = process.env.NODE_ENV === "development";
 
 export interface BetterExportPdfPluginSettings {
-  prevConfig?: TConfig;
+  prevConfig?: ExportConfigType;
 
   showTitle: boolean;
   maxLevel: string;
@@ -28,6 +28,7 @@ export interface BetterExportPdfPluginSettings {
   debug: boolean;
   enabledCss: boolean;
   concurrency: string;
+  version?: string;
 }
 
 const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type BetterExportPdfPlugin from "../main";
-  import type { TConfig, ExportConfigModal } from "../modal";
+  import type { ExportConfigType, ExportConfigModal } from "../modal";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText } from "../actions";
   import * as electron from "electron";
 
@@ -15,7 +15,7 @@
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
-    config: TConfig;
+    config: ExportConfigType;
     pdfPreview: any;
     lastPreview: electron.WebviewTag | null;
     handleExport: () => void;
@@ -26,8 +26,8 @@
   const settings = $derived(plugin.settings);
 
   // ── Derived visibility states ──────────────────────────
-  let showCustomSize = $state(config.pageSize === "Custom");
-  let showCustomMargin = $state(config.marginType === "3");
+  let showCustomSize = $derived(config.pageSize === "Custom");
+  let showCustomMargin = $derived(config.marginType === "3");
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
@@ -74,8 +74,7 @@
       options: pageSizeOptions,
       value: config.pageSize as string,
       onChange: async (value) => {
-        config.pageSize = value as TConfig["pageSize"];
-        showCustomSize = value === "Custom";
+        config.pageSize = value as ExportConfigType["pageSize"];
         pdfPreview?.calcPageSize();
         await pdfPreview?.calcWebviewSize();
       },
@@ -117,7 +116,6 @@
       value: config.marginType,
       onChange: (value) => {
         config.marginType = value;
-        showCustomMargin = value === "3";
       },
     }}
   ></div>
@@ -241,6 +239,20 @@
     ></div>
   {/if}
 
+  <!-- PDF Preview -->
+  <div
+    use:settingToggle={{
+      name: "PDF Preview",
+      tooltip: "PDF Preview",
+      value: config.pdfPreview ?? false,
+      onChange: (value) => {
+        config.pdfPreview = value;
+        if (value) {
+          pdfPreview?.renderPreview(true);
+        }
+      },
+    }}
+  ></div>
   <!-- Export Button -->
   <div
     use:settingButton={{
