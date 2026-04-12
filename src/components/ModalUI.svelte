@@ -1,8 +1,6 @@
 <script lang="ts">
   import type BetterExportPdfPlugin from "../main";
   import type { TConfig, ExportConfigModal } from "../modal";
-  import { TFile } from "obsidian";
-  import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import * as electron from "electron";
   import { isNumber } from "../utils";
   import ExportSettings from "./ExportSettings.svelte";
@@ -24,7 +22,7 @@
   let completed = $state(false);
   let docs = $state<any[]>([]);
 
-  let pdfPreview: PdfPreview = $state();
+  let pdfPreview = $state<PdfPreview | null>(null);
 
   const settings = $derived(plugin.settings);
 
@@ -47,25 +45,9 @@
       }
     }
 
-    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+    await pdfPreview?.handlePrintToPDF();
 
-    if (modal.multiplePdf) {
-      const outputPath = await getOutputPath(title);
-      if (outputPath) {
-        await Promise.all(
-          webviews.map(async (wb, i) => {
-            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i]);
-          }),
-        );
         modal.close();
-      }
-    } else {
-      const outputFile = await getOutputFile(title, settings.isTimestamp);
-      if (outputFile) {
-        await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0]);
-        modal.close();
-      }
-    }
   }
 </script>
 

@@ -1,15 +1,16 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import type BetterExportPdfPlugin from "../main";
   import type { TConfig, ExportConfigModal } from "../modal";
   import { TFile } from "obsidian";
-  import { getAllStyles, getPatchStyle, renderMarkdown, type ParamType } from "../render";
+  import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
   import { PageSize } from "../constant";
   import * as electron from "electron";
   import { mm2px, safeParseFloat, px2mm, safeParseInt } from "../utils";
   import { fixDoc } from "../render";
-  import pLimit from "p-limit";
+  import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { icon } from "../actions";
+  import pLimit from "p-limit";
   const fs = require("fs").promises;
 
   let {
@@ -124,6 +125,28 @@
     });
   }
 
+  export async function handlePrintToPDF() {
+    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+
+    if (modal.multiplePdf) {
+      const outputPath = await getOutputPath(title);
+      if (outputPath) {
+        await Promise.all(
+          webviews.map(async (wb, i) => {
+            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i]);
+          }),
+        );
+        // modal.close();
+      }
+    } else {
+      const outputFile = await getOutputFile(title, settings.isTimestamp);
+      if (outputFile) {
+        await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0]);
+        // modal.close();
+      }
+    }
+  }
+
   function initWebviewEvents(preview: electron.WebviewTag, docObj: any) {
     webviews.push(preview);
     lastPreview = preview;
@@ -143,7 +166,7 @@
           console.warn(error);
         }
       }
-      await preview.executeJavaScript(modal.makeWebviewJs(docObj.doc));
+      await preview.executeJavaScript(makeWebviewJs(docObj.doc));
       getPatchStyle().forEach(async (css) => {
         await preview.insertCSS(css);
       });
