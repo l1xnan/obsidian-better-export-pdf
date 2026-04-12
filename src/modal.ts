@@ -169,31 +169,6 @@ export class ExportConfigModal extends Modal {
 
   // ── Webview management ──────────────────────────────────
 
-  makeWebviewJs(doc: Document) {
-    return `
-      document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
-      document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
-      
-      // Function to recursively decode and replace innerHTML of span.markdown-embed elements
-      function decodeAndReplaceEmbed(element) {
-				// Replace the innerHTML with the decoded content
-        element.innerHTML = decodeURIComponent(element.innerHTML);
-				// Check if the new content contains further span.markdown-embed elements
-        const newEmbeds = element.querySelectorAll("span.markdown-embed");
-        newEmbeds.forEach(decodeAndReplaceEmbed);
-      }
-      
-      // Start the process with all span.markdown-embed elements in the document
-      document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
-
-      document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
-      document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
-      document.body.addClass("theme-light");
-      document.body.removeClass("theme-dark");
-      document.title = \`${doc.title}\`;
-      `;
-  }
-
   // ── CSS Snippets helper ─────────────────────────────────
 
   cssSnippets(): Record<string, string> {
