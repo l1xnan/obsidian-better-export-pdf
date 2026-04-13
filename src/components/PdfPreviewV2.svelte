@@ -6,14 +6,14 @@
   import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
   import { PageSize } from "../constant";
   import * as electron from "electron";
-  import { mm2px, safeParseFloat, safeParseInt } from "../utils";
+  import { getHeadingTree, mm2px, safeParseFloat, safeParseInt } from "../utils";
   import pLimit from "p-limit";
   import { icon } from "../actions";
   const fs = require("fs").promises;
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { getOutputFile } from "../pdf";
+  import { editPDF, getOutputFile, makePrintOptions } from "../pdf";
 
   let {
     modal,
@@ -34,6 +34,8 @@
   let previewEl = $state<HTMLDivElement>();
   let docs = $state<DocType[]>([]);
   let canvasDocs = $state<HTMLCanvasElement[]>([]);
+
+  const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
 
   export function calcPageSize() {
     const { pageSize, pageWidth } = config;
@@ -106,26 +108,6 @@
     });
   }
 
-  export async function handlePrintToPDF() {
-    console.log("printEl", printEl);
-    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
-    const outputFile = await getOutputFile(title, settings.isTimestamp);
-
-    const el = document.querySelector(".print");
-
-    const res = await printToPdf(el, {
-      filepath: outputFile,
-      includeName: true,
-      landscape: false,
-      marginsType: 0,
-      open: true,
-      pageSize: "A4",
-      scale: 1,
-      scaleFactor: 100,
-    });
-    console.log("print res", res);
-  }
-
   onMount(() => {
     if (!previewEl) return;
     const resizeObserver = new ResizeObserver(() => {
@@ -166,6 +148,36 @@
     };
   }
 
+  export async function handlePrintToPDF() {
+    console.log("printEl", printEl);
+    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+    const outputFile = await getOutputFile(title, settings.isTimestamp);
+
+    const el = document.querySelector(".print");
+
+    console.log("printOptions:", printOptions);
+    const pdfOptions = {
+      ...printOptions,
+      filepath: outputFile,
+    };
+    await printToPdf(el, pdfOptions);
+
+    let data = await fs.readFile(outputFile);
+
+    data = await editPDF(data, {
+      headings: getHeadingTree(el as unknown as Document),
+      frontMatter: docs[0].frontMatter,
+      displayMetadata: settings?.displayMetadata,
+      maxLevel: safeParseInt(settings?.maxLevel, 6),
+    });
+
+    await fs.writeFile(outputFile, data);
+    if (config.open) {
+      // @ts-ignore
+      electron.remote.shell.openPath(outputFile);
+    }
+  }
+
   async function renderPdf() {
     // 1. 加载 PDF.js 库
     const pdfjsLib = await loadPdfJs();
@@ -177,16 +189,9 @@
     // const el = document.querySelector(".print");
     const el = docs[0].doc;
 
-    const res = await printToPdf(el, {
-      filepath: tempFilePath,
-      includeName: true,
-      landscape: false,
-      marginsType: 0,
-      open: false,
-      pageSize: "A4",
-      scale: 1,
-      scaleFactor: 100,
-    });
+    console.log("printOptions:", printOptions);
+
+    await printToPdf(el, { ...printOptions, filepath: tempFilePath });
 
     console.log(tempFilePath);
     await sleep(200);
@@ -197,6 +202,7 @@
     const loadingTask = pdfjsLib.getDocument({ data: content });
     const pdf = await loadingTask.promise;
 
+    console.log("loading tmp file", pdf.numPages);
     const canvasNodes = [];
 
     // 4. 循环处理每一页
@@ -207,7 +213,7 @@
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 
-      const viewport = page.getViewport({ scale: 2 }); // 设置缩放
+      const viewport = page.getViewport({ scale: 5 }); // 设置缩放
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -218,14 +224,29 @@
       }).promise;
 
       canvasNodes.push(canvas);
+
+      // 1. 更新或追加
+      if (i - 1 < canvasDocs.length) {
+        canvasDocs[i - 1] = canvas; // 覆盖已有位置
+      } else {
+        canvasDocs.push(canvas); // 追加新元素
+      }
     }
-    canvasDocs = canvasNodes;
+
+    // 2. 删除多余元素
+    if (canvasDocs.length > pdf.numPages) {
+      canvasDocs.length = pdf.numPages;
+    }
+
+    console.log("loaded tmp file", canvasNodes.length);
+
+    // canvasDocs = canvasNodes;
     return canvasNodes; // 这就是你需要的 DOM Node 列表
   }
 
   function mountCanvas(container: HTMLElement, canvas: HTMLCanvasElement) {
     const update = (newCanvas: HTMLCanvasElement) => {
-    container.innerHTML = "";
+      container.innerHTML = "";
       if (newCanvas) {
         newCanvas.style.width = "100%"; // 使用更安全的方式设置样式
         container.appendChild(newCanvas);
@@ -262,18 +283,17 @@
     {/each}
     <div class="webview-wrapper">
       <button onclick={renderPdf}>Preview</button>
-      <div class="pdf-preview-webview" style="--modal-scale: {scale};">
-        <div
-          class="print"
-          bind:this={printEl}
-          use:mountNodes={docs}
-          style:display={config?.pdfPreview ? "none" : "block"}
-        ></div>
-        <div style:display={config?.pdfPreview ? "block" : "none"}>
-          {#each canvasDocs as canvas (canvas)}
-            <div class="pdf-canvas-container" use:mountCanvas={canvas}></div>
-          {/each}
-        </div>
+      <div
+        class="pdf-preview-webview"
+        style="--modal-scale: {scale};"
+        style:display={config?.pdfPreview ? "none" : "block"}
+      >
+        <div class="print" bind:this={printEl} use:mountNodes={docs}></div>
+      </div>
+      <div style:display={config?.pdfPreview ? "block" : "none"}>
+        {#each canvasDocs as canvas (canvas)}
+          <div class="pdf-canvas-container" use:mountCanvas={canvas}></div>
+        {/each}
       </div>
     </div>
   </div>

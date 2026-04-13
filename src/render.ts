@@ -573,7 +573,12 @@ export type PDFOptions = {
  * @param printEl
  * @param options
  */
-export async function printToPdf(printEl: any, options: PDFOptions) {
+export async function printToPdf(
+  printEl: any,
+  options: electron.PrintToPDFOptions & {
+    filepath: string;
+  },
+) {
   const ipc = printEl.win.electron.ipcRenderer as electron.IpcRenderer;
 
   return new Promise((resolve) => {
