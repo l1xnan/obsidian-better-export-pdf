@@ -224,9 +224,17 @@
   }
 
   function mountCanvas(container: HTMLElement, canvas: HTMLCanvasElement) {
+    const update = (newCanvas: HTMLCanvasElement) => {
     container.innerHTML = "";
-    canvas.style = "width: 100%";
-    container.appendChild(canvas);
+      if (newCanvas) {
+        newCanvas.style.width = "100%"; // 使用更安全的方式设置样式
+        container.appendChild(newCanvas);
+      }
+    };
+    update(canvas);
+    return {
+      update,
+    };
   }
 </script>
 
@@ -262,7 +270,7 @@
           style:display={config?.pdfPreview ? "none" : "block"}
         ></div>
         <div style:display={config?.pdfPreview ? "block" : "none"}>
-          {#each canvasDocs as canvas}
+          {#each canvasDocs as canvas (canvas)}
             <div class="pdf-canvas-container" use:mountCanvas={canvas}></div>
           {/each}
         </div>
