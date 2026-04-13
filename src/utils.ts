@@ -221,7 +221,7 @@ export function copyAttributes(node: HTMLElement, attributes: NamedNodeMap) {
   });
 }
 
-export function render(tpl: string, data: Record<string, string>) {
+export function renderTemplate(tpl: string, data: Record<string, string>) {
   return tpl.replace(/\{\{(.*?)\}\}/g, (match, key) => data[key.trim()]);
 }
 
