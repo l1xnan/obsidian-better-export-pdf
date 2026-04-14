@@ -76,7 +76,7 @@
       _docs = modal.mergeDocV2(_docs);
     }
     return _docs.map(({ doc, ...rest }) => {
-      return { ...rest, doc: fixDocV2(doc as unknown as Document, doc.title) };
+      return { ...rest, doc: fixDocV2(doc, doc.title) as HTMLDivElement };
     });
   }
 
@@ -87,16 +87,7 @@
       docs = await renderFiles(data, (i) => updateRenderStates(i));
     }
 
-    const promises = docs.map((docItem) => {
-      return new Promise<void>((resolve) => {
-        // @ts-ignore
-        docItem.resolve = resolve;
-      });
-    });
-
-    await Promise.all(promises);
     calcPageSize();
-    await calcWebviewSize();
   }
 
   export function toggleTitle(value: boolean) {

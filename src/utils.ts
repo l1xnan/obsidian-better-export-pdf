@@ -24,7 +24,7 @@ export class TreeNode {
  *   h2 1.3
  */
 
-export function getHeadingTree(doc = document) {
+export function getHeadingTree(doc: Document | HTMLDivElement = document) {
   const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
   const root = new TreeNode("", "Root", 0);
   let prev = root;
@@ -56,7 +56,7 @@ export function getHeadingTree(doc = document) {
 
 // modify heading/block, and get heading/block flag
 // Enhanced to support both Obsidian wikilinks and standard markdown anchor links
-export function modifyDest(doc: Document) {
+export function modifyDest(doc: Document | HTMLDivElement) {
   const data = new Map();
   doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
     const link = document.createElement("a") as HTMLAnchorElement;
@@ -102,7 +102,7 @@ function convertMapKeysToLowercase(map: Map<string, string>) {
   return new Map(Array.from(map).map(([key, value]) => [key?.toLowerCase(), value]));
 }
 
-export function fixAnchors(doc: Document, dest: Map<string, string>, basename: string) {
+export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, string>, basename: string) {
   const lowerDest = convertMapKeysToLowercase(dest);
 
   // Handle Obsidian internal links (wikilink-style)

@@ -35,7 +35,7 @@ export interface ExportConfigType {
   pdfPreview?: boolean;
 }
 
-export type DocType = { doc: Document; frontMatter?: FrontMatterCache; file: TFile };
+export type DocType = { doc: Document | HTMLDivElement; frontMatter?: FrontMatterCache; file: TFile };
 export type DocV2Type = {
   doc: HTMLDivElement;
   frontMatter: FrontMatterCache;

@@ -80,3 +80,27 @@
     display: block;
   }
 }
+
+/* 必须有此样式, 否则大纲锚点失效 */
+@media print {
+  .print .markdown-preview-view {
+    height: auto !important;
+  }
+  .md-print-anchor,
+  .blockid {
+    white-space: pre !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    display: inline-block !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    right: 0 !important;
+    outline: 0 !important;
+    background: 0 0 !important;
+    text-decoration: initial !important;
+    text-shadow: initial !important;
+  }
+}

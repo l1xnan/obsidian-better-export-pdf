@@ -324,19 +324,10 @@ function createViewEl({
 }) {
   const frontMatter = getFrontMatter(app, file);
 
-  const cssclasses = [];
-  for (const [key, val] of Object.entries(frontMatter)) {
-    if (key.toLowerCase() == "cssclass" || key.toLowerCase() == "cssclasses") {
-      if (Array.isArray(val)) {
-        cssclasses.push(...val);
-      } else {
-        cssclasses.push(val);
-      }
-    }
-  }
-  const viewEl = printEl.createDiv({
-    cls: "markdown-preview-view markdown-rendered " + cssclasses.join(" "),
-  });
+  const viewEl = printEl.createDiv({ cls: "markdown-preview-view markdown-rendered" });
+
+  const cssclasses = getCssclasses(frontMatter);
+  viewEl.addClasses(cssclasses);
 
   // @ts-ignore
   viewEl.toggleClass("rtl", app.vault.getConfig("rightToLeft"));
@@ -455,7 +446,7 @@ export function fixDoc(doc: Document, title: string) {
   return doc;
 }
 
-export function fixDocV2(doc: Document, title: string) {
+export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
   return doc;
@@ -557,17 +548,6 @@ function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): 
   });
 }
 
-export type PDFOptions = {
-  filepath: string;
-  includeName: boolean;
-  landscape: false;
-  marginsType: number;
-  open: boolean;
-  pageSize: PageSizeType;
-  scale: number;
-  scaleFactor: number;
-};
-
 /**
  *
  * @param printEl
@@ -590,4 +570,18 @@ export async function printToPdf(
     // 2. 发送请求
     ipc.send("print-to-pdf", options);
   });
+}
+
+export function getCssclasses(frontMatter: FrontMatterCache) {
+  const cssclasses = [];
+  for (const [key, val] of Object.entries(frontMatter)) {
+    if (key.toLowerCase() == "cssclass" || key.toLowerCase() == "cssclasses") {
+      if (Array.isArray(val)) {
+        cssclasses.push(...val);
+      } else {
+        cssclasses.push(val);
+      }
+    }
+  }
+  return cssclasses;
 }
