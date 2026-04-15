@@ -91,11 +91,12 @@
   }
 
   export function toggleTitle(value: boolean) {
-    docs.forEach(({ doc }) => {
+    docs = docs.map(({ doc, ...rest }) => {
       const _title = doc?.querySelector("h1.__title__") as HTMLHeadingElement;
       if (_title) {
         _title.style.display = value ? "block" : "none";
       }
+      return { doc, ...rest };
     });
   }
 
@@ -250,7 +251,7 @@
   }
 </script>
 
-<div class="pdf-preview">
+<div class="print-preview">
   <div class="progress">
     {#if renderStates.length > 0 && !renderStates.every((item) => item.status)}
       <div>Rendering...</div>
@@ -272,18 +273,17 @@
         <div class="filename">{i + 1}-{item.doc.title}</div>
       {/if}
     {/each}
-    <div class="webview-wrapper">
+    <div class="preview-wrapper">
       <button onclick={renderPdf}>Preview</button>
       <div
-        class="pdf-preview-webview"
+        class="print-preview-container"
         style="--modal-scale: {scale};"
         style:display={config?.pdfPreview ? "none" : "block"}
-      >
-        <div class="print" bind:this={printEl} use:mountNodes={docs}></div>
-      </div>
+        use:mountNodes={docs}
+      ></div>
       <div style:display={config?.pdfPreview ? "block" : "none"}>
         {#each canvasDocs as canvas (canvas)}
-          <div class="pdf-canvas-container" use:mountCanvas={canvas}></div>
+          <div class="pdf-canvas-page" use:mountCanvas={canvas}></div>
         {/each}
       </div>
     </div>

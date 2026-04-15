@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: row;
   height: 75vh;
-  .pdf-preview {
+  .print-preview {
     flex: 1;
     overflow-x: hidden;
     overflow-y: scroll;
@@ -15,66 +15,72 @@
     width: 320px;
     margin-left: 16px;
   }
+
+  .setting-wrapper .setting-item[hidden] {
+    display: none;
+  }
 }
 
-#better-export-pdf .pdf-preview .webview-wrapper {
-  position: relative;
-  height: 100%;
-  width: 100%;
-}
+#better-export-pdf .print-preview {
+  .webview-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
 
-#better-export-pdf .pdf-preview .print-size {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  z-index: 99;
-  font-size: 0.6rem;
-  white-space: pre-wrap;
-  text-align: right;
-  /* visibility: hidden; */
-}
+  .print-size {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 99;
+    font-size: 0.6rem;
+    white-space: pre-wrap;
+    text-align: right;
+  }
 
-#better-export-pdf .pdf-preview > div {
-  flex: 1;
-  height: 100%;
-  width: 100%;
-}
+  & > div {
+    flex: 1;
+    height: 100%;
+    width: 100%;
+  }
 
-#better-export-pdf .pdf-preview > div.progress {
-  flex: none;
-  height: auto;
-  width: 100%;
-  text-align: left;
-}
+  & > div.progress {
+    flex: none;
+    height: auto;
+    width: 100%;
+    text-align: left;
+  }
 
-#better-export-pdf .pdf-preview .filename {
-  font-size: 0.75rem;
-  color: var(--color-base-60);
-}
-
-#better-export-pdf .pdf-preview .filename:not(:first-child) {
-  padding-top: calc(var(--p-spacing));
-}
-
-#better-export-pdf .pdf-preview-webview {
-  height: calc(var(--modal-scale) * 100%);
-  width: calc(var(--modal-scale) * 100%);
-  transform: scale(calc(1 / var(--modal-scale)), calc(1 / var(--modal-scale)));
-  transform-origin: top left;
-  border: 1px solid var(--background-modifier-border, #f2f2f2);
-}
-
-#better-export-pdf .setting-wrapper .setting-item[hidden] {
-  display: none;
+  .filename {
+    font-size: 0.75rem;
+    color: var(--color-base-60);
+  }
+  .filename:not(:first-child) {
+    padding-top: calc(var(--p-spacing));
+  }
 }
 
 #better-export-pdf {
-  .pdf-canvas-container {
+  .print-preview-container {
+    height: calc(var(--modal-scale) * 100%);
+    width: calc(var(--modal-scale) * 100%);
+    transform: scale(calc(1 / var(--modal-scale)), calc(1 / var(--modal-scale)));
+    transform-origin: top left;
+    border: 1px solid var(--background-modifier-border, #f2f2f2);
+  }
+
+  .preview-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+  .pdf-canvas-page {
     width: 100%;
     margin: 20px 10px;
     background-color: rgba(0, 0, 0, 0.1);
   }
-  .pdf-canvas-container :global(canvas) {
+
+  .pdf-canvas-page :global(canvas) {
     width: 100% !important;
     height: auto !important;
     display: block;

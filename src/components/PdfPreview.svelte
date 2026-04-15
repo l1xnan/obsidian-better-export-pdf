@@ -200,7 +200,7 @@
   });
 </script>
 
-<div class="pdf-preview">
+<div class="print-preview">
   <div class="progress">
     {#if renderStates.length > 0 && !renderStates.every((item) => item.status)}
       <div>Rendering...</div>
@@ -228,7 +228,7 @@
         <webview
           src="app://obsidian.md/help.html"
           nodeintegration={true}
-          class="pdf-preview-webview"
+          class="print-preview-container"
           style="--modal-scale: {scale};"
           use:initWebviewEvents={item}
         ></webview>
