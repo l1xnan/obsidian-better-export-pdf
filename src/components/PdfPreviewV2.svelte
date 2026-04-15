@@ -13,7 +13,7 @@
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { editPDF, getOutputFile, makePrintOptions } from "../pdf";
+  import { editPDF, getOutputFile, getOutputPath, makePrintOptions } from "../pdf";
 
   let {
     modal,
@@ -128,7 +128,6 @@
   });
   function mountNodes(node: HTMLElement, docs: DocType[]) {
     const update = (newDocs: DocType[]) => {
-      console.log("newDocs", $state.snapshot(newDocs));
       node.innerHTML = "";
       newDocs.forEach((item) => node.appendChild(item.doc.cloneNode(true)));
     };
@@ -142,20 +141,42 @@
       },
     };
   }
+  class Mutex {
+    queue: Promise<unknown>;
+    constructor() {
+      this.queue = Promise.resolve();
+    }
 
-  export async function handlePrintToPDF() {
-    console.log("printEl", printEl);
-    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
-    const outputFile = await getOutputFile(title, settings.isTimestamp);
+    async run(task: any) {
+      const result = this.queue.then(() => task());
+      // 更新队列，确保下一个任务等待当前任务（无论成功失败）
+      this.queue = result.catch(() => {});
+      return result;
+    }
+  }
 
-    const el = document.querySelector(".print");
+  const mutex = new Mutex();
 
+  export async function exportToPDF({
+    el,
+    outputFile,
+    title,
+  }: {
+    el: HTMLDivElement;
+    outputFile: string;
+    title: string;
+  }) {
     console.log("printOptions:", printOptions);
     const pdfOptions = {
       ...printOptions,
       filepath: outputFile,
     };
-    await printToPdf(el, pdfOptions);
+
+    await mutex.run(async () => {
+      // 防止标题污染, 同一时间只有一个PDF被渲染
+      document.title = title;
+      await printToPdf(el, pdfOptions);
+    });
 
     let data = await fs.readFile(outputFile);
 
@@ -171,6 +192,32 @@
       // @ts-ignore
       electron.remote.shell.openPath(outputFile);
     }
+  }
+
+  export async function handlePrintToPDF() {
+    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+    const currentTitle = document.title;
+
+    if (modal.multiplePdf) {
+      const outputPath = await getOutputPath(title);
+      if (outputPath) {
+        const elems = document.querySelectorAll("body > div.print");
+
+        await Promise.all(
+          Array.from(elems).map(async (el: HTMLDivElement, i) => {
+            const title = docs[i].file.basename;
+            await exportToPDF({ el, outputFile: `${outputPath}/${title}.pdf`, title });
+          }),
+        );
+      }
+    } else {
+      const outputFile = await getOutputFile(title, settings.isTimestamp);
+      if (outputFile) {
+        const el = docs[0].doc as HTMLDivElement;
+        await exportToPDF({ el, outputFile, title });
+      }
+    }
+    document.title = currentTitle;
   }
 
   async function renderPdf() {
