@@ -26,7 +26,6 @@
   } = $props();
 
   const settings = $derived(plugin.settings);
-  let printEl = $state<HTMLDivElement>();
 
   // Progress
   let renderStates = $state<{ filename: string; status: number }[]>([]);
@@ -97,6 +96,10 @@
         _title.style.display = value ? "block" : "none";
       }
       return { doc, ...rest };
+    });
+
+    previewEl?.querySelectorAll("h1.__title__").forEach((el: HTMLHeadElement) => {
+      el.style.display = value ? "block" : "none";
     });
   }
 
