@@ -201,14 +201,15 @@
     if (modal.multiplePdf) {
       const outputPath = await getOutputPath(title);
       if (outputPath) {
-        const elems = document.querySelectorAll("body > div.print");
-
-        await Promise.all(
-          Array.from(elems).map(async (el: HTMLDivElement, i) => {
-            const title = docs[i].file.basename;
-            await exportToPDF({ el, outputFile: `${outputPath}/${title}.pdf`, title });
-          }),
-        );
+        docs.forEach(({ doc }) => {
+          (doc as HTMLElement).style.display = "none";
+        });
+        for (const item of docs) {
+          const title = item.file.basename;
+          (item.doc as HTMLElement).style.display = "block";
+          await exportToPDF({ el: item.doc as HTMLDivElement, outputFile: `${outputPath}/${title}.pdf`, title });
+          (item.doc as HTMLElement).style.display = "none";
+        }
       }
     } else {
       const outputFile = await getOutputFile(title, settings.isTimestamp);
@@ -320,7 +321,7 @@
   <div bind:this={previewEl}>
     {#each docs as item, i}
       {#if modal.multiplePdf}
-        <div class="filename">{i + 1}-{item.doc.title}</div>
+        <div class="filename">{i + 1}-{item.file.name}</div>
       {/if}
     {/each}
     <div class="preview-wrapper">

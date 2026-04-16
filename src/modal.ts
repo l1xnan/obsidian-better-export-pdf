@@ -202,30 +202,19 @@ export class ExportConfigModal extends Modal {
   }
 
   mergeDocV2(docs: DocV2Type[]): DocV2Type[] {
-    const sections = [];
     const printEl = document.body.createDiv("print");
-    const viewEl = printEl.createDiv({
-      cls: "markdown-preview-view markdown-rendered",
-    });
+
     for (const { doc } of docs) {
-      const element = doc.querySelector(".markdown-preview-view");
-      if (element) {
-        const section = viewEl.createDiv("section");
-        // section.appendChild(element);
-        Array.from(element.children).forEach((child) => {
-          section.appendChild(child);
-        });
-        sections.push(section);
+      const viewEl = doc.querySelector(".markdown-preview-view");
+      if (viewEl) {
+        printEl.appendChild(viewEl);
       }
       document.body.removeChild(doc);
     }
     return [{ ...docs[0], doc: printEl }];
   }
 
-  // ── Webview management ──────────────────────────────────
-
   // ── CSS Snippets helper ─────────────────────────────────
-
   cssSnippets(): Record<string, string> {
     // @ts-ignore
     const { snippets, enabledSnippets } = this.app?.customCss ?? {};
