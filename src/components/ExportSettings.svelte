@@ -247,9 +247,6 @@
       value: config.pdfPreview ?? false,
       onChange: (value) => {
         config.pdfPreview = value;
-        if (value) {
-          pdfPreview?.renderPreview(true);
-        }
       },
     }}
   ></div>
