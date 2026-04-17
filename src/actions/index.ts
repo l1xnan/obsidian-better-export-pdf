@@ -1,5 +1,6 @@
 import { setIcon, Setting, debounce } from "obsidian";
 import type { Action } from "svelte/action";
+import type { DocType } from "../modal";
 
 function setInputWidth(inputEl: HTMLInputElement) {
   inputEl.setAttribute("style", "width: 100px;");
@@ -179,3 +180,49 @@ export const icon: Action<HTMLElement, string> = (node, iconId) => {
     },
   };
 };
+
+export function mountNodes(node: HTMLElement, docs: DocType[]) {
+  const update = (newDocs: DocType[]) => {
+    node.innerHTML = "";
+    newDocs.forEach((item) => node.appendChild(item.doc.cloneNode(true)));
+  };
+
+  update(docs);
+
+  return {
+    update,
+    destroy() {
+      node.innerHTML = "";
+    },
+  };
+}
+
+export function mountNode(node: HTMLElement, doc: any) {
+  const update = (newDoc: any) => {
+    node.innerHTML = "";
+    node.appendChild(newDoc.cloneNode(true));
+  };
+
+  update(doc);
+
+  return {
+    update,
+    destroy() {
+      node.innerHTML = "";
+    },
+  };
+}
+
+export function mountCanvas(container: HTMLElement, canvas: HTMLCanvasElement) {
+  const update = (newCanvas: HTMLCanvasElement) => {
+    container.innerHTML = "";
+    if (newCanvas) {
+      newCanvas.style.width = "100%"; // 使用更安全的方式设置样式
+      container.appendChild(newCanvas);
+    }
+  };
+  update(canvas);
+  return {
+    update,
+  };
+}

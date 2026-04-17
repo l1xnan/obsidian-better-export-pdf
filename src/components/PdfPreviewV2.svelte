@@ -8,7 +8,7 @@
   import * as electron from "electron";
   import { getHeadingTree, mm2px, safeParseFloat, safeParseInt } from "../utils";
   import pLimit from "p-limit";
-  import { icon } from "../actions";
+  import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
@@ -126,28 +126,14 @@
   $effect(() => {
     console.log("config:", $state.snapshot(config));
   });
-  function mountNodes(node: HTMLElement, docs: DocType[]) {
-    const update = (newDocs: DocType[]) => {
-      node.innerHTML = "";
-      newDocs.forEach((item) => node.appendChild(item.doc.cloneNode(true)));
-    };
 
-    update(docs);
-
-    return {
-      update,
-      destroy() {
-        node.innerHTML = "";
-      },
-    };
-  }
   class Mutex {
     queue: Promise<unknown>;
     constructor() {
       this.queue = Promise.resolve();
     }
 
-    async run(task: any) {
+    async run(task: Function) {
       const result = this.queue.then(() => task());
       // 更新队列，确保下一个任务等待当前任务（无论成功失败）
       this.queue = result.catch(() => {});
@@ -194,31 +180,48 @@
     }
   }
 
-  export async function handlePrintToPDF() {
-    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+  export async function printDocs(docs: DocType[], outfiles: string[], cb?: any) {
     const currentTitle = document.title;
 
-    if (modal.multiplePdf) {
-      const outputPath = await getOutputPath(title);
-      if (outputPath) {
-        docs.forEach(({ doc }) => {
-          (doc as HTMLElement).style.display = "none";
-        });
-        for (const item of docs) {
-          const title = item.file.basename;
-          (item.doc as HTMLElement).style.display = "block";
-          await exportToPDF({ el: item.doc as HTMLDivElement, outputFile: `${outputPath}/${title}.pdf`, title });
-          (item.doc as HTMLElement).style.display = "none";
-        }
-      }
-    } else {
-      const outputFile = await getOutputFile(title, settings.isTimestamp);
-      if (outputFile) {
-        const el = docs[0].doc as HTMLDivElement;
-        await exportToPDF({ el, outputFile, title });
+    docs.forEach(({ doc }) => {
+      (doc as HTMLElement).style.display = "none";
+    });
+
+    for (const [i, outfile] of outfiles.entries()) {
+      const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
+      const title = file.basename;
+      doc.style.display = "block";
+      await sleep(200);
+
+      await exportToPDF({ el: doc, outputFile: outfile, title });
+      doc.style.display = "none";
+      if (cb) {
+        await cb(outfile);
       }
     }
     document.title = currentTitle;
+  }
+
+  export async function handlePrintToPDF() {
+    const title = (modal.file as TFile)?.basename ?? modal.file?.name;
+
+    const files = [];
+    if (modal.multiplePdf) {
+      const outputPath = await getOutputPath(title);
+      if (!outputPath) {
+        return false;
+      }
+      files.push(...docs.map((item) => `${outputPath}/${item.file.basename}.pdf`));
+    } else {
+      const outputFile = await getOutputFile(title, settings.isTimestamp);
+      if (!outputFile) {
+        return false;
+      }
+      files.push(outputFile);
+    }
+
+    await printDocs(docs, files);
+    return true;
   }
 
   async function renderPdf() {
@@ -227,26 +230,20 @@
     const tempDir = os.tmpdir();
 
     // 生成一个唯一的文件名
-    const tempFilePath = path.join(tempDir, `obsidian-temp-${Date.now()}.pdf`);
+    const tempFiles = docs.map(({ file }) => path.join(tempDir, `obsidian-temp-${file.basename}-${Date.now()}.pdf`));
+    console.log("tempFiles", tempFiles);
 
-    // const el = document.querySelector(".print");
-    const el = docs[0].doc;
+    let numPages = 0;
 
-    console.log("printOptions:", printOptions);
-
-    await printToPdf(el, { ...printOptions, filepath: tempFilePath });
-
-    console.log(tempFilePath);
-    await sleep(200);
+    async function renderCanvas(tmpfile: string) {
     // 2. 读取文件为 ArrayBuffer
-    const content = await fs.readFile(tempFilePath);
+      const content = await fs.readFile(tmpfile);
 
     // // 3. 加载文档
     const loadingTask = pdfjsLib.getDocument({ data: content });
     const pdf = await loadingTask.promise;
 
     console.log("loading tmp file", pdf.numPages);
-    const canvasNodes = [];
 
     // 4. 循环处理每一页
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -266,39 +263,20 @@
         viewport: viewport,
       }).promise;
 
-      canvasNodes.push(canvas);
-
-      // 1. 更新或追加
-      if (i - 1 < canvasDocs.length) {
-        canvasDocs[i - 1] = canvas; // 覆盖已有位置
+        // 5. 更新或追加
+        if (numPages < canvasDocs.length) {
+          canvasDocs[numPages] = canvas; // 覆盖已有位置
       } else {
         canvasDocs.push(canvas); // 追加新元素
       }
-    }
-
-    // 2. 删除多余元素
-    if (canvasDocs.length > pdf.numPages) {
-      canvasDocs.length = pdf.numPages;
-    }
-
-    console.log("loaded tmp file", canvasNodes.length);
-
-    // canvasDocs = canvasNodes;
-    return canvasNodes; // 这就是你需要的 DOM Node 列表
-  }
-
-  function mountCanvas(container: HTMLElement, canvas: HTMLCanvasElement) {
-    const update = (newCanvas: HTMLCanvasElement) => {
-      container.innerHTML = "";
-      if (newCanvas) {
-        newCanvas.style.width = "100%"; // 使用更安全的方式设置样式
-        container.appendChild(newCanvas);
+        numPages += 1;
       }
-    };
-    update(canvas);
-    return {
-      update,
-    };
+    }
+    await printDocs(docs, tempFiles, renderCanvas);
+
+    canvasDocs.length = numPages;
+
+    console.log("loaded tmp canvas pages:", numPages);
   }
 </script>
 
@@ -319,19 +297,20 @@
     {/if}
   </div>
   <div bind:this={previewEl}>
-    {#each docs as item, i}
-      {#if modal.multiplePdf}
-        <div class="filename">{i + 1}-{item.file.name}</div>
-      {/if}
-    {/each}
     <div class="preview-wrapper">
       <button onclick={renderPdf}>Preview</button>
       <div
         class="print-preview-container"
         style="--modal-scale: {scale};"
         style:display={config?.pdfPreview ? "none" : "block"}
-        use:mountNodes={docs}
-      ></div>
+      >
+        {#each docs as item, i}
+          {#if modal.multiplePdf}
+            <div class="filename">{item.file.name}</div>
+          {/if}
+          <div class="print-preview-item" use:mountNode={item.doc}></div>
+        {/each}
+      </div>
       <div style:display={config?.pdfPreview ? "block" : "none"}>
         {#each canvasDocs as canvas (canvas)}
           <div class="pdf-canvas-page" use:mountCanvas={canvas}></div>

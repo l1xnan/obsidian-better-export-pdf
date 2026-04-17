@@ -54,9 +54,11 @@
   .filename {
     font-size: 0.75rem;
     color: var(--color-base-60);
+    text-align: center;
+    padding-bottom: calc(var(--p-spacing) / 4);
   }
   .filename:not(:first-child) {
-    padding-top: calc(var(--p-spacing));
+    padding-top: calc(var(--p-spacing) / 2);
   }
 }
 
@@ -66,7 +68,10 @@
     width: calc(var(--modal-scale) * 100%);
     transform: scale(calc(1 / var(--modal-scale)), calc(1 / var(--modal-scale)));
     transform-origin: top left;
-    border: 1px solid var(--background-modifier-border, #f2f2f2);
+
+    .print-preview-item {
+      border: 1px solid var(--background-modifier-border, #f2f2f2);
+    }
   }
 
   .preview-wrapper {
@@ -76,8 +81,8 @@
   }
   .pdf-canvas-page {
     width: 100%;
-    margin: 20px 10px;
-    background-color: rgba(0, 0, 0, 0.1);
+    height: 100%;
+    border: 1px solid var(--background-modifier-border);
   }
 
   .pdf-canvas-page :global(canvas) {
