@@ -33,6 +33,7 @@
   let previewEl = $state<HTMLDivElement>();
   let docs = $state<DocType[]>([]);
   let canvasDocs = $state<HTMLCanvasElement[]>([]);
+  let pdfCaches = $state<Record<string, string[]>>({});
 
   const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
 
@@ -147,10 +148,12 @@
     el,
     outputFile,
     title,
+    onlyPreview = false,
   }: {
     el: HTMLDivElement;
     outputFile: string;
     title: string;
+    onlyPreview?: boolean;
   }) {
     console.log("printOptions:", printOptions);
     const pdfOptions = {
@@ -163,6 +166,9 @@
       document.title = title;
       await printToPdf(el, pdfOptions);
     });
+    if (onlyPreview) {
+      return;
+    }
 
     let data = await fs.readFile(outputFile);
 
@@ -180,7 +186,17 @@
     }
   }
 
-  export async function printDocs(docs: DocType[], outfiles: string[], cb?: any) {
+  export async function printDocs({
+    docs,
+    outfiles,
+    cb,
+    onlyPreview,
+  }: {
+    docs: DocType[];
+    outfiles: string[];
+    cb?: any;
+    onlyPreview?: boolean;
+  }) {
     const currentTitle = document.title;
 
     docs.forEach(({ doc }) => {
@@ -193,7 +209,7 @@
       doc.style.display = "block";
       await sleep(200);
 
-      await exportToPDF({ el: doc, outputFile: outfile, title });
+      await exportToPDF({ el: doc, outputFile: outfile, title, onlyPreview });
       doc.style.display = "none";
       if (cb) {
         await cb(outfile);
@@ -220,7 +236,7 @@
       files.push(outputFile);
     }
 
-    await printDocs(docs, files);
+    await printDocs({ docs, outfiles: files });
     return true;
   }
 
@@ -228,10 +244,6 @@
     // 1. 加载 PDF.js 库
     const pdfjsLib = await loadPdfJs();
     const tempDir = os.tmpdir();
-
-    // 生成一个唯一的文件名
-    const tempFiles = docs.map(({ file }) => path.join(tempDir, `obsidian-temp-${file.basename}-${Date.now()}.pdf`));
-    console.log("tempFiles", tempFiles);
 
     let numPages = 0;
 
@@ -272,8 +284,22 @@
         numPages += 1;
       }
     }
-    await printDocs(docs, tempFiles, renderCanvas);
 
+    const key = JSON.stringify(printOptions);
+    if (!pdfCaches[key]) {
+      // 生成一个唯一的文件名
+
+      const tempFiles = docs.map(({ file }) =>
+        path.join(tempDir, `obsidian-temp-${file.path.replace(/[/\\]/g, "_")}-${Date.now()}.pdf`),
+      );
+      console.log("tempFiles", tempFiles);
+
+      await printDocs({ docs, outfiles: tempFiles, cb: renderCanvas, onlyPreview: true });
+
+      pdfCaches[key] = tempFiles;
+    } else {
+      pdfCaches[key].forEach((file) => renderCanvas(file));
+    }
     canvasDocs.length = numPages;
 
     console.log("loaded tmp canvas pages:", numPages);
