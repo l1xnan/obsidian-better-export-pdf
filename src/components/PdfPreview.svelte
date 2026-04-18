@@ -17,12 +17,10 @@
     modal,
     plugin,
     config = $bindable(),
-    lastPreview = $bindable(null),
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
     config: ExportConfigType;
-    lastPreview?: electron.WebviewTag | null;
   } = $props();
 
   const settings = $derived(plugin.settings);
@@ -98,7 +96,6 @@
     }
 
     webviews = [];
-    lastPreview = null;
 
     const promises = docs.map((docItem) => {
       return new Promise<void>((resolve) => {
@@ -147,9 +144,12 @@
     }
   }
 
+  export function handleOpenDevTools() {
+    webviews?.[-1]?.openDevTools();
+  }
+
   function initWebviewEvents(preview: electron.WebviewTag, docObj: any) {
     webviews.push(preview);
-    lastPreview = preview;
 
     const handler = async () => {
       completed = true;

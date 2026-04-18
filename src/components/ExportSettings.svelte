@@ -9,7 +9,6 @@
     plugin,
     config = $bindable(),
     pdfPreview,
-    lastPreview,
     handleExport,
     refreshPreview,
   }: {
@@ -17,7 +16,6 @@
     plugin: BetterExportPdfPlugin;
     config: ExportConfigType;
     pdfPreview: any;
-    lastPreview: electron.WebviewTag | null;
     handleExport: () => void;
     refreshPreview: () => Promise<void>;
   } = $props();
@@ -272,7 +270,7 @@
     use:settingButton={{
       text: "Debug",
       hidden: !settings?.debug,
-      onClick: () => lastPreview?.openDevTools(),
+      onClick: () => pdfPreview?.handleOpenDevTools(),
     }}
   ></div>
 </div>

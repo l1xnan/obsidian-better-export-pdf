@@ -304,6 +304,12 @@
 
     console.log("loaded tmp canvas pages:", numPages);
   }
+
+  export function handleOpenDevTools() {
+    // @ts-ignore
+    const c = document.win.electron.remote.getCurrentWebContents();
+    c.openDevTools();
+  }
 </script>
 
 <div class="print-preview">

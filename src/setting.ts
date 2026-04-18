@@ -40,7 +40,15 @@ export default class ConfigSettingTab extends PluginSettingTab {
     });
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
-
+    new Setting(containerEl).setName(this.i18n.settings.version).addDropdown((dropdown) => {
+      dropdown
+        .addOptions(Object.fromEntries(["1", "2"].map((v) => [v, `v${v}`])))
+        .setValue(this.plugin.settings.version)
+        .onChange(async (value: string) => {
+          this.plugin.settings.version = value;
+          this.plugin.saveSettings();
+        });
+    });
     new Setting(containerEl).setName(this.i18n.settings.showTitle).addToggle((toggle) =>
       toggle
         .setTooltip(this.i18n.settings.showTitle)
