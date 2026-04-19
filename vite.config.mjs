@@ -58,6 +58,13 @@ export default defineConfig(({ mode }) => ({
       ],
       watch: {
         include: "src/**",
+        // 忽略监听这些打包生成的文件，防止二次触发打包
+        exclude: [
+          "main.js",
+          "styles.css",
+          "manifest.json", // 如果你用脚本动态生成 manifest 也可以加上
+          "node_modules/**",
+        ],
       },
     },
   },
@@ -79,7 +86,7 @@ function writeObsidianAssets() {
       this.emitFile({
         type: "asset",
         fileName: "manifest.json",
-        source: JSON.stringify(manifest, null, "\t"),
+        source: JSON.stringify(manifest, null, "  ") + "\n",
       });
     },
   };
