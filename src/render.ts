@@ -1,6 +1,7 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
-import type { TConfig } from "./modal";
+import type { PageSizeType, ExportConfigType } from "./modal";
 import { copyAttributes, fixAnchors, modifyDest } from "./utils";
+import * as electron from "electron";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -114,15 +115,16 @@ export function getFrontMatter(app: App, file: TFile) {
 export type ParamType = {
   app: App;
   file: TFile;
-  config: TConfig;
+  config?: ExportConfigType;
   extra?: {
     title?: string;
     file: TFile;
     id?: string;
   };
+  cleanup?: () => void;
 };
 
-// 逆向原生打印函数
+// 逆向Obdian官方打印函数
 export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const startTime = new Date().getTime();
 
@@ -137,8 +139,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const leaf = ws.getLeaf(true);
   await leaf.openFile(file);
   const view = leaf.view as MarkdownView;
-  // @ts-ignore
-  const data: string = view?.data ?? ws?.getActiveFileView()?.data ?? ws.activeEditor?.data;
+  const data = await app.vault.cachedRead(file);
   if (!data) {
     new Notice("data is empty!");
   }
@@ -163,7 +164,6 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered " + cssclasses.join(" "),
   });
-  app.vault.cachedRead(file);
 
   // @ts-ignore
   viewEl.toggleClass("rtl", app.vault.getConfig("rightToLeft"));
@@ -173,7 +173,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const title = extra?.title ?? frontMatter?.title ?? file.basename;
   viewEl.createEl("h1", { text: title }, (e) => {
     e.addClass("__title__");
-    e.style.display = config.showTitle ? "block" : "none";
+    e.style.display = config?.showTitle ? "block" : "none";
     e.id = extra?.id ?? "";
   });
 
@@ -281,10 +281,174 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   return { doc, frontMatter, file };
 }
 
+export async function renderMarkdownV2({ app, file, config, extra }: ParamType) {
+  const startTime = new Date().getTime();
+
+  const data = await app.vault.cachedRead(file);
+  if (!data) {
+    new Notice(`${file} data is empty!`);
+  }
+
+  const comp = new Component();
+  comp.load();
+
+  const printEl = document.body.createDiv("print");
+  const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
+
+  const markdown = modifyMarkdown({ app, file, data });
+
+  await renderHtml({ app, markdown, file, comp, viewEl });
+
+  const cleanup = () => {
+    printEl.detach();
+    comp.unload();
+    printEl.remove();
+  };
+  console.log(`md render time:${new Date().getTime() - startTime}ms`);
+
+  return { doc: printEl, frontMatter, file, cleanup };
+}
+
+function createViewEl({
+  app,
+  file,
+  printEl,
+  extra,
+  config,
+}: {
+  app: App;
+  file: TFile;
+  printEl: HTMLDivElement;
+  extra: { title?: string; file: TFile; id?: string } | undefined;
+  config?: ExportConfigType;
+}) {
+  const frontMatter = getFrontMatter(app, file);
+
+  const viewEl = printEl.createDiv({ cls: "markdown-preview-view markdown-rendered" });
+
+  const cssclasses = getCssclasses(frontMatter);
+  viewEl.addClasses(cssclasses);
+
+  // @ts-ignore
+  viewEl.toggleClass("rtl", app.vault.getConfig("rightToLeft"));
+  // @ts-ignore
+  viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
+
+  const title = extra?.title ?? frontMatter?.title ?? file.basename;
+  viewEl.createEl("h1", { text: title }, (e) => {
+    e.addClass("__title__");
+    e.style.display = config?.showTitle ? "block" : "none";
+    e.id = extra?.id ?? "";
+  });
+  return { viewEl, frontMatter };
+}
+
+function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
+  const cache = app.metadataCache.getFileCache(file);
+
+  const blocks = new Map(Object.entries(cache?.blocks ?? {}));
+  const lines = (data?.split("\n") ?? []).map((line, i) => {
+    for (const {
+      id,
+      position: { start, end },
+    } of blocks.values()) {
+      const blockid = `^${id}`;
+      if (line.includes(blockid) && i >= start.line && i <= end.line) {
+        blocks.delete(id);
+        return line.replace(blockid, `<span id="${blockid}" class="blockid"></span> ${blockid}`);
+      }
+    }
+    return line;
+  });
+
+  [...blocks.values()].forEach(({ id, position: { start, end } }) => {
+    const idx = start.line;
+    lines[idx] = `<span id="^${id}" class="blockid"></span>\n\n` + lines[idx];
+  });
+  return lines.join("\n");
+}
+
+async function renderHtml({
+  app,
+  markdown,
+  file,
+  comp,
+  viewEl,
+}: {
+  app: App;
+  markdown: string;
+  file: TFile;
+  comp: Component;
+  viewEl: HTMLDivElement;
+}) {
+  const fragment = {
+    children: undefined,
+    appendChild(e: DocumentFragment) {
+      this.children = e?.children;
+      throw new Error("exit");
+    },
+  } as unknown as HTMLElement;
+
+  const promises: AyncFnType[] = [];
+  try {
+    // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
+    // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
+    // but errors occur during recent postProcess handling, thus achieving the goal of avoiding postProcess handling.
+    await MarkdownRenderer.render(app, markdown, fragment, file.path, comp);
+  } catch (error) {
+    /* empty */
+  }
+
+  const el = createFragment();
+  Array.from(fragment.children).forEach((item) => {
+    el.createDiv({}, (t) => {
+      return t.appendChild(item);
+    });
+  });
+
+  viewEl.appendChild(el);
+
+  // @ts-ignore
+  // (app: App: param: T) => T
+  // MarkdownPostProcessorContext
+  await MarkdownRenderer.postProcess(app, {
+    docId: generateDocId(16),
+    sourcePath: file.path,
+    frontmatter: {},
+    promises,
+    addChild: function (e: Component) {
+      return comp.addChild(e);
+    },
+    getSectionInfo: function () {
+      return null;
+    },
+    containerEl: viewEl,
+    el: viewEl,
+    displayMode: true,
+  });
+  await Promise.all(promises);
+
+  viewEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
+    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+
+    if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
+      return;
+    }
+
+    el.removeAttribute("href");
+  });
+}
+
 export function fixDoc(doc: Document, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
   encodeEmbeds(doc);
+  return doc;
+}
+
+export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
+  const dest = modifyDest(doc);
+  fixAnchors(doc, dest, title);
   return doc;
 }
 
@@ -334,6 +498,31 @@ export function createWebview(scale = 1.25) {
   return webview;
 }
 
+export function makeWebviewJs(doc: Document) {
+  return `
+      document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
+      document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
+      
+      // Function to recursively decode and replace innerHTML of span.markdown-embed elements
+      function decodeAndReplaceEmbed(element) {
+				// Replace the innerHTML with the decoded content
+        element.innerHTML = decodeURIComponent(element.innerHTML);
+				// Check if the new content contains further span.markdown-embed elements
+        const newEmbeds = element.querySelectorAll("span.markdown-embed");
+        newEmbeds.forEach(decodeAndReplaceEmbed);
+      }
+      
+      // Start the process with all span.markdown-embed elements in the document
+      document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
+
+      document.body.setAttribute("class", \`${document.body.getAttribute("class")}\`)
+      document.body.setAttribute("style", \`${document.body.getAttribute("style")}\`)
+      document.body.addClass("theme-light");
+      document.body.removeClass("theme-dark");
+      document.title = \`${doc.title}\`;
+      `;
+}
+
 function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): Promise<boolean> {
   return new Promise((resolve, reject) => {
     let timer: NodeJS.Timeout;
@@ -357,4 +546,42 @@ function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): 
       reject(new Error(`timeout ${timeout}ms`));
     }, timeout);
   });
+}
+
+/**
+ *
+ * @param printEl
+ * @param options
+ */
+export async function printToPdf(
+  printEl: any,
+  options: electron.PrintToPDFOptions & {
+    filepath: string;
+  },
+) {
+  const ipc = printEl.win.electron.ipcRenderer as electron.IpcRenderer;
+
+  return new Promise((resolve) => {
+    // 1.ipc先设置监听（确保不会错过主进程的回信）
+    ipc.once("print-to-pdf", (event, result) => {
+      resolve(result); // 收到回复时，结束等待
+    });
+
+    // 2. 发送请求
+    ipc.send("print-to-pdf", options);
+  });
+}
+
+export function getCssclasses(frontMatter: FrontMatterCache) {
+  const cssclasses = [];
+  for (const [key, val] of Object.entries(frontMatter)) {
+    if (key.toLowerCase() == "cssclass" || key.toLowerCase() == "cssclasses") {
+      if (Array.isArray(val)) {
+        cssclasses.push(...val);
+      } else {
+        cssclasses.push(val);
+      }
+    }
+  }
+  return cssclasses;
 }

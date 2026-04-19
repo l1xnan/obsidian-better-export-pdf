@@ -1,11 +1,11 @@
 import electron, { type WebviewTag } from "electron";
-import * as fs from "fs/promises";
+const fs = require("fs").promises;
 import { type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
 import type { BetterExportPdfPluginSettings } from "./main";
-import type { DocType, PageSizeType, TConfig } from "./modal";
-import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, render } from "./utils";
+import type { DocType, PageSizeType, ExportConfigType } from "./modal";
+import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -365,13 +365,27 @@ export function setMetadata(
   pdfDoc.setModificationDate(new Date(updated_at ?? new Date()));
 }
 
-export async function exportToPDF(
-  outputFile: string,
-  config: TConfig & BetterExportPdfPluginSettings,
-  w: WebviewTag,
-  { doc, frontMatter }: DocType,
-) {
-  console.log("output pdf:", outputFile);
+function mergeObj(obj1: any, obj2: any, props: string[]) {
+  const result = { ...obj1 };
+  if (!obj2) {
+    return result;
+  }
+
+  props.forEach((prop) => {
+    const value = obj2[prop];
+    if (value !== null && value !== undefined) {
+      result[prop] = value;
+    }
+  });
+  return result;
+}
+
+export function makePrintOptions(
+  config: ExportConfigType & BetterExportPdfPluginSettings,
+  frontMatter?: FrontMatterCache,
+): electron.PrintToPDFOptions {
+  config = mergeObj(config, frontMatter, ["headerTemplate", "footerTemplate"]);
+
   let pageSize = config["pageSize"] as PageSizeType;
   if (config["pageSize"] == "Custom" && config["pageWidth"] && config["pageHeight"]) {
     pageSize = {
@@ -395,11 +409,12 @@ export async function exportToPDF(
     },
     displayHeaderFooter: config["displayHeader"] || config["displayFooter"],
     headerTemplate: config["displayHeader"]
-      ? render(frontMatter?.["headerTemplate"] ?? config["headerTemplate"], frontMatter ?? {})
+      ? renderTemplate(config["headerTemplate"], frontMatter ?? {})
       : "<span></span>",
     footerTemplate: config["displayFooter"]
-      ? render(frontMatter?.["footerTemplate"] ?? config["footerTemplate"], frontMatter ?? {})
+      ? renderTemplate(config["footerTemplate"], frontMatter ?? {})
       : "<span></span>",
+    // generateDocumentOutline: true,
   };
 
   if (config.marginType == "0") {
@@ -432,6 +447,18 @@ export async function exportToPDF(
       right: safeParseFloat(config["marginRight"], 0) / 25.4,
     };
   }
+  return printOptions;
+}
+
+export async function exportToPDF(
+  outputFile: string,
+  config: ExportConfigType & BetterExportPdfPluginSettings,
+  w: WebviewTag,
+  { doc, frontMatter }: DocType,
+) {
+  console.log("output pdf:", outputFile);
+
+  const printOptions = makePrintOptions(config, frontMatter);
 
   try {
     let data = await w.printToPDF(printOptions);

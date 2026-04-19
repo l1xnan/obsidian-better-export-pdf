@@ -2,66 +2,121 @@
   display: flex;
   flex-direction: row;
   height: 75vh;
+  .print-preview {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+  }
+  .setting-wrapper {
+    width: 320px;
+    margin-left: 16px;
+  }
+
+  .setting-wrapper .setting-item[hidden] {
+    display: none;
+  }
 }
 
-#better-export-pdf .pdf-preview {
-  flex: auto;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  align-content: flex-start;
+#better-export-pdf .print-preview {
+  .webview-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
+  .print-size {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    z-index: 99;
+    font-size: 0.6rem;
+    white-space: pre-wrap;
+    text-align: right;
+  }
+
+  & > div {
+    flex: 1;
+    height: 100%;
+    width: 100%;
+  }
+
+  & > div.progress {
+    flex: none;
+    height: auto;
+    width: 100%;
+    text-align: left;
+  }
+
+  .filename {
+    font-size: 0.75rem;
+    color: var(--color-base-60);
+    text-align: center;
+    padding-bottom: calc(var(--p-spacing) / 4);
+  }
+  .filename:not(:first-child) {
+    padding-top: calc(var(--p-spacing) / 2);
+  }
 }
 
-#better-export-pdf .pdf-preview .webview-wrapper {
-  position: relative;
-  height: 100%;
-  width: 100%;
+#better-export-pdf {
+  .print-preview-container {
+    height: calc(var(--modal-scale) * 100%);
+    width: calc(var(--modal-scale) * 100%);
+    transform: scale(calc(1 / var(--modal-scale)), calc(1 / var(--modal-scale)));
+    transform-origin: top left;
+
+    .print-preview-item {
+      border: 1px solid var(--background-modifier-border, #f2f2f2);
+    }
+  }
+
+  .preview-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+  .pdf-canvas-page {
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--background-modifier-border);
+  }
+
+  .pdf-canvas-page :global(canvas) {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  .icon svg {
+    width: var(--icon-xs) !important;
+    height: var(--icon-xs) !important;
+  }
 }
 
-#better-export-pdf .pdf-preview .print-size {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  z-index: 99;
-  font-size: 0.6rem;
-  white-space: pre-wrap;
-  text-align: right;
-  visibility: hidden;
-}
-
-#better-export-pdf .pdf-preview > div {
-  flex: 1;
-  height: 100%;
-  width: 100%;
-}
-#better-export-pdf .pdf-preview > div.progress {
-  flex: none;
-  height: auto;
-  width: 100%;
-  text-align: left;
-}
-
-#better-export-pdf .pdf-preview .filename {
-  font-size: 0.75rem;
-  color: var(--color-base-60);
-}
-#better-export-pdf .pdf-preview .filename:not(:first-child) {
-  padding-top: calc(var(--p-spacing));
-}
-
-#better-export-pdf webview {
-  flex: 1;
-  height: 100%;
-  width: 100%;
-}
-
-#better-export-pdf .setting-wrapper {
-  width: 320px;
-  margin-left: 16px;
-}
-
-#better-export-pdf .setting-wrapper .setting-item[hidden] {
-  display: none;
+/* 必须有此样式, 否则大纲锚点失效 */
+@media print {
+  .print .markdown-preview-view {
+    height: auto !important;
+  }
+  .md-print-anchor,
+  .blockid {
+    white-space: pre !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    display: inline-block !important;
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    right: 0 !important;
+    outline: 0 !important;
+    background: 0 0 !important;
+    text-decoration: initial !important;
+    text-shadow: initial !important;
+  }
 }
