@@ -32,7 +32,6 @@ export interface ExportConfigType {
   cssSnippet?: string;
 
   multiple?: boolean;
-  pdfPreview?: boolean;
 }
 
 export type DocType = { doc: Document | HTMLDivElement; frontMatter?: FrontMatterCache; file: TFile };

@@ -14,7 +14,7 @@
   import * as os from "os";
   import * as path from "path";
   import { editPDF, getOutputFile, getOutputPath, makePrintOptions } from "../pdf";
-
+  import Switch from "./Switch.svelte";
   let {
     modal,
     plugin,
@@ -26,6 +26,8 @@
   } = $props();
 
   const settings = $derived(plugin.settings);
+  let isPDF = $state(false);
+  let rendering = $state(false);
 
   // Progress
   let renderStates = $state<{ filename: string; status: number }[]>([]);
@@ -34,6 +36,7 @@
   let docs = $state<DocType[]>([]);
   let canvasDocs = $state<HTMLCanvasElement[]>([]);
   let pdfCaches = $state<Record<string, string[]>>({});
+  let preConfig = $state.snapshot(config);
 
   const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
 
@@ -43,15 +46,15 @@
     const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
     scale = Math.floor((mm2px(width) / previewEl.offsetWidth) * 100) / 100;
   }
-
+  export async function handleChangeSize() {
+    await calcPageSize();
+  }
   function initRenderStates(data: FileListType) {
     renderStates = data.map((param) => ({ status: 0, filename: param.file.name }));
   }
   function updateRenderStates(i: number) {
     renderStates[i].status = 1;
   }
-
-  export async function calcWebviewSize() {}
 
   async function renderFiles(data: FileListType, cb?: (i: number) => void) {
     const concurrency = safeParseInt(settings.concurrency) || 5;
@@ -90,7 +93,7 @@
     calcPageSize();
   }
 
-  export function toggleTitle(value: boolean) {
+  export async function toggleTitle(value: boolean) {
     docs = docs.map(({ doc, ...rest }) => {
       const _title = doc?.querySelector("h1.__title__") as HTMLHeadingElement;
       if (_title) {
@@ -242,50 +245,52 @@
 
   async function renderPdf() {
     // 1. 加载 PDF.js 库
+    rendering = true;
+
     const pdfjsLib = await loadPdfJs();
     const tempDir = os.tmpdir();
 
     let numPages = 0;
 
     async function renderCanvas(tmpfile: string) {
-    // 2. 读取文件为 ArrayBuffer
+      // 2. 读取文件为 ArrayBuffer
       const content = await fs.readFile(tmpfile);
 
-    // // 3. 加载文档
-    const loadingTask = pdfjsLib.getDocument({ data: content });
-    const pdf = await loadingTask.promise;
+      // // 3. 加载文档
+      const loadingTask = pdfjsLib.getDocument({ data: content });
+      const pdf = await loadingTask.promise;
 
-    console.log("loading tmp file", pdf.numPages);
+      console.log("loading tmp file", pdf.numPages);
 
-    // 4. 循环处理每一页
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
+      // 4. 循环处理每一页
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
 
-      // 创建 Canvas 节点
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
+        // 创建 Canvas 节点
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
 
-      const viewport = page.getViewport({ scale: 5 }); // 设置缩放
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+        const viewport = page.getViewport({ scale: 5 }); // 设置缩放
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-      // 渲染到 Canvas
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-      }).promise;
+        // 渲染到 Canvas
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+        }).promise;
 
         // 5. 更新或追加
         if (numPages < canvasDocs.length) {
           canvasDocs[numPages] = canvas; // 覆盖已有位置
-      } else {
-        canvasDocs.push(canvas); // 追加新元素
-      }
+        } else {
+          canvasDocs.push(canvas); // 追加新元素
+        }
         numPages += 1;
       }
     }
 
-    const key = JSON.stringify(printOptions);
+    const key = JSON.stringify(config);
     if (!pdfCaches[key]) {
       // 生成一个唯一的文件名
 
@@ -298,9 +303,13 @@
 
       pdfCaches[key] = tempFiles;
     } else {
-      pdfCaches[key].forEach((file) => renderCanvas(file));
+      console.log(key, pdfCaches[key]);
+      for (const file of pdfCaches[key]) {
+        await renderCanvas(file);
+      }
     }
     canvasDocs.length = numPages;
+    rendering = false;
 
     console.log("loaded tmp canvas pages:", numPages);
   }
@@ -310,6 +319,57 @@
     const c = document.win.electron.remote.getCurrentWebContents();
     c.openDevTools();
   }
+
+  async function toggleModel(model: string) {
+    if (model === "pdf") {
+      isPDF = true;
+      await renderPdf();
+      rendering = false;
+    } else {
+      isPDF = false;
+    }
+  }
+
+  $effect(() => {
+    const current = $state.snapshot(config);
+    const changes = [];
+
+    console.log("config changed:", preConfig, current);
+    const keys = [
+      "pageSize",
+      "scale",
+      "landscape",
+      "marginBottom",
+      "marginLeft",
+      "marginRight",
+      "marginTop",
+      "marginType",
+      "displayHeader",
+      "displayFooter",
+      "showTitle",
+    ];
+
+    for (const _key of keys) {
+      const key = _key as keyof ExportConfigType;
+      if (current?.[key] != preConfig?.[key]) {
+        changes.push({ key, oldValue: preConfig[key], newValue: current[key] });
+      }
+    }
+
+    if (changes.length == 0) {
+      return;
+    }
+    preConfig = current;
+    rendering = true;
+    const timer = setTimeout(async () => {
+      if (isPDF) {
+        await renderPdf();
+        rendering = false;
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  });
 </script>
 
 <div class="print-preview">
@@ -328,14 +388,16 @@
       {/each}
     {/if}
   </div>
+  {#if rendering}
+    <div class="rendering">
+      <span use:icon={"loader"} style="animation: spin 1s linear infinite;max-width:18px;max-height:18px;"></span>
+      <span>Rendering</span>
+    </div>
+  {/if}
+  <Switch initialMode="html" onChange={toggleModel}></Switch>
   <div bind:this={previewEl}>
     <div class="preview-wrapper">
-      <button onclick={renderPdf}>Preview</button>
-      <div
-        class="print-preview-container"
-        style="--modal-scale: {scale};"
-        style:display={config?.pdfPreview ? "none" : "block"}
-      >
+      <div class="print-preview-container" style="--modal-scale: {scale};" style:display={isPDF ? "none" : "block"}>
         {#each docs as item, i}
           {#if modal.multiplePdf}
             <div class="filename">{item.file.name}</div>
@@ -343,7 +405,7 @@
           <div class="print-preview-item" use:mountNode={item.doc}></div>
         {/each}
       </div>
-      <div style:display={config?.pdfPreview ? "block" : "none"}>
+      <div style:display={isPDF ? "block" : "none"}>
         {#each canvasDocs as canvas (canvas)}
           <div class="pdf-canvas-page" use:mountCanvas={canvas}></div>
         {/each}
@@ -353,4 +415,11 @@
 </div>
 
 <style>
+  .rendering {
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
 </style>

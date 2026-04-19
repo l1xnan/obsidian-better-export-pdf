@@ -200,7 +200,10 @@ export function mountNodes(node: HTMLElement, docs: DocType[]) {
 export function mountNode(node: HTMLElement, doc: any) {
   const update = (newDoc: any) => {
     node.innerHTML = "";
-    node.appendChild(newDoc.cloneNode(true));
+
+    const child = newDoc.cloneNode(true);
+    child.style.display = "block";
+    node.appendChild(child);
   };
 
   update(doc);

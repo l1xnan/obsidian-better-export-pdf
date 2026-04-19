@@ -2,7 +2,6 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal } from "../modal";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText } from "../actions";
-  import * as electron from "electron";
 
   let {
     modal,
@@ -73,8 +72,7 @@
       value: config.pageSize as string,
       onChange: async (value) => {
         config.pageSize = value as ExportConfigType["pageSize"];
-        pdfPreview?.calcPageSize();
-        await pdfPreview?.calcWebviewSize();
+        await pdfPreview?.handleChangeSize?.();
       },
     }}
   ></div>
@@ -90,8 +88,7 @@
           isDebounce: true,
           onChange: async (value) => {
             config.pageWidth = value;
-            pdfPreview?.calcPageSize();
-            await pdfPreview?.calcWebviewSize();
+            await pdfPreview?.handleChangeSize?.();
           },
         },
         input2: {
@@ -223,7 +220,7 @@
   ></div>
 
   <!-- CSS Snippets -->
-  {#if hasSnippets}
+  {#if hasSnippets && settings.version == "1"}
     <div
       use:settingDropdown={{
         name: i18n.exportDialog.cssSnippets,
@@ -237,17 +234,6 @@
     ></div>
   {/if}
 
-  <!-- PDF Preview -->
-  <div
-    use:settingToggle={{
-      name: "PDF Preview",
-      tooltip: "PDF Preview",
-      value: config.pdfPreview ?? false,
-      onChange: (value) => {
-        config.pdfPreview = value;
-      },
-    }}
-  ></div>
   <!-- Export Button -->
   <div
     use:settingButton={{
@@ -258,12 +244,14 @@
   ></div>
 
   <!-- Refresh Button -->
-  <div
-    use:settingButton={{
-      text: "Refresh",
-      onClick: () => refreshPreview(),
-    }}
-  ></div>
+  {#if settings.version == "1"}
+    <div
+      use:settingButton={{
+        text: "Refresh",
+        onClick: () => refreshPreview(),
+      }}
+    ></div>
+  {/if}
 
   <!-- Debug Button -->
   <div

@@ -90,6 +90,11 @@
     height: auto !important;
     display: block;
   }
+
+  .icon svg {
+    width: var(--icon-xs) !important;
+    height: var(--icon-xs) !important;
+  }
 }
 
 /* 必须有此样式, 否则大纲锚点失效 */

@@ -57,6 +57,11 @@
     });
   }
 
+  export async function handleChangeSize() {
+    await calcPageSize();
+    await calcWebviewSize();
+  }
+
   async function renderFiles(data: ParamType[], allDocs?: any[], cb?: (i: number) => void) {
     const concurrency = safeParseInt(settings.concurrency) || 5;
     const limit = pLimit(concurrency);
