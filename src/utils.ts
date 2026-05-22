@@ -77,15 +77,15 @@ export function modifyDest(doc: Document | HTMLDivElement) {
       // Also map URL-encoded version and common variations
       data.set(encodeURIComponent(headingText), flag);
       // Map space-to-dash version (common in many markdown processors)
-      data.set(headingText.replace(/\s+/g, '-'), flag);
+      data.set(headingText.replace(/\s+/g, "-"), flag);
       // Map space-to-dash-lowercase version
-      data.set(headingText.toLowerCase().replace(/\s+/g, '-'), flag);
+      data.set(headingText.toLowerCase().replace(/\s+/g, "-"), flag);
       // Map version with special characters removed (common in some processors)
-      const cleanText = headingText.replace(/[^\w\s-]/g, '').trim();
+      const cleanText = headingText.replace(/[^\w\s-]/g, "").trim();
       if (cleanText && cleanText !== headingText) {
         data.set(cleanText, flag);
-        data.set(cleanText.replace(/\s+/g, '-'), flag);
-        data.set(cleanText.toLowerCase().replace(/\s+/g, '-'), flag);
+        data.set(cleanText.replace(/\s+/g, "-"), flag);
+        data.set(cleanText.toLowerCase().replace(/\s+/g, "-"), flag);
       }
     }
 
@@ -142,14 +142,14 @@ export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, str
 
     // Try multiple variations of the anchor text to find a match
     const variations = [
-      anchor,                                    // Original anchor
-      decodeURIComponent(anchor),               // URL decoded
-      anchor.replace(/-/g, ' '),                // Dash to space
-      decodeURIComponent(anchor).replace(/-/g, ' '), // Both
-      anchor.toLowerCase(),                     // Lowercase
+      anchor, // Original anchor
+      decodeURIComponent(anchor), // URL decoded
+      anchor.replace(/-/g, " "), // Dash to space
+      decodeURIComponent(anchor).replace(/-/g, " "), // Both
+      anchor.toLowerCase(), // Lowercase
       decodeURIComponent(anchor).toLowerCase(), // URL decoded + lowercase
-      anchor.toLowerCase().replace(/-/g, ' '),  // Lowercase + dash to space
-      decodeURIComponent(anchor).toLowerCase().replace(/-/g, ' '), // All transformations
+      anchor.toLowerCase().replace(/-/g, " "), // Lowercase + dash to space
+      decodeURIComponent(anchor).toLowerCase().replace(/-/g, " "), // All transformations
     ];
 
     // Try to find a matching heading using any of the variations

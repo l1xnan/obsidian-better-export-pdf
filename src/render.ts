@@ -101,7 +101,7 @@ export function getPrintStyle() {
   return cssTexts;
 }
 
-function generateDocId(n: number) {
+export function generateDocId(n: number) {
   return Array.from({ length: n }, () => ((16 * Math.random()) | 0).toString(16)).join("");
 }
 
@@ -286,13 +286,18 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
 
   const data = await app.vault.cachedRead(file);
   if (!data) {
-    new Notice(`${file} data is empty!`);
+    new Notice(`${file} content is empty!`);
   }
 
   const comp = new Component();
   comp.load();
 
-  const printEl = document.body.createDiv("print");
+  const printEl = document.body.createDiv({
+    cls: "print",
+    attr: {
+      id: file.path,
+    },
+  });
   const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
 
   const markdown = modifyMarkdown({ app, file, data });
@@ -309,7 +314,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
   return { doc: printEl, frontMatter, file, cleanup };
 }
 
-function createViewEl({
+export function createViewEl({
   app,
   file,
   printEl,
@@ -319,7 +324,7 @@ function createViewEl({
   app: App;
   file: TFile;
   printEl: HTMLDivElement;
-  extra: { title?: string; file: TFile; id?: string } | undefined;
+  extra: { title?: string; file?: TFile; id?: string } | undefined;
   config?: ExportConfigType;
 }) {
   const frontMatter = getFrontMatter(app, file);
@@ -330,6 +335,7 @@ function createViewEl({
   viewEl.addClasses(cssclasses);
 
   // @ts-ignore
+  // 设置阅读方向和属性显示
   viewEl.toggleClass("rtl", app.vault.getConfig("rightToLeft"));
   // @ts-ignore
   viewEl.toggleClass("show-properties", "hidden" !== app.vault.getConfig("propertiesInDocument"));
@@ -343,7 +349,8 @@ function createViewEl({
   return { viewEl, frontMatter };
 }
 
-function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
+// 添加块ID
+export function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
   const cache = app.metadataCache.getFileCache(file);
 
   const blocks = new Map(Object.entries(cache?.blocks ?? {}));
