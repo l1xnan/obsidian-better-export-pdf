@@ -26,5 +26,6 @@ export default {
     enabledCss: "Enable select css snippets",
     concurrency: "Limit concurrency",
     debugMode: "Debug Mode",
+    version: "Engine Version",
   },
 };

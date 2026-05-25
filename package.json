@@ -1,10 +1,12 @@
 {
   "name": "obsidian-better-export-pdf",
-  "version": "1.11.0",
+  "version": "2.0.0.beta.1",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
+    "dev:vite": "vite build --watch --mode development",
+    "build:vite": "vite build",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
@@ -13,25 +15,37 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.7.0",
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^20.14.10",
     "builtin-modules": "3.3.0",
-    "electron": "32.2.5",
-    "esbuild": "0.25.2",
-    "esbuild-svelte": "^0.9.2",
+    "electron": "39.8.3",
+    "esbuild": "0.28.0",
+    "esbuild-svelte": "^0.9.4",
     "eslint": "^8.57.0",
-    "obsidian": "^1.8.7",
-    "svelte": "^5.26.1",
-    "svelte-check": "^4.1.4",
+    "obsidian": "^1.12.3",
+    "svelte": "^5.55.3",
+    "svelte-check": "^4.4.6",
     "svelte-preprocess": "^6.0.3",
     "tslib": "2.6.3",
-    "typescript": "5.8.3",
-    "typescript-eslint": "^7.16.0"
+    "typescript": "6.0.2",
+    "typescript-eslint": "^8.58.1",
+    "vite": "^8.0.8"
   },
   "dependencies": {
-    "@lucide/svelte": "^0.487.0",
     "deepmerge": "^4.3.1",
-    "p-limit": "^6.2.0",
+    "p-limit": "^7.3.0",
     "pdf-lib": "^1.17.1"
+  },
+  "obsidian": {
+    "id": "better-export-pdf",
+    "name": "Better Export PDF",
+    "version": "1.11.0",
+    "minAppVersion": "0.15.0",
+    "description": "Export your notes to PDF, support export preview, add bookmarks outline and header/footer.",
+    "author": "l1xnan",
+    "authorUrl": "https://github.com/l1xnan",
+    "fundingUrl": "https://www.buymeacoffee.com/l1xnan",
+    "isDesktopOnly": true
   }
 }

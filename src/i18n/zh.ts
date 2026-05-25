@@ -30,5 +30,6 @@ export default {
     enabledCss: "启用CSS片段选择",
     concurrency: "限制并发数",
     debugMode: "调试模式",
+    version: "引擎版本",
   },
 } satisfies Lang;

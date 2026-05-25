@@ -49,7 +49,7 @@ jobs:
       - name: Build
         id: build
         run: |
-          pnpm build
+          pnpm build:vite
           mkdir ${{ env.PLUGIN_NAME }}
           cp main.js styles.css manifest.json ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
