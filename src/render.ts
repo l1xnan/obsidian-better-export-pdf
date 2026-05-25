@@ -340,7 +340,36 @@ function createViewEl({
     e.style.display = config?.showTitle ? "block" : "none";
     e.id = extra?.id ?? "";
   });
+
+  // Embed automatic page break and image downscale CSS so they apply
+  // in both the on-screen preview and the printed PDF (v2 engine).
+  const extraCss = buildExportCss(config);
+  if (extraCss) {
+    printEl.createEl("style", { text: extraCss });
+  }
+
   return { viewEl, frontMatter };
+}
+
+// Builds optional page-break and image-downscale CSS from the export config.
+// Shared by the v1 webview engine and the v2 print engine.
+export function buildExportCss(config?: ExportConfigType): string {
+  const rules: string[] = [];
+
+  if (config?.autoPageBreak && config?.breakBefore) {
+    const lvl = config.breakBefore;
+    const reset = `.markdown-preview-view h1, .markdown-preview-view h2, .markdown-preview-view h3, .markdown-preview-view h4, .markdown-preview-view h5, .markdown-preview-view h6 { break-before: auto !important; page-break-before: auto !important; }`;
+    const rule = `.markdown-preview-view ${lvl} { break-before: page !important; page-break-before: always !important; }`;
+    const first = `.markdown-preview-view ${lvl}:first-of-type { break-before: auto !important; page-break-before: auto !important; }`;
+    rules.push(`@media print { ${reset} ${rule} ${first} }`);
+  }
+
+  if (config?.imageScale != null) {
+    const percent = Math.max(0, Math.min(100, config.imageScale));
+    rules.push(`@media print, screen { .markdown-preview-view img { height: auto !important; max-width: ${percent}%; } }`);
+  }
+
+  return rules.join("\n");
 }
 
 function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {

@@ -24,6 +24,12 @@ export interface ExportConfigType {
   displayHeader: boolean;
   displayFooter: boolean;
 
+  // Automatic page break options
+  autoPageBreak?: boolean;
+  breakBefore?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  // Image downscale percent
+  imageScale?: number;
+
   marginTop?: string;
   marginBottom?: string;
   marginLeft?: string;
@@ -78,6 +84,9 @@ export class ExportConfigModal extends Modal {
       marginRight: "10",
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
+      autoPageBreak: false,
+      breakBefore: "h1",
+      imageScale: 100,
       cssSnippet: "0",
       ...(plugin.settings.prevConfig ?? {}),
     } as ExportConfigType;

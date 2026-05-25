@@ -25,6 +25,7 @@
   // ── Derived visibility states ──────────────────────────
   let showCustomSize = $derived(config.pageSize === "Custom");
   let showCustomMargin = $derived(config.marginType === "3");
+  let showBreakBefore = $derived(config.autoPageBreak ?? false);
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
@@ -159,14 +160,27 @@
     ></div>
   {/if}
 
-  <!-- Scale -->
+  <!-- Text Downscale -->
   <div
     use:settingSlider={{
       name: i18n.exportDialog.downscalePercent,
-      limits: [0, 200, 1],
+      limits: [10, 100, 1],
       value: config.scale,
       onChange: (value) => {
         config.scale = value;
+      },
+    }}
+  ></div>
+
+  <!-- Image Downscale -->
+  <div
+    use:settingSlider={{
+      name: i18n.exportDialog.imageDownscalePercent,
+      limits: [0, 100, 1],
+      value: config.imageScale ?? 100,
+      onChange: async (value) => {
+        config.imageScale = value;
+        await refreshPreview();
       },
     }}
   ></div>
@@ -182,6 +196,34 @@
       },
     }}
   ></div>
+
+  <!-- Automatic Page Break -->
+  <div
+    use:settingToggle={{
+      name: "Automatic Page Break",
+      tooltip: "Insert page breaks before selected heading level when exporting",
+      value: config.autoPageBreak ?? false,
+      onChange: async (value) => {
+        config.autoPageBreak = value;
+        await refreshPreview();
+      },
+    }}
+  ></div>
+
+  <!-- Break before (heading level) -->
+  {#if showBreakBefore}
+    <div
+      use:settingDropdown={{
+        name: "Break before",
+        options: { h1: "h1", h2: "h2", h3: "h3", h4: "h4", h5: "h5", h6: "h6" },
+        value: config.breakBefore ?? "h1",
+        onChange: async (value) => {
+          config.breakBefore = value as ExportConfigType["breakBefore"];
+          await refreshPreview();
+        },
+      }}
+    ></div>
+  {/if}
 
   <!-- Display Header -->
   <div

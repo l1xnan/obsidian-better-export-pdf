@@ -3,7 +3,7 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType } from "../modal";
   import { TFile } from "obsidian";
-  import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
+  import { buildExportCss, getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
   import { PageSize } from "../constant";
   import * as electron from "electron";
   import { mm2px, safeParseFloat, px2mm, safeParseInt } from "../utils";
@@ -175,6 +175,11 @@
       getPatchStyle().forEach(async (css) => {
         await preview.insertCSS(css);
       });
+      // Inject automatic page break and image downscale CSS last to override other styles
+      const extraCss = buildExportCss(config);
+      if (extraCss) {
+        await preview.insertCSS(extraCss);
+      }
       if (docObj.resolve) {
         docObj.resolve();
       }
