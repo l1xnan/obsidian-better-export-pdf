@@ -207,10 +207,11 @@ export function traverseFolder(path: TFolder | TFile): TFile[] {
       return [];
     }
   }
-  const arr = [];
+  const arr: TFile[] = [];
   for (const item of path.children) {
     arr.push(...traverseFolder(item as TFolder));
   }
+  arr.sort((a, b) => a.name.localeCompare(b.name));
   return arr;
 }
 
