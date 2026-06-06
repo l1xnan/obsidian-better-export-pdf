@@ -47,6 +47,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .onChange(async (value: string) => {
           this.plugin.settings.version = value;
           this.plugin.saveSettings();
+          updateVersionVisibility(value);
         });
     });
     new Setting(containerEl).setName(this.i18n.settings.showTitle).addToggle((toggle) =>
@@ -164,8 +165,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
-
-    new Setting(containerEl)
+    const enabledCssSetting = new Setting(containerEl)
       .setName(this.i18n.settings.enabledCss)
       .setDesc("Select the css snippet that are not enabled")
       .addToggle((cb) => {
@@ -175,6 +175,10 @@ export default class ConfigSettingTab extends PluginSettingTab {
         });
       });
 
+    const updateVersionVisibility = (version: string) => {
+      enabledCssSetting.settingEl.hidden = version !== "1";
+    };
+    updateVersionVisibility(this.plugin.settings.version);
     new Setting(containerEl)
       .setName(this.i18n.settings.concurrency)
       .setDesc("Limit the number of concurrent renders")

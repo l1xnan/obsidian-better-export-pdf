@@ -41,8 +41,9 @@
     height: 24px;
     width: 56px;
     padding: 2px 4px;
-    border: 0px solid #ccc;
-    background: white;
+    border: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+    color: var(--text-normal);
     cursor: pointer;
     border-radius: 0px;
     display: flex;
@@ -51,9 +52,12 @@
     gap: 2px;
     font-size: 12px;
   }
+  button:hover {
+    background: var(--background-modifier-hover);
+  }
   button.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+    border-color: var(--interactive-accent);
   }
 </style>
