@@ -13,6 +13,8 @@ env:
 
 jobs:
   build:
+    permissions:
+      contents: write  
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -60,7 +62,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         if: github.ref_type == 'tag'
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
@@ -75,4 +77,4 @@ jobs:
         id: generate_changelog
         run: npx changelogithub
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
