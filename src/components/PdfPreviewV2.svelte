@@ -338,12 +338,13 @@
       return;
     }
     preConfig = current;
+
+    if (!isPDF) return;
+
     rendering = true;
     const timer = setTimeout(async () => {
-      if (isPDF) {
         await renderPdf();
         rendering = false;
-      }
     }, 300);
 
     return () => clearTimeout(timer);
