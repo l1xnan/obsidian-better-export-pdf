@@ -4,9 +4,8 @@
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { TFile } from "obsidian";
   import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
-  import { PageSize } from "../constant";
   import * as electron from "electron";
-  import { getHeadingTree, mm2px, safeParseFloat, safeParseInt } from "../utils";
+  import { getHeadingTree, safeParseInt } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
@@ -15,6 +14,9 @@
   import * as path from "path";
   import { editPDF, getOutputFile, getOutputPath, makePrintOptions } from "../pdf";
   import Switch from "./Switch.svelte";
+  import { Mutex } from "../utils/mutex";
+  import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
+  import { PageSizeCalculator } from "../utils/pageSize";
   let {
     modal,
     plugin,
@@ -29,8 +31,8 @@
   let isPDF = $state(false);
   let rendering = $state(false);
 
-  // Progress
-  let renderStates = $state<{ filename: string; status: number }[]>([]);
+  // State
+  let renderStates = $state<RenderState[]>([]);
   let scale = $state(0.75);
   let previewEl = $state<HTMLDivElement>();
   let docs = $state<DocType[]>([]);
@@ -39,21 +41,14 @@
   let preConfig = $state.snapshot(config);
 
   const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
+  const pageSizeCalc = new PageSizeCalculator(config);
 
   export function calcPageSize() {
-    const { pageSize, pageWidth } = config;
     if (!previewEl) return;
-    const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
-    scale = Math.floor((mm2px(width) / previewEl.offsetWidth) * 100) / 100;
+    scale = pageSizeCalc.calc(previewEl);
   }
   export async function handleChangeSize() {
     await calcPageSize();
-  }
-  function initRenderStates(data: FileListType) {
-    renderStates = data.map((param) => ({ status: 0, filename: param.file.name }));
-  }
-  function updateRenderStates(i: number) {
-    renderStates[i].status = 1;
   }
 
   async function renderFiles(data: FileListType, cb?: (i: number) => void) {
@@ -86,8 +81,8 @@
   export async function renderPreview(render = true) {
     if (render) {
       const { data } = await modal.getAllFilesV2();
-      initRenderStates(data);
-      docs = await renderFiles(data, (i) => updateRenderStates(i));
+      renderStates = initRenderStates(data);
+      docs = await renderFiles(data, (i) => { renderStates = completeRenderState(renderStates, i); });
     }
 
     calcPageSize();
@@ -109,16 +104,13 @@
 
   onMount(() => {
     if (!previewEl) return;
-    const resizeObserver = new ResizeObserver(() => {
-      calcPageSize();
-    });
-    resizeObserver.observe(previewEl);
+    pageSizeCalc.startObserver(previewEl);
 
     // Initial render
     renderPreview(true);
 
-    return async () => {
-      resizeObserver.disconnect();
+    return () => {
+      pageSizeCalc.stopObserver();
     };
   });
 
@@ -130,20 +122,6 @@
   $effect(() => {
     console.log("config:", $state.snapshot(config));
   });
-
-  class Mutex {
-    queue: Promise<unknown>;
-    constructor() {
-      this.queue = Promise.resolve();
-    }
-
-    async run(task: Function) {
-      const result = this.queue.then(() => task());
-      // 更新队列，确保下一个任务等待当前任务（无论成功失败）
-      this.queue = result.catch(() => {});
-      return result;
-    }
-  }
 
   const mutex = new Mutex();
 

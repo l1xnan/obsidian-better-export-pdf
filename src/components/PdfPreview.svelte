@@ -4,12 +4,13 @@
   import type { ExportConfigType, ExportConfigModal, DocType } from "../modal";
   import { TFile } from "obsidian";
   import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
-  import { PageSize } from "../constant";
   import * as electron from "electron";
-  import { mm2px, safeParseFloat, px2mm, safeParseInt } from "../utils";
+  import { px2mm, safeParseInt } from "../utils";
   import { fixDoc } from "../render";
   import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { icon } from "../actions";
+  import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
+  import { PageSizeCalculator } from "../utils/pageSize";
   import pLimit from "p-limit";
   const fs = require("fs").promises;
 
@@ -25,26 +26,19 @@
 
   const settings = $derived(plugin.settings);
 
-  // Progress
+  // State
   let completed = $state(false);
   let docs = $state<DocType[]>([]);
   let webviews = $state<electron.WebviewTag[]>([]);
-  let renderStates = $state<{ filename: string; status: number }[]>([]);
   let scale = $state(0.75);
   let previewEl = $state<HTMLDivElement>();
 
-  export function calcPageSize() {
-    const { pageSize, pageWidth } = config;
-    if (!previewEl) return;
-    const width = PageSize?.[pageSize as string]?.[0] ?? safeParseFloat(pageWidth as string, 210);
-    scale = Math.floor((mm2px(width) / previewEl.offsetWidth) * 100) / 100;
-  }
+  let renderStates = $state<RenderState[]>([]);
+  const pageSizeCalc = new PageSizeCalculator(config);
 
-  function initRenderStates(data: ParamType[]) {
-    renderStates = data.map((param) => ({ status: 0, filename: param.file.name }));
-  }
-  function updateRenderStates(i: number) {
-    renderStates[i].status = 1;
+  export function calcPageSize() {
+    if (!previewEl) return;
+    scale = pageSizeCalc.calc(previewEl);
   }
 
   export async function calcWebviewSize() {
@@ -96,8 +90,8 @@
   export async function renderPreview(render = true) {
     if (render) {
       const { data, docs: allDocs } = await modal.getAllFiles();
-      initRenderStates(data);
-      docs = await renderFiles(data, allDocs, (i) => updateRenderStates(i));
+      renderStates = initRenderStates(data);
+      docs = await renderFiles(data, allDocs, (i) => { renderStates = completeRenderState(renderStates, i); });
     }
 
     webviews = [];
@@ -191,16 +185,13 @@
 
   onMount(() => {
     if (!previewEl) return;
-    const resizeObserver = new ResizeObserver(() => {
-      calcPageSize();
-    });
-    resizeObserver.observe(previewEl);
+    pageSizeCalc.startObserver(previewEl);
 
     // Initial render
     renderPreview(true);
 
     return () => {
-      resizeObserver.disconnect();
+      pageSizeCalc.stopObserver();
     };
   });
 </script>

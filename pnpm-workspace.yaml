@@ -1,0 +1,4 @@
+allowBuilds:
+  electron: false
+  esbuild: false
+  svelte-preprocess: false
