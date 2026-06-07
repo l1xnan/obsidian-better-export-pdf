@@ -456,7 +456,7 @@ export async function exportToPDF(
   w: WebviewTag,
   { doc, frontMatter }: DocType,
 ) {
-  console.log("output pdf:", outputFile);
+  console.debug("output pdf:", outputFile);
 
   const printOptions = makePrintOptions(config, frontMatter);
 

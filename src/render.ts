@@ -131,7 +131,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const ws = app.workspace;
   // if (ws.getActiveFile()?.path != file.path) {
   //   const leaf = ws.getLeaf(true);
-  //   console.log(file, leaf);
+  //   console.debug(file, leaf);
   //   await leaf.openFile(file);
   // }
   // const view = ws.getActiveViewOfType(MarkdownView) as MarkdownView;
@@ -277,7 +277,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   printEl.remove();
   doc.title = title;
   leaf.detach();
-  console.log(`md render time:${new Date().getTime() - startTime}ms`);
+  console.debug(`md render time:${new Date().getTime() - startTime}ms`);
   return { doc, frontMatter, file };
 }
 
@@ -309,7 +309,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
     comp.unload();
     printEl.remove();
   };
-  console.log(`md render time:${new Date().getTime() - startTime}ms`);
+  console.debug(`md render time:${new Date().getTime() - startTime}ms`);
 
   return { doc: printEl, frontMatter, file, cleanup };
 }

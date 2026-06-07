@@ -62,7 +62,7 @@
 
     const currentConfig = $state.snapshot(config);
 
-    console.log("file list data:", data, currentConfig);
+    console.debug("file list data:", data, currentConfig);
 
     const inputs = data.map((param, i) =>
       limit(async () => {

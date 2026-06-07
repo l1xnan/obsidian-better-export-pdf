@@ -57,7 +57,7 @@
   async function renderFiles(data: FileListType, cb?: (i: number) => void) {
     const concurrency = safeParseInt(settings.concurrency) || 5;
     const limit = pLimit(concurrency);
-    console.log("file list data:", data);
+    console.debug("file list data:", data);
     const inputs = data.map((param, i) =>
       limit(async () => {
         const res = await renderMarkdownV2({
@@ -71,7 +71,7 @@
     );
     let _docs = [...(await Promise.all(inputs))] as DocV2Type[];
 
-    console.log(_docs, modal.multiplePdf);
+    console.debug(_docs, modal.multiplePdf);
 
     if (!modal.multiplePdf && _docs.length > 1) {
       _docs = modal.mergeDocV2(_docs);
@@ -135,7 +135,7 @@
   });
 
   $effect(() => {
-    console.log("config:", $state.snapshot(config));
+    console.debug("config:", $state.snapshot(config));
   });
 
   const mutex = new Mutex();
@@ -151,7 +151,7 @@
     title: string;
     onlyPreview?: boolean;
   }) {
-    console.log("printOptions:", printOptions);
+    console.debug("printOptions:", printOptions);
     const pdfOptions = {
       ...printOptions,
       filepath: outputFile,
@@ -253,7 +253,7 @@
       const loadingTask = pdfjsLib.getDocument({ data: content });
       const pdf = await loadingTask.promise;
 
-      console.log("loading tmp file", pdf.numPages);
+      console.debug("loading tmp file", pdf.numPages);
 
       // 4. 循环处理每一页
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -290,13 +290,13 @@
       const tempFiles = docs.map(({ file }) =>
         path.join(tempDir, `obsidian-temp-${file.path.replace(/[/\\]/g, "_")}-${Date.now()}.pdf`),
       );
-      console.log("tempFiles", tempFiles);
+      console.debug("tempFiles", tempFiles);
 
       await printDocs({ docs, outfiles: tempFiles, cb: renderCanvas, onlyPreview: true });
 
       pdfCaches[key] = tempFiles;
     } else {
-      console.log(key, pdfCaches[key]);
+      console.debug(key, pdfCaches[key]);
       for (const file of pdfCaches[key]) {
         await renderCanvas(file);
       }
@@ -304,7 +304,7 @@
     canvasDocs.length = numPages;
     rendering = false;
 
-    console.log("loaded tmp canvas pages:", numPages);
+    console.debug("loaded tmp canvas pages:", numPages);
   }
 
   export function handleOpenDevTools() {
@@ -327,7 +327,6 @@
     const current = $state.snapshot(config);
     const changes = [];
 
-    console.log("config changed:", preConfig, current);
     const keys = [
       "pageSize",
       "scale",
