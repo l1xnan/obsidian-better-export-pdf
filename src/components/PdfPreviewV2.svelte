@@ -17,6 +17,8 @@
   import { Mutex } from "../utils/mutex";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
   import { PageSizeCalculator } from "../utils/pageSize";
+ import { px2mm } from "../utils";
+
   let {
     modal,
     plugin,
@@ -36,6 +38,7 @@
   let scale = $state(0.75);
   let previewEl = $state<HTMLDivElement>();
   let docs = $state<DocType[]>([]);
+  let previewSizes = $state<{ width: number; height: number }[]>([]);
   let canvasDocs = $state<HTMLCanvasElement[]>([]);
   let pdfCaches = $state<Record<string, string[]>>({});
   let preConfig = $state.snapshot(config);
@@ -82,7 +85,9 @@
     if (render) {
       const { data } = await modal.getAllFilesV2();
       renderStates = initRenderStates(data);
-      docs = await renderFiles(data, (i) => { renderStates = completeRenderState(renderStates, i); });
+      docs = await renderFiles(data, (i) => {
+        renderStates = completeRenderState(renderStates, i);
+      });
     }
 
     calcPageSize();
@@ -100,6 +105,16 @@
     previewEl?.querySelectorAll("h1.__title__").forEach((el: HTMLHeadElement) => {
       el.style.display = value ? "block" : "none";
     });
+  }
+
+  function measurePreviewItem(el: HTMLElement, index: number) {
+    const measure = () => {
+      previewSizes[index] = { width: el.offsetWidth, height: el.offsetHeight };
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return { destroy: () => observer.disconnect() };
   }
 
   onMount(() => {
@@ -343,8 +358,8 @@
 
     rendering = true;
     const timer = setTimeout(async () => {
-        await renderPdf();
-        rendering = false;
+      await renderPdf();
+      rendering = false;
     }, 300);
 
     return () => clearTimeout(timer);
@@ -378,10 +393,13 @@
     <div class="preview-wrapper">
       <div class="print-preview-container" style="--modal-scale: {scale};" style:display={isPDF ? "none" : "block"}>
         {#each docs as item, i}
+        <div class="print-size" style:visibility={config.pageSize === "Custom" ? "visible" : "hidden"}>
+          {previewSizes[i] ? `${previewSizes[i].width}×${previewSizes[i].height}px\n${px2mm(previewSizes[i].width)}×${px2mm(previewSizes[i].height)}mm` : ""}
+        </div>
           {#if modal.multiplePdf}
             <div class="filename">{item.file.name}</div>
           {/if}
-          <div class="print-preview-item" use:mountNode={item.doc}></div>
+          <div class="print-preview-item" use:mountNode={item.doc} use:measurePreviewItem={i}></div>
         {/each}
       </div>
       <div style:display={isPDF ? "block" : "none"}>

@@ -1,6 +1,6 @@
 {
   "name": "obsidian-better-export-pdf",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
   "main": "main.js",
   "scripts": {
