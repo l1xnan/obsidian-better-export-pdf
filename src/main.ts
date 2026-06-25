@@ -3,6 +3,7 @@ import i18n, { type Lang } from "./i18n";
 import { ExportConfigModal, type ExportConfigType } from "./modal";
 import ConfigSettingTab from "./setting";
 import { traverseFolder } from "./utils";
+import { HEADING_NUMBERING_CSS, TOC_CSS } from "./render";
 const fs = require("fs").promises;
 import path from "path";
 
@@ -24,6 +25,7 @@ export interface BetterExportPdfPluginSettings {
 
   displayMetadata: boolean;
 
+  autoNumberHeadings: boolean;
   isTimestamp: boolean;
   debug: boolean;
   enabledCss: boolean;
@@ -44,6 +46,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   generateTaggedPDF: false,
 
   displayMetadata: false,
+  autoNumberHeadings: false,
   debug: false,
   isTimestamp: false,
   enabledCss: false,
@@ -62,7 +65,7 @@ export default class BetterExportPdfPlugin extends Plugin {
 
   async onload() {
     await this.loadSettings();
-
+    this.injectHeadingNumberingStyles();
     this.registerCommand();
     this.registerSetting();
     this.registerEvents();
@@ -180,7 +183,17 @@ export default class BetterExportPdfPlugin extends Plugin {
     }
   }
 
-  onunload() {}
+  onunload() {
+    document.getElementById("bep-heading-numbering")?.remove();
+  }
+
+  injectHeadingNumberingStyles() {
+    if (document.getElementById("bep-heading-numbering")) return;
+    const style = document.createElement("style");
+    style.id = "bep-heading-numbering";
+    style.textContent = HEADING_NUMBERING_CSS + TOC_CSS;
+    document.head.appendChild(style);
+  }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }

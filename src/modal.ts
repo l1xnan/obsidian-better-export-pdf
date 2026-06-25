@@ -30,6 +30,7 @@ export interface ExportConfigType {
   marginRight?: string;
 
   cssSnippet?: string;
+  autoNumberHeadings?: boolean;
 
   multiple?: boolean;
 }
@@ -79,6 +80,7 @@ export class ExportConfigModal extends Modal {
       displayHeader: plugin.settings.displayHeader ?? true,
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
+      autoNumberHeadings: plugin.settings.autoNumberHeadings ?? false,
       ...(plugin.settings.prevConfig ?? {}),
     } as ExportConfigType;
   }

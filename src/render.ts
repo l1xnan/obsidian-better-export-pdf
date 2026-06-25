@@ -34,6 +34,76 @@ export function getAllStyles() {
   return cssTexts;
 }
 
+export const TOC_CSS = `
+.pdf-toc-title {
+  font-weight: bold;
+  font-size: 1.2em;
+  margin-bottom: 0.5em;
+}
+.pdf-toc ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.pdf-toc li {
+  margin: 0.2em 0;
+  line-height: 1.5;
+}
+.pdf-toc li.toc-level-1 { padding-left: 0; }
+.pdf-toc li.toc-level-2 { padding-left: 1.5em; }
+.pdf-toc li.toc-level-3 { padding-left: 3em; }
+.pdf-toc li.toc-level-4 { padding-left: 4.5em; }
+.pdf-toc li.toc-level-5 { padding-left: 6em; }
+.pdf-toc li.toc-level-6 { padding-left: 7.5em; }
+`;
+
+export const HEADING_NUMBERING_CSS = `
+.auto-number-headings .markdown-preview-view {
+  counter-reset: h1c 0 h2c 0 h3c 0 h4c 0 h5c 0 h6c 0;
+}
+.auto-number-headings .markdown-preview-view h1:not(.__title__) {
+  counter-increment: h1c;
+  counter-reset: h2c h3c h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h1:not(.__title__)::before {
+  content: counter(h1c) ". ";
+}
+.auto-number-headings .markdown-preview-view h2 {
+  counter-increment: h2c;
+  counter-reset: h3c h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h2::before {
+  content: counter(h1c) "." counter(h2c) ". ";
+}
+.auto-number-headings .markdown-preview-view h3 {
+  counter-increment: h3c;
+  counter-reset: h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h3::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) ". ";
+}
+.auto-number-headings .markdown-preview-view h4 {
+  counter-increment: h4c;
+  counter-reset: h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h4::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) ". ";
+}
+.auto-number-headings .markdown-preview-view h5 {
+  counter-increment: h5c;
+  counter-reset: h6c;
+}
+.auto-number-headings .markdown-preview-view h5::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) ". ";
+}
+.auto-number-headings .markdown-preview-view h6 {
+  counter-increment: h6c;
+}
+.auto-number-headings .markdown-preview-view h6::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) "." counter(h6c) ". ";
+}
+`;
+
 const CSS_PATCH = `
 /* ---------- css patch ---------- */
 
@@ -298,6 +368,9 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
       id: file.path,
     },
   });
+  if (config?.autoNumberHeadings) {
+    printEl.addClass("auto-number-headings");
+  }
   const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
 
   const markdown = modifyMarkdown({ app, file, data });
@@ -351,6 +424,8 @@ export function createViewEl({
 
 // 添加块ID
 export function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
+  data = data.replace(/<!--\s*__TOC__\s*-->/g, '<div class="__toc_placeholder__"></div>');
+
   const cache = app.metadataCache.getFileCache(file);
 
   const blocks = new Map(Object.entries(cache?.blocks ?? {}));
@@ -453,10 +528,71 @@ export function fixDoc(doc: Document, title: string) {
   return doc;
 }
 
-export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
+export function fixDocV2(doc: Document | HTMLDivElement, title: string, autoNumberHeadings = false) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
+  injectTOC(doc, autoNumberHeadings);
   return doc;
+}
+
+function computeHeadingNumbers(headings: HTMLElement[]): string[] {
+  const counters = [0, 0, 0, 0, 0, 0];
+  return headings.map((heading) => {
+    const level = parseInt(heading.tagName[1]) - 1;
+    counters[level]++;
+    for (let i = level + 1; i < 6; i++) counters[i] = 0;
+    return counters.slice(0, level + 1).join(".") + ". ";
+  });
+}
+
+export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = false) {
+  const placeholder = doc.querySelector(".__toc_placeholder__");
+  if (!placeholder) return;
+
+  const headings = Array.from(
+    doc.querySelectorAll("h1:not(.__title__), h2, h3, h4, h5, h6"),
+  ) as HTMLElement[];
+
+  if (headings.length === 0) {
+    placeholder.remove();
+    return;
+  }
+
+  const numberPrefixes = autoNumberHeadings ? computeHeadingNumbers(headings) : [];
+
+  const nav = document.createElement("nav");
+  nav.className = "pdf-toc";
+
+  const titleEl = document.createElement("p");
+  titleEl.className = "pdf-toc-title";
+  titleEl.textContent = "Table of Contents";
+  nav.appendChild(titleEl);
+
+  const ul = document.createElement("ul");
+
+  headings.forEach((heading, idx) => {
+    const level = parseInt(heading.tagName[1]);
+    const flag = heading.querySelector("a.md-print-anchor")?.getAttribute("href")?.replace("af://", "");
+    const text = heading.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const prefix = numberPrefixes[idx] ?? "";
+
+    const li = document.createElement("li");
+    li.className = `toc-level-${level}`;
+
+    if (flag) {
+      const a = document.createElement("a");
+      a.href = `an://${flag}`;
+      a.textContent = prefix + text;
+      li.appendChild(a);
+    } else {
+      li.textContent = prefix + text;
+    }
+
+    ul.appendChild(li);
+  });
+
+  nav.appendChild(ul);
+  placeholder.replaceWith(nav);
 }
 
 export function encodeEmbeds(doc: Document) {

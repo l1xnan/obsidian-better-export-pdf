@@ -77,7 +77,7 @@
       _docs = modal.mergeDocV2(_docs);
     }
     return _docs.map(({ doc, ...rest }) => {
-      return { ...rest, doc: fixDocV2(doc, doc.title) as HTMLDivElement };
+      return { ...rest, doc: fixDocV2(doc, doc.title, config.autoNumberHeadings) as HTMLDivElement };
     });
   }
 
@@ -91,6 +91,13 @@
     }
 
     calcPageSize();
+  }
+
+  export function toggleAutoNumberHeadings(value: boolean) {
+    docs = docs.map(({ doc, ...rest }) => {
+      (doc as HTMLElement).classList.toggle("auto-number-headings", value);
+      return { doc, ...rest };
+    });
   }
 
   export async function toggleTitle(value: boolean) {
@@ -339,6 +346,7 @@
       "displayHeader",
       "displayFooter",
       "showTitle",
+      "autoNumberHeadings",
     ];
 
     for (const _key of keys) {
