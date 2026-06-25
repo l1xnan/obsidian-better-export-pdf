@@ -53,20 +53,33 @@ export const TOC_CSS = `
   margin: 0;
 }
 .pdf-toc li {
-  line-height: 1.5;
-  margin: 0;
-  border-radius: 4px;
+  display: flex;
+  align-items: baseline;
+  position: relative;
+  margin: 0.1em 0;
+  margin-right: 2.5em;
 }
-.pdf-toc li a {
-  display: block;
+.pdf-toc li .toc-link {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
   text-decoration: none;
   color: inherit;
-  padding: 0.15em 0.4em;
+  padding: 0.15em 0.2em 0.15em 0.4em;
   border-radius: 4px;
   transition: background 0.15s;
+  flex-shrink: 0;
+  max-width: 85%;
 }
-.pdf-toc li a:hover {
+.pdf-toc li .toc-link:hover {
   background: rgba(128, 128, 128, 0.15);
+}
+.pdf-toc .toc-leader {
+  flex: 1;
+  border-bottom: 1px dotted currentColor;
+  opacity: 0.35;
+  margin: 0 0.3em 0.25em;
+  min-width: 0.5em;
 }
 /* Level indentation */
 .pdf-toc li.toc-level-1 { padding-left: 0; }
@@ -76,12 +89,12 @@ export const TOC_CSS = `
 .pdf-toc li.toc-level-5 { padding-left: 4.8em; }
 .pdf-toc li.toc-level-6 { padding-left: 6em; }
 /* Per-level typography */
-.pdf-toc li.toc-level-1 a { font-size: 1em;    font-weight: 600; }
-.pdf-toc li.toc-level-2 a { font-size: 0.95em; font-weight: 500; }
-.pdf-toc li.toc-level-3 a { font-size: 0.9em;  font-weight: 400; opacity: 0.85; }
-.pdf-toc li.toc-level-4 a { font-size: 0.85em; font-weight: 400; opacity: 0.75; font-style: italic; }
-.pdf-toc li.toc-level-5 a { font-size: 0.8em;  font-weight: 400; opacity: 0.65; font-style: italic; }
-.pdf-toc li.toc-level-6 a { font-size: 0.78em; font-weight: 400; opacity: 0.55; font-style: italic; }
+.pdf-toc li.toc-level-1 .toc-link { font-size: 1em;    font-weight: 600; }
+.pdf-toc li.toc-level-2 .toc-link { font-size: 0.95em; font-weight: 500; }
+.pdf-toc li.toc-level-3 .toc-link { font-size: 0.9em;  font-weight: 400; opacity: 0.85; }
+.pdf-toc li.toc-level-4 .toc-link { font-size: 0.85em; font-weight: 400; opacity: 0.75; font-style: italic; }
+.pdf-toc li.toc-level-5 .toc-link { font-size: 0.8em;  font-weight: 400; opacity: 0.65; font-style: italic; }
+.pdf-toc li.toc-level-6 .toc-link { font-size: 0.78em; font-weight: 400; opacity: 0.55; font-style: italic; }
 `;
 
 export const HEADING_NUMBERING_CSS = `
@@ -606,14 +619,30 @@ export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = f
     const li = document.createElement("li");
     li.className = `toc-level-${level}`;
 
+    // Invisible anchor so getDestPosition can find this row's Y in the PDF
+    if (flag) {
+      const posAnchor = document.createElement("a");
+      posAnchor.href = `af://toc-${flag}`;
+      posAnchor.className = "md-print-anchor";
+      li.appendChild(posAnchor);
+    }
+
     if (flag) {
       const a = document.createElement("a");
       a.href = `an://${flag}`;
+      a.className = "toc-link";
       a.textContent = prefix + text;
       li.appendChild(a);
     } else {
-      li.textContent = prefix + text;
+      const span = document.createElement("span");
+      span.className = "toc-link";
+      span.textContent = prefix + text;
+      li.appendChild(span);
     }
+
+    const leader = document.createElement("span");
+    leader.className = "toc-leader";
+    li.appendChild(leader);
 
     ul.appendChild(li);
   });
