@@ -37,6 +37,10 @@ export function getAllStyles() {
 export const TOC_CSS = `
 .pdf-toc {
   margin: 1em 0 1.5em 0;
+  page-break-before: always;
+  break-before: page;
+  page-break-after: always;
+  break-after: page;
 }
 .pdf-toc-title {
   font-size: 1.4em;
@@ -55,9 +59,20 @@ export const TOC_CSS = `
 .pdf-toc li {
   display: flex;
   align-items: baseline;
-  position: relative;
   margin: 0.1em 0;
   margin-right: 2.5em;
+}
+/* Inline position anchor — height:1em + align-items:baseline means
+   its bottom edge lands exactly on the text baseline, so rect.y from
+   getDestPosition maps to the baseline of the TOC entry text. */
+.pdf-toc-anchor {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: transparent;
+  background: transparent;
 }
 .pdf-toc li .toc-link {
   white-space: nowrap;
@@ -619,11 +634,13 @@ export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = f
     const li = document.createElement("li");
     li.className = `toc-level-${level}`;
 
-    // Invisible anchor so getDestPosition can find this row's Y in the PDF
+    // Inline anchor so getDestPosition captures this row's baseline Y in the PDF.
+    // Uses pdf-toc-anchor (not md-print-anchor) to stay in normal flow and
+    // baseline-align with the text, giving an accurate rect.y.
     if (flag) {
       const posAnchor = document.createElement("a");
       posAnchor.href = `af://toc-${flag}`;
-      posAnchor.className = "md-print-anchor";
+      posAnchor.className = "pdf-toc-anchor";
       li.appendChild(posAnchor);
     }
 

@@ -323,7 +323,7 @@ export async function addTocPageNumbers(pdfDoc: PDFDocument, positions: TPositio
   if (tocEntries.length === 0) return;
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontSize = 9;
+  const fontSize = 8;
 
   for (const [tocKey, [tocPageIdx, tocY]] of tocEntries) {
     const headingKey = tocKey.slice(4); // strip "toc-"
@@ -335,12 +335,14 @@ export async function addTocPageNumbers(pdfDoc: PDFDocument, positions: TPositio
     const page = pdfDoc.getPage(tocPageIdx);
     const textWidth = font.widthOfTextAtSize(text, fontSize);
 
+    // tocY is rect.y of the inline pdf-toc-anchor whose bottom edge baseline-aligns
+    // with the TOC entry text. Drawing at tocY + 1 puts the text baseline there.
     page.drawText(text, {
       x: page.getWidth() - 30 - textWidth,
-      y: tocY + 2,
+      y: tocY + 1,
       font,
       size: fontSize,
-      opacity: 0.75,
+      opacity: 0.7,
     });
   }
 }
