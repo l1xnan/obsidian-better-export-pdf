@@ -35,10 +35,17 @@ export function getAllStyles() {
 }
 
 export const TOC_CSS = `
+.pdf-toc {
+  margin: 1em 0 1.5em 0;
+}
 .pdf-toc-title {
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: 0.5em;
+  font-size: 1.4em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.85;
 }
 .pdf-toc ul {
   list-style: none;
@@ -46,15 +53,35 @@ export const TOC_CSS = `
   margin: 0;
 }
 .pdf-toc li {
-  margin: 0.2em 0;
   line-height: 1.5;
+  margin: 0;
+  border-radius: 4px;
 }
+.pdf-toc li a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.pdf-toc li a:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+/* Level indentation */
 .pdf-toc li.toc-level-1 { padding-left: 0; }
-.pdf-toc li.toc-level-2 { padding-left: 1.5em; }
-.pdf-toc li.toc-level-3 { padding-left: 3em; }
-.pdf-toc li.toc-level-4 { padding-left: 4.5em; }
-.pdf-toc li.toc-level-5 { padding-left: 6em; }
-.pdf-toc li.toc-level-6 { padding-left: 7.5em; }
+.pdf-toc li.toc-level-2 { padding-left: 1.2em; }
+.pdf-toc li.toc-level-3 { padding-left: 2.4em; }
+.pdf-toc li.toc-level-4 { padding-left: 3.6em; }
+.pdf-toc li.toc-level-5 { padding-left: 4.8em; }
+.pdf-toc li.toc-level-6 { padding-left: 6em; }
+/* Per-level typography */
+.pdf-toc li.toc-level-1 a { font-size: 1em;    font-weight: 600; }
+.pdf-toc li.toc-level-2 a { font-size: 0.95em; font-weight: 500; }
+.pdf-toc li.toc-level-3 a { font-size: 0.9em;  font-weight: 400; opacity: 0.85; }
+.pdf-toc li.toc-level-4 a { font-size: 0.85em; font-weight: 400; opacity: 0.75; font-style: italic; }
+.pdf-toc li.toc-level-5 a { font-size: 0.8em;  font-weight: 400; opacity: 0.65; font-style: italic; }
+.pdf-toc li.toc-level-6 a { font-size: 0.78em; font-weight: 400; opacity: 0.55; font-style: italic; }
 `;
 
 export const HEADING_NUMBERING_CSS = `
