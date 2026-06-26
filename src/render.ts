@@ -333,7 +333,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const fragment = {
     children: undefined,
     appendChild(e: DocumentFragment) {
-      this.children = e?.children;
+      (this as any).children = e?.children;
       throw new Error("exit");
     },
   } as unknown as HTMLElement;
@@ -377,8 +377,8 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   });
   await Promise.all(promises);
 
-  printEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
-    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+  printEl.findAll("a.internal-link").forEach((el) => {
+    const [title, anchor] = (el as HTMLAnchorElement).dataset.href?.split("#") ?? [];
 
     if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
       return;
@@ -521,7 +521,7 @@ async function renderHtml({
   const fragment = {
     children: undefined,
     appendChild(e: DocumentFragment) {
-      this.children = e?.children;
+      (this as any).children = e?.children;
       throw new Error("exit");
     },
   } as unknown as HTMLElement;
@@ -565,8 +565,8 @@ async function renderHtml({
   });
   await Promise.all(promises);
 
-  viewEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
-    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+  viewEl.findAll("a.internal-link").forEach((el) => {
+    const [title, anchor] = (el as HTMLAnchorElement).dataset.href?.split("#") ?? [];
 
     if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
       return;
@@ -670,7 +670,7 @@ export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = f
 
 export function encodeEmbeds(doc: Document) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
-  spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
+  spans.forEach((span) => ((span as HTMLElement).innerHTML = encodeURIComponent((span as HTMLElement).innerHTML)));
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {

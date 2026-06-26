@@ -11,6 +11,6 @@ export default {
   },
   get current() {
     const lang = window.localStorage.getItem("language") ?? "en";
-    return merge(this.i18n.en, this.i18n[lang] ?? {}) as Lang;
+    return merge(this.i18n.en, (this.i18n as Record<string, typeof en>)[lang] ?? {}) as Lang;
   },
 };

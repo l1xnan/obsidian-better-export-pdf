@@ -98,7 +98,7 @@ export class ExportConfigModal extends Modal {
         modal: this,
         plugin: this.plugin,
       },
-    });
+    }) as unknown as ModalUI;
   }
 
   onClose() {
@@ -185,9 +185,10 @@ export class ExportConfigModal extends Modal {
     for (const { doc } of docs) {
       const element = doc.querySelector(".markdown-preview-view");
       if (element) {
-        const section = doc0.createElement("section");
+        const doc0doc = doc0 as Document;
+        const section = doc0doc.createElement("section");
         Array.from(element.children).forEach((child) => {
-          section.appendChild(doc0.importNode(child, true));
+          section.appendChild(doc0doc.importNode(child, true));
         });
         sections.push(section);
       }
