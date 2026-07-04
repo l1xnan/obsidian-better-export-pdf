@@ -202,6 +202,7 @@ export function mountNode(node: HTMLElement, doc: any) {
     node.innerHTML = "";
 
     const child = newDoc.cloneNode(true);
+    child.removeClass("theme-light");
     child.style.display = "block";
     node.appendChild(child);
   };

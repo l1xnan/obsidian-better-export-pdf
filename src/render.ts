@@ -160,9 +160,9 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const comp = new Component();
   comp.load();
 
-  const printEl = document.body.createDiv("print");
+  const printEl = document.body.createDiv("print theme-light");
   const viewEl = printEl.createDiv({
-    cls: "markdown-preview-view markdown-rendered " + cssclasses.join(" "),
+    cls: "markdown-preview-view markdown-rendered" + cssclasses.join(" "),
   });
 
   // @ts-ignore
@@ -293,7 +293,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
   comp.load();
 
   const printEl = document.body.createDiv({
-    cls: "print",
+    cls: "print theme-light",
     attr: {
       id: file.path,
     },
@@ -509,7 +509,7 @@ export function makeWebviewJs(doc: Document) {
   return `
       document.body.innerHTML = decodeURIComponent(\`${encodeURIComponent(doc.body.innerHTML)}\`);
       document.head.innerHTML = decodeURIComponent(\`${encodeURIComponent(document.head.innerHTML)}\`);
-      
+
       // Function to recursively decode and replace innerHTML of span.markdown-embed elements
       function decodeAndReplaceEmbed(element) {
 				// Replace the innerHTML with the decoded content
@@ -518,7 +518,7 @@ export function makeWebviewJs(doc: Document) {
         const newEmbeds = element.querySelectorAll("span.markdown-embed");
         newEmbeds.forEach(decodeAndReplaceEmbed);
       }
-      
+
       // Start the process with all span.markdown-embed elements in the document
       document.querySelectorAll("span.markdown-embed").forEach(decodeAndReplaceEmbed);
 
