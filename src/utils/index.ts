@@ -246,3 +246,113 @@ export function safeParseFloat(str?: string, default_ = 0.0) {
     return default_;
   }
 }
+
+/**
+ * 获取在暗色主题中定义，但在亮色主题中缺失重构的衍生变量公式
+ * @returns {Object} 缺失的衍生变量键值对，例如: { "--table-header-color": "var(--text-normal)" }
+ */
+export function getDerivedLightVars() {
+  const lightVars = new Set();
+  const derivedDarkVars: Record<string, string> = {};
+
+  try {
+    for (const sheet of document.styleSheets) {
+      try {
+        const rules = sheet.cssRules || sheet.rules;
+        if (!rules) continue;
+
+        for (const rule of rules) {
+          if (rule.type !== CSSRule.STYLE_RULE) continue;
+
+          const selector = rule.selectorText;
+
+          // 1. 收集 .theme-light 中主动声明的变量
+          if (selector.includes(".theme-light")) {
+            const style = rule.style;
+            for (let i = 0; i < style.length; i++) {
+              const prop = style[i];
+              if (prop.startsWith("--")) {
+                lightVars.add(prop);
+              }
+            }
+          }
+
+          // 2. 收集 body 或 .theme-dark 中声明的衍生变量（含有 var( 的变量）
+          if (selector.includes("body") || selector.includes(".theme-dark")) {
+            const style = rule.style;
+            for (let i = 0; i < style.length; i++) {
+              const prop = style[i];
+              if (prop.startsWith("--")) {
+                const rawVal = style.getPropertyValue(prop).trim();
+                // 筛选包含 var( 的衍生变量
+                if (rawVal.includes("var(")) {
+                  derivedDarkVars[prop] = rawVal;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // 忽略跨域样式表 (CORS 限制) 导致的报错
+      }
+    }
+  } catch (e) {
+    console.error("读取全局样式表时出错:", e);
+  }
+
+  // 3. 过滤并求差集：只保留亮色主题中没有定义的衍生变量
+  const missingVars: Record<string, string> = {};
+  for (const [prop, rawVal] of Object.entries(derivedDarkVars)) {
+    if (!lightVars.has(prop)) {
+      missingVars[prop as string] = rawVal as string;
+    }
+  }
+
+  return missingVars;
+}
+
+/**
+ * 动态将变量以“公式字符串”的形式注入到 .theme-light 及其子元素的作用域中
+ * @param {Object} vars - 变量键值对对象
+ *
+ * 说明:
+ * 自定义属性（CSS 变量）在向子元素传递（继承）之前，会在声明它的元素上先进行“计算（Compute）”
+ * 对于 { "--table-header-color": "var(--text-normal)" }
+ * --table-header-color 值在 body.theme-dark 时已由 .theme-dark 的 --text-normal 确定,
+ * .theme-light 如果不定义 --table-header-color 无法重置此值
+ */
+export function injectLightVarsPatch(vars: Record<string, string>) {
+  const patchId = "theme-light-auto-patch";
+
+  // 1. 如果传入的变量对象为空，清理旧补丁并直接返回
+  if (!vars || Object.keys(vars).length === 0) {
+    const oldPatch = document.getElementById(patchId);
+    if (oldPatch) oldPatch.remove();
+    console.log("[Theme Patch] 没有需要修复的衍生变量，未进行注入。");
+    return;
+  }
+
+  // 2. 将键值对对象格式化为 CSS 规则行数组
+  const cssLines = [];
+  for (const [prop, value] of Object.entries(vars)) {
+    cssLines.push(`${prop}: ${value};`);
+  }
+
+  // 3. 如果已有旧补丁则先移除，防止重复累积
+  const oldPatch = document.getElementById(patchId);
+  if (oldPatch) {
+    oldPatch.remove();
+  }
+
+  // 4. 动态创建 style 标签并插入
+  const styleTag = document.createElement("style");
+  styleTag.id = patchId;
+  styleTag.textContent = `
+    /* 将这些变量在亮色作用域下强制用原始公式重新解析一次 */
+    .print.theme-light {
+      ${cssLines.join("\n      ")}
+    }
+  `;
+  document.head.appendChild(styleTag);
+  console.log(`[Theme Patch] 成功动态注入了 ${cssLines.length} 个缺失的衍生 CSS 变量。`);
+}
