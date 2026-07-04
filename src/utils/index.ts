@@ -356,3 +356,18 @@ export function injectLightVarsPatch(vars: Record<string, string>) {
   document.head.appendChild(styleTag);
   console.log(`[Theme Patch] 成功动态注入了 ${cssLines.length} 个缺失的衍生 CSS 变量。`);
 }
+
+/**
+ * 移除动态注入的亮色变量样式补丁，恢复原本的样式表现
+ */
+export function removeLightVarsPatch() {
+  const patchId = "theme-light-auto-patch";
+  const patchElement = document.getElementById(patchId);
+
+  if (patchElement) {
+    patchElement.remove();
+    console.log(`[Theme Patch] 已安全移除样式补丁 (#${patchId})，样式已恢复。`);
+  } else {
+    console.log(`[Theme Patch] 未找到活跃的样式补丁 (#${patchId})。`);
+  }
+}

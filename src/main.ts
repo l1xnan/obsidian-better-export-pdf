@@ -2,16 +2,11 @@ import { App, MarkdownView, Menu, Plugin, type PluginManifest, TFile, TFolder } 
 import i18n, { type Lang } from "./i18n";
 import { ExportConfigModal, type ExportConfigType } from "./modal";
 import ConfigSettingTab from "./setting";
-import { traverseFolder, getDerivedLightVars, injectLightVarsPatch } from "./utils";
+import { traverseFolder } from "./utils";
 const fs = require("fs").promises;
 import path from "path";
 
 const isDev = process.env.NODE_ENV === "development";
-
-const missingVars = getDerivedLightVars();
-console.debug("检测到以下衍生变量在亮色主题下未重置，即将进行注入：", missingVars);
-// 步骤 2：注入补丁样式
-injectLightVarsPatch(missingVars);
 
 export interface BetterExportPdfPluginSettings {
   prevConfig?: ExportConfigType;
