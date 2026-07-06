@@ -200,8 +200,8 @@
     });
 
     for (const [i, outfile] of outfiles.entries()) {
-      const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
-      const title = file.basename;
+      const { doc, file, frontMatter } = docs[i] as { doc: HTMLDivElement; file: TFile; frontMatter: Record<string, unknown> };
+      const title = (frontMatter?.title as string | undefined) ?? file.basename;
       doc.style.display = "block";
       await sleep(200);
 
