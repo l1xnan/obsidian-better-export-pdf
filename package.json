@@ -19,8 +19,8 @@
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^20.14.10",
     "builtin-modules": "3.3.0",
-    "electron": "39.8.3",
-    "esbuild": "0.28.0",
+    "electron": "^39.8.10",
+    "esbuild": "^0.28.1",
     "esbuild-svelte": "^0.9.5",
     "eslint": "^8.57.0",
     "obsidian": "^1.12.3",
@@ -47,5 +47,10 @@
     "authorUrl": "https://github.com/l1xnan",
     "fundingUrl": "https://www.buymeacoffee.com/l1xnan",
     "isDesktopOnly": true
+  },
+  "allowScripts": {
+    "svelte-preprocess@6.0.5": true,
+    "electron@39.8.10": true,
+    "esbuild@0.28.1": true
   }
 }
