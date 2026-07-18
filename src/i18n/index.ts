@@ -4,13 +4,20 @@ import zh from "./zh";
 
 export type Lang = typeof en;
 
+const translations = {
+  en,
+  zh,
+};
+
+function isSupportedLanguage(lang: string): lang is keyof typeof translations {
+  return Object.prototype.hasOwnProperty.call(translations, lang);
+}
+
 export default {
-  i18n: {
-    en,
-    zh,
-  },
+  i18n: translations,
   get current() {
     const lang = window.localStorage.getItem("language") ?? "en";
-    return merge(this.i18n.en, this.i18n[lang] ?? {}) as Lang;
+    const localized = isSupportedLanguage(lang) ? translations[lang] : {};
+    return merge(translations.en, localized) as Lang;
   },
 };

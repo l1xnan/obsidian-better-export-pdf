@@ -52,7 +52,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
 };
 
 export default class BetterExportPdfPlugin extends Plugin {
-  settings: BetterExportPdfPluginSettings;
+  settings: BetterExportPdfPluginSettings = { ...DEFAULT_SETTINGS };
   i18n: Lang;
 
   constructor(app: App, manifest: PluginManifest) {
@@ -113,7 +113,11 @@ export default class BetterExportPdfPlugin extends Plugin {
   registerEvents() {
     // Register the Export As HTML button in the file menu
     this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (!(file instanceof TFile || file instanceof TFolder)) {
+          return;
+        }
+
         let title = file instanceof TFolder ? "Export folder to PDF" : "Better Export PDF";
         if (isDev) {
           title = `${title} (dev)`;
@@ -131,7 +135,7 @@ export default class BetterExportPdfPlugin extends Plugin {
       }),
     );
     this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
+      this.app.workspace.on("file-menu", (menu, file) => {
         if (file instanceof TFolder) {
           let title = "Export to PDF...";
           if (isDev) {
