@@ -1,11 +1,12 @@
 import electron, { type WebviewTag } from "electron";
 const fs = require("fs").promises;
-import { type FrontMatterCache } from "obsidian";
+import { type FrontMatterCache, type App, type TFile } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
 import type { BetterExportPdfPluginSettings } from "./main";
 import type { DocType, PageSizeType, ExportConfigType } from "./modal";
 import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
+import { readTemplateFile } from "./utils/templateFile";
 
 interface TPosition {
   [key: string]: number[];
@@ -450,15 +451,85 @@ export function makePrintOptions(
   return printOptions;
 }
 
+/**
+ * Resolve the effective header/footer templates for a PDF export.
+ * Priority per template (highest first):
+ * 1. File template — `headerTemplateFile` / `footerTemplateFile` frontmatter
+ *    property pointing at a vault file (supports [[wiki-links]] and relative
+ *    paths); used only when the file resolves and reads successfully.
+ * 2. Inline frontmatter — `headerTemplate` / `footerTemplate` frontmatter property.
+ * 3. Plugin settings default — `config.headerTemplate` / `config.footerTemplate`.
+ *
+ * A missing/unreadable template file falls back to the next priority; export
+ * never aborts because of a template file.
+ */
+export async function resolveHeaderFooterTemplates(
+  config: ExportConfigType & BetterExportPdfPluginSettings,
+  frontMatter: FrontMatterCache | undefined,
+  app: App | undefined,
+  sourceFile: TFile | undefined,
+): Promise<{ headerTemplate: string; footerTemplate: string }> {
+  let headerTemplate = config["headerTemplate"];
+
+  // Priority 2: inline template from frontmatter
+  if (frontMatter?.["headerTemplate"]) {
+    headerTemplate = frontMatter["headerTemplate"];
+  }
+  // Priority 1: file template from frontmatter (highest priority, overrides inline)
+  if (frontMatter?.["headerTemplateFile"]) {
+    if (config.debug) {
+      console.debug(`Reading header template from file: ${frontMatter["headerTemplateFile"]}`);
+    }
+    const fileContent = await readTemplateFile(
+      app,
+      frontMatter["headerTemplateFile"],
+      config.debug,
+      sourceFile?.path,
+    );
+    if (fileContent !== null) {
+      headerTemplate = fileContent;
+    }
+  }
+
+  let footerTemplate = config["footerTemplate"];
+
+  // Priority 2: inline template from frontmatter
+  if (frontMatter?.["footerTemplate"]) {
+    footerTemplate = frontMatter["footerTemplate"];
+  }
+  // Priority 1: file template from frontmatter (highest priority, overrides inline)
+  if (frontMatter?.["footerTemplateFile"]) {
+    if (config.debug) {
+      console.debug(`Reading footer template from file: ${frontMatter["footerTemplateFile"]}`);
+    }
+    const fileContent = await readTemplateFile(
+      app,
+      frontMatter["footerTemplateFile"],
+      config.debug,
+      sourceFile?.path,
+    );
+    if (fileContent !== null) {
+      footerTemplate = fileContent;
+    }
+  }
+
+  return { headerTemplate, footerTemplate };
+}
+
 export async function exportToPDF(
   outputFile: string,
   config: ExportConfigType & BetterExportPdfPluginSettings,
   w: WebviewTag,
-  { doc, frontMatter }: DocType,
+  { doc, frontMatter, file }: DocType,
+  app: App,
 ) {
   console.debug("output pdf:", outputFile);
 
-  const printOptions = makePrintOptions(config, frontMatter);
+  const templates = await resolveHeaderFooterTemplates(config, frontMatter, app, file);
+  // Bake the resolved templates into the frontmatter slice so makePrintOptions'
+  // mergeObj picks them up with the file > inline > settings priority already applied.
+  const mergedFrontMatter = { ...(frontMatter ?? {}), ...templates };
+  const printOptions = makePrintOptions(config, mergedFrontMatter);
 
   try {
     let data = await w.printToPDF(printOptions);

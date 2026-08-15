@@ -12,7 +12,8 @@
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { editPDF, getOutputFile, getOutputPath, makePrintOptions } from "../pdf";
+  import { editPDF, getOutputFile, getOutputPath, makePrintOptions, resolveHeaderFooterTemplates } from "../pdf";
+  import { resolveTemplateFile } from "../utils/templateFile";
   import Switch from "./Switch.svelte";
   import { Mutex } from "../utils/mutex";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
@@ -43,8 +44,24 @@
   let pdfCaches = $state<Record<string, string[]>>({});
   let preConfig = $state.snapshot(config);
 
-  const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
+  const mergedConfig = $derived({ ...settings, ...config });
   const pageSizeCalc = new PageSizeCalculator(config);
+
+  // Stamp that changes whenever a header/footer template file referenced by any
+  // document is created, deleted or edited. Used to invalidate the PDF preview
+  // cache, which is otherwise keyed on the export configuration only.
+  const templateStamp = $derived(
+    docs
+      .map((d) => {
+        const stampFile = (ref: unknown) => {
+          if (typeof ref !== "string") return "none";
+          const file = resolveTemplateFile(plugin.app, ref, d.file.path);
+          return file instanceof TFile ? `${file.path}:${file.stat.mtime}` : "missing";
+        };
+        return `${stampFile(d.frontMatter?.headerTemplateFile)}|${stampFile(d.frontMatter?.footerTemplateFile)}`;
+      })
+      .join(";"),
+  );
 
   export function calcPageSize() {
     if (!previewEl) return;
@@ -151,6 +168,15 @@
     title: string;
     onlyPreview?: boolean;
   }) {
+    // Resolve header/footer templates (file > inline frontmatter > settings)
+    // against the document being exported, so file-based templates work in
+    // engine v2 as well. Falls back to the first doc for defensive coding.
+    const docInfo = docs.find((d) => d.doc === el) ?? docs[0];
+    const templates = await resolveHeaderFooterTemplates(mergedConfig, docInfo?.frontMatter, plugin.app, docInfo?.file);
+    // Route through makePrintOptions (like engine v1) so the resolved templates
+    // get {{variable}} rendering (renderTemplate) and displayHeader/displayFooter
+    // gating, instead of being injected as raw template strings.
+    const printOptions = makePrintOptions(mergedConfig, { ...(docInfo?.frontMatter ?? {}), ...templates });
     console.debug("printOptions:", printOptions);
     const pdfOptions = {
       ...printOptions,
@@ -283,7 +309,7 @@
       }
     }
 
-    const key = JSON.stringify(config);
+    const key = JSON.stringify(config) + "::" + templateStamp;
     if (!pdfCaches[key]) {
       // 生成一个唯一的文件名
 

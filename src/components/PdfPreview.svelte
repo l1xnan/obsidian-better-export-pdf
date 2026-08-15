@@ -131,14 +131,14 @@
       if (outputPath) {
         await Promise.all(
           webviews.map(async (wb, i) => {
-            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i]);
+            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i], plugin.app);
           }),
         );
       }
     } else {
       const outputFile = await getOutputFile(title, settings.isTimestamp);
       if (outputFile) {
-        await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0]);
+        await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0], plugin.app);
       }
     }
   }
