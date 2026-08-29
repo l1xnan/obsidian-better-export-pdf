@@ -56,7 +56,7 @@ export class ExportConfigModal extends Modal {
   i18n: Lang;
 
   // Svelte component instance
-  private component?: ModalUI;
+  private component?: ReturnType<typeof mount>;
 
   constructor(plugin: BetterExportPdfPlugin, file: TFile | TFolder, multiplePdf?: boolean) {
     super(plugin.app);
@@ -183,13 +183,14 @@ export class ExportConfigModal extends Modal {
 
   mergeDoc(docs: DocType[]) {
     const { doc: doc0, frontMatter, file } = docs[0];
+    const ownerDocument = "createElement" in doc0 ? doc0 : doc0.ownerDocument;
     const sections = [];
     for (const { doc } of docs) {
       const element = doc.querySelector(".markdown-preview-view");
       if (element) {
-        const section = doc0.createElement("section");
+        const section = ownerDocument.createElement("section");
         Array.from(element.children).forEach((child) => {
-          section.appendChild(doc0.importNode(child, true));
+          section.appendChild(ownerDocument.importNode(child, true));
         });
         sections.push(section);
       }

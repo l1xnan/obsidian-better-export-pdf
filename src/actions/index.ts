@@ -104,9 +104,9 @@ export const settingSlider: Action<
     slider
       .setLimits(params.limits[0], params.limits[1], params.limits[2])
       .setValue(params.value)
+      .setDynamicTooltip()
       .onChange((v) => {
         params.onChange(v);
-        slider.showTooltip();
       });
   });
 
