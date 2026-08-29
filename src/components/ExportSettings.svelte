@@ -207,6 +207,19 @@
     }}
   ></div>
 
+  <!-- Auto-number headings -->
+  <div
+    use:settingToggle={{
+      name: "Auto-number headings",
+      tooltip: "Prefix each heading with a hierarchical number (1., 1.1., 1.1.1., …)",
+      value: config.autoNumberHeadings ?? false,
+      onChange: (value) => {
+        config.autoNumberHeadings = value;
+        pdfPreview?.toggleAutoNumberHeadings(value);
+      },
+    }}
+  ></div>
+
   <!-- Open after export -->
   <div
     use:settingToggle={{

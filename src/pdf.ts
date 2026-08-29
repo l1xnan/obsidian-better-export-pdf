@@ -318,6 +318,35 @@ export type EditPDFParamType = {
   frontMatter?: PdfFrontMatterCache;
 };
 
+export async function addTocPageNumbers(pdfDoc: PDFDocument, positions: TPosition) {
+  const tocEntries = Object.entries(positions).filter(([key]) => key.startsWith("toc-"));
+  if (tocEntries.length === 0) return;
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontSize = 8;
+
+  for (const [tocKey, [tocPageIdx, tocY]] of tocEntries) {
+    const headingKey = tocKey.slice(4); // strip "toc-"
+    const headingPos = positions[headingKey];
+    if (!headingPos) continue;
+
+    const pageNumber = headingPos[0] + 1;
+    const text = String(pageNumber);
+    const page = pdfDoc.getPage(tocPageIdx);
+    const textWidth = font.widthOfTextAtSize(text, fontSize);
+
+    // tocY is rect.y of the inline pdf-toc-anchor whose bottom edge baseline-aligns
+    // with the TOC entry text. Drawing at tocY + 1 puts the text baseline there.
+    page.drawText(text, {
+      x: page.getWidth() - 30 - textWidth,
+      y: tocY + 1,
+      font,
+      size: fontSize,
+      opacity: 0.7,
+    });
+  }
+}
+
 // add outlines
 export async function editPDF(
   data: Uint8Array,
@@ -329,8 +358,10 @@ export async function editPDF(
   setAnchors(pdfDoc, posistions);
 
   const outlines = generateOutlines(headings, posistions, maxLevel);
-
   setOutline(pdfDoc, outlines);
+
+  await addTocPageNumbers(pdfDoc, posistions);
+
   if (displayMetadata) {
     setMetadata(pdfDoc, frontMatter ?? {});
   }

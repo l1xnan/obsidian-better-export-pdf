@@ -6,7 +6,7 @@ export class TreeNode {
   title: string;
   level: number;
   children: TreeNode[] = [];
-  parent: TreeNode;
+  parent!: TreeNode;
   constructor(key: string, title: string, level: number) {
     this.key = key;
     this.title = title;
@@ -29,18 +29,19 @@ export function getHeadingTree(doc: Document | HTMLDivElement = document) {
   const root = new TreeNode("", "Root", 0);
   let prev = root;
 
-  headings.forEach((heading: HTMLElement) => {
-    if (heading.style.display == "none") {
+  headings.forEach((heading) => {
+    const h = heading as HTMLElement;
+    if (h.style.display == "none") {
       return;
     }
-    const level = parseInt(heading.tagName.slice(1));
+    const level = parseInt(h.tagName.slice(1));
 
-    const link = heading.querySelector("a.md-print-anchor") as HTMLLinkElement;
+    const link = h.querySelector("a.md-print-anchor") as HTMLLinkElement;
     const regexMatch = /^af:\/\/(.+)$/.exec(link?.href ?? "");
     if (!regexMatch) {
       return;
     }
-    const newNode = new TreeNode(regexMatch[1], heading.innerText, level);
+    const newNode = new TreeNode(regexMatch[1], h.innerText, level);
 
     while (prev.level >= level) {
       prev = prev.parent;
@@ -58,20 +59,21 @@ export function getHeadingTree(doc: Document | HTMLDivElement = document) {
 // Enhanced to support both Obsidian wikilinks and standard markdown anchor links
 export function modifyDest(doc: Document | HTMLDivElement) {
   const data = new Map();
-  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
+  doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading, i) => {
+    const h = heading as HTMLElement;
     const link = document.createElement("a") as HTMLAnchorElement;
-    const flag = `${heading.tagName.toLowerCase()}-${i}`;
+    const flag = `${h.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
     link.className = "md-print-anchor";
-    heading.appendChild(link);
+    h.appendChild(link);
 
     // Map both the dataset.heading and the text content for different link types
-    if (heading.dataset.heading) {
-      data.set(heading.dataset.heading, flag);
+    if (h.dataset.heading) {
+      data.set(h.dataset.heading, flag);
     }
 
     // Also map the heading text content (for standard markdown links)
-    const headingText = heading.textContent?.trim();
+    const headingText = h.textContent?.trim();
     if (headingText) {
       data.set(headingText, flag);
       // Also map URL-encoded version and common variations
@@ -90,8 +92,8 @@ export function modifyDest(doc: Document | HTMLDivElement) {
     }
 
     // Map the heading ID if it exists
-    if (heading.id) {
-      data.set(heading.id, flag);
+    if (h.id) {
+      data.set(h.id, flag);
     }
   });
 
@@ -106,11 +108,12 @@ export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, str
   const lowerDest = convertMapKeysToLowercase(dest);
 
   // Handle Obsidian internal links (wikilink-style)
-  doc.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement, i) => {
-    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+  doc.querySelectorAll("a.internal-link").forEach((el) => {
+    const a = el as HTMLAnchorElement;
+    const [title, anchor] = a.dataset.href?.split("#") ?? [];
 
     if (anchor?.startsWith("^")) {
-      el.href = el.dataset.href?.toLowerCase() as string;
+      a.href = a.dataset.href?.toLowerCase() as string;
     }
 
     if (anchor?.length > 0) {
@@ -120,14 +123,15 @@ export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, str
 
       const flag = dest.get(anchor) || lowerDest.get(anchor?.toLowerCase());
       if (flag && !anchor.startsWith("^")) {
-        el.href = `an://${flag}`;
+        a.href = `an://${flag}`;
       }
     }
   });
 
   // Handle standard markdown anchor links like [text](#heading)
-  doc.querySelectorAll("a[href^='#']").forEach((el: HTMLAnchorElement) => {
-    const href = el.getAttribute("href");
+  doc.querySelectorAll("a[href^='#']").forEach((el) => {
+    const a = el as HTMLAnchorElement;
+    const href = a.getAttribute("href");
     if (!href) return;
 
     // Extract the anchor part (without the #)
@@ -160,7 +164,7 @@ export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, str
     }
 
     if (flag) {
-      el.href = `an://${flag}`;
+      a.href = `an://${flag}`;
     }
   });
 }

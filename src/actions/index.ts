@@ -106,6 +106,7 @@ export const settingSlider: Action<
       .setValue(params.value)
       .onChange((v) => {
         params.onChange(v);
+        // @ts-ignore
         slider.showTooltip();
       });
   });

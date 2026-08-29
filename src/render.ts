@@ -34,6 +34,131 @@ export function getAllStyles() {
   return cssTexts;
 }
 
+export const TOC_CSS = `
+.pdf-toc {
+  margin: 1em 0 1.5em 0;
+  page-break-before: always;
+  break-before: page;
+  page-break-after: always;
+  break-after: page;
+}
+.pdf-toc-title {
+  font-size: 1.4em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.85;
+}
+.pdf-toc ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.pdf-toc li {
+  display: flex;
+  align-items: baseline;
+  margin: 0.1em 0;
+  margin-right: 2.5em;
+}
+/* Inline position anchor — height:1em + align-items:baseline means
+   its bottom edge lands exactly on the text baseline, so rect.y from
+   getDestPosition maps to the baseline of the TOC entry text. */
+.pdf-toc-anchor {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: transparent;
+  background: transparent;
+}
+.pdf-toc li .toc-link {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.15em 0.2em 0.15em 0.4em;
+  border-radius: 4px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  max-width: 85%;
+}
+.pdf-toc li .toc-link:hover {
+  background: rgba(128, 128, 128, 0.15);
+}
+.pdf-toc .toc-leader {
+  flex: 1;
+  border-bottom: 1px dotted currentColor;
+  opacity: 0.35;
+  margin: 0 0.3em 0.25em;
+  min-width: 0.5em;
+}
+/* Level indentation */
+.pdf-toc li.toc-level-1 { padding-left: 0; }
+.pdf-toc li.toc-level-2 { padding-left: 1.2em; }
+.pdf-toc li.toc-level-3 { padding-left: 2.4em; }
+.pdf-toc li.toc-level-4 { padding-left: 3.6em; }
+.pdf-toc li.toc-level-5 { padding-left: 4.8em; }
+.pdf-toc li.toc-level-6 { padding-left: 6em; }
+/* Per-level typography */
+.pdf-toc li.toc-level-1 .toc-link { font-size: 1em;    font-weight: 600; }
+.pdf-toc li.toc-level-2 .toc-link { font-size: 0.95em; font-weight: 500; }
+.pdf-toc li.toc-level-3 .toc-link { font-size: 0.9em;  font-weight: 400; opacity: 0.85; }
+.pdf-toc li.toc-level-4 .toc-link { font-size: 0.85em; font-weight: 400; opacity: 0.75; font-style: italic; }
+.pdf-toc li.toc-level-5 .toc-link { font-size: 0.8em;  font-weight: 400; opacity: 0.65; font-style: italic; }
+.pdf-toc li.toc-level-6 .toc-link { font-size: 0.78em; font-weight: 400; opacity: 0.55; font-style: italic; }
+`;
+
+export const HEADING_NUMBERING_CSS = `
+.auto-number-headings .markdown-preview-view {
+  counter-reset: h1c 0 h2c 0 h3c 0 h4c 0 h5c 0 h6c 0;
+}
+.auto-number-headings .markdown-preview-view h1:not(.__title__) {
+  counter-increment: h1c;
+  counter-reset: h2c h3c h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h1:not(.__title__)::before {
+  content: counter(h1c) ". ";
+}
+.auto-number-headings .markdown-preview-view h2 {
+  counter-increment: h2c;
+  counter-reset: h3c h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h2::before {
+  content: counter(h1c) "." counter(h2c) ". ";
+}
+.auto-number-headings .markdown-preview-view h3 {
+  counter-increment: h3c;
+  counter-reset: h4c h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h3::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) ". ";
+}
+.auto-number-headings .markdown-preview-view h4 {
+  counter-increment: h4c;
+  counter-reset: h5c h6c;
+}
+.auto-number-headings .markdown-preview-view h4::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) ". ";
+}
+.auto-number-headings .markdown-preview-view h5 {
+  counter-increment: h5c;
+  counter-reset: h6c;
+}
+.auto-number-headings .markdown-preview-view h5::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) ". ";
+}
+.auto-number-headings .markdown-preview-view h6 {
+  counter-increment: h6c;
+}
+.auto-number-headings .markdown-preview-view h6::before {
+  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) "." counter(h6c) ". ";
+}
+`;
+
 const CSS_PATCH = `
 /* ---------- css patch ---------- */
 
@@ -208,7 +333,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const fragment = {
     children: undefined,
     appendChild(e: DocumentFragment) {
-      this.children = e?.children;
+      (this as any).children = e?.children;
       throw new Error("exit");
     },
   } as unknown as HTMLElement;
@@ -252,8 +377,8 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   });
   await Promise.all(promises);
 
-  printEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
-    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+  printEl.findAll("a.internal-link").forEach((el) => {
+    const [title, anchor] = (el as HTMLAnchorElement).dataset.href?.split("#") ?? [];
 
     if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
       return;
@@ -298,6 +423,9 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
       id: file.path,
     },
   });
+  if (config?.autoNumberHeadings) {
+    printEl.addClass("auto-number-headings");
+  }
   const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
 
   const markdown = modifyMarkdown({ app, file, data });
@@ -351,6 +479,8 @@ export function createViewEl({
 
 // 添加块ID
 export function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
+  data = data.replace(/<!--\s*__TOC__\s*-->/g, '<div class="__toc_placeholder__"></div>');
+
   const cache = app.metadataCache.getFileCache(file);
 
   const blocks = new Map(Object.entries(cache?.blocks ?? {}));
@@ -391,7 +521,7 @@ async function renderHtml({
   const fragment = {
     children: undefined,
     appendChild(e: DocumentFragment) {
-      this.children = e?.children;
+      (this as any).children = e?.children;
       throw new Error("exit");
     },
   } as unknown as HTMLElement;
@@ -435,8 +565,8 @@ async function renderHtml({
   });
   await Promise.all(promises);
 
-  viewEl.findAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
-    const [title, anchor] = el.dataset.href?.split("#") ?? [];
+  viewEl.findAll("a.internal-link").forEach((el) => {
+    const [title, anchor] = (el as HTMLAnchorElement).dataset.href?.split("#") ?? [];
 
     if ((!title || title?.length == 0 || title == file.basename) && anchor?.startsWith("^")) {
       return;
@@ -453,15 +583,94 @@ export function fixDoc(doc: Document, title: string) {
   return doc;
 }
 
-export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
+export function fixDocV2(doc: Document | HTMLDivElement, title: string, autoNumberHeadings = false) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
+  injectTOC(doc, autoNumberHeadings);
   return doc;
+}
+
+function computeHeadingNumbers(headings: HTMLElement[]): string[] {
+  const counters = [0, 0, 0, 0, 0, 0];
+  return headings.map((heading) => {
+    const level = parseInt(heading.tagName[1]) - 1;
+    counters[level]++;
+    for (let i = level + 1; i < 6; i++) counters[i] = 0;
+    return counters.slice(0, level + 1).join(".") + ". ";
+  });
+}
+
+export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = false) {
+  const placeholder = doc.querySelector(".__toc_placeholder__");
+  if (!placeholder) return;
+
+  const headings = Array.from(
+    doc.querySelectorAll("h1:not(.__title__), h2, h3, h4, h5, h6"),
+  ) as HTMLElement[];
+
+  if (headings.length === 0) {
+    placeholder.remove();
+    return;
+  }
+
+  const numberPrefixes = autoNumberHeadings ? computeHeadingNumbers(headings) : [];
+
+  const nav = document.createElement("nav");
+  nav.className = "pdf-toc";
+
+  const titleEl = document.createElement("p");
+  titleEl.className = "pdf-toc-title";
+  titleEl.textContent = "Table of Contents";
+  nav.appendChild(titleEl);
+
+  const ul = document.createElement("ul");
+
+  headings.forEach((heading, idx) => {
+    const level = parseInt(heading.tagName[1]);
+    const flag = heading.querySelector("a.md-print-anchor")?.getAttribute("href")?.replace("af://", "");
+    const text = heading.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const prefix = numberPrefixes[idx] ?? "";
+
+    const li = document.createElement("li");
+    li.className = `toc-level-${level}`;
+
+    // Inline anchor so getDestPosition captures this row's baseline Y in the PDF.
+    // Uses pdf-toc-anchor (not md-print-anchor) to stay in normal flow and
+    // baseline-align with the text, giving an accurate rect.y.
+    if (flag) {
+      const posAnchor = document.createElement("a");
+      posAnchor.href = `af://toc-${flag}`;
+      posAnchor.className = "pdf-toc-anchor";
+      li.appendChild(posAnchor);
+    }
+
+    if (flag) {
+      const a = document.createElement("a");
+      a.href = `an://${flag}`;
+      a.className = "toc-link";
+      a.textContent = prefix + text;
+      li.appendChild(a);
+    } else {
+      const span = document.createElement("span");
+      span.className = "toc-link";
+      span.textContent = prefix + text;
+      li.appendChild(span);
+    }
+
+    const leader = document.createElement("span");
+    leader.className = "toc-leader";
+    li.appendChild(leader);
+
+    ul.appendChild(li);
+  });
+
+  nav.appendChild(ul);
+  placeholder.replaceWith(nav);
 }
 
 export function encodeEmbeds(doc: Document) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
-  spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
+  spans.forEach((span) => ((span as HTMLElement).innerHTML = encodeURIComponent((span as HTMLElement).innerHTML)));
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
