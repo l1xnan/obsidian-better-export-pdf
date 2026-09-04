@@ -26,6 +26,7 @@ export default {
     headerTemplate: "页眉模板",
     footerTemplate: "页脚模板",
     isTimestamp: "文件名添加时间戳",
+    saveNextToNote: "保存到笔记所在文件夹",
     enabledCss: "启用CSS片段选择",
     concurrency: "限制并发数",
     debugMode: "调试模式",

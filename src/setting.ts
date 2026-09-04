@@ -165,6 +165,15 @@ export default class ConfigSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
+    new Setting(containerEl)
+      .setName(this.i18n.settings.saveNextToNote)
+      .setDesc("Skip the save dialog and always write the PDF into the folder of the note, overwriting an existing one")
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.saveNextToNote).onChange(async (value) => {
+          this.plugin.settings.saveNextToNote = value;
+          await this.plugin.saveSettings();
+        });
+      });
     const enabledCssSetting = new Setting(containerEl)
       .setName(this.i18n.settings.enabledCss)
       .setDesc("Select the css snippet that are not enabled")

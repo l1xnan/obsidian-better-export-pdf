@@ -1,6 +1,7 @@
 import electron, { type WebviewTag } from "electron";
 const fs = require("fs").promises;
-import { Notice, type FrontMatterCache } from "obsidian";
+import { Notice, type App, type FrontMatterCache, type TFile } from "obsidian";
+import path from "path";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
 import type { BetterExportPdfPluginSettings } from "./main";
@@ -517,6 +518,17 @@ export async function getOutputFile(filename: string, isTimestamp?: boolean) {
     return;
   }
   return result.filePath;
+}
+
+/**
+ * Output path next to the note itself, without showing a save dialog.
+ * An already existing PDF at that location is overwritten.
+ */
+export function getSiblingOutputFile(app: App, file: TFile, isTimestamp?: boolean) {
+  // @ts-ignore `basePath` is not part of the public DataAdapter API
+  const basePath = app.vault.adapter.basePath as string;
+  const filename = file.basename + (isTimestamp ? "-" + Date.now() : "") + ".pdf";
+  return path.join(basePath, file.parent?.path ?? "", filename);
 }
 
 export async function getOutputPath(filename: string, isTimestamp?: boolean) {

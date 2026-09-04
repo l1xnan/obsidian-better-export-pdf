@@ -12,7 +12,7 @@
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { editPDF, getOutputFile, getOutputPath, makePrintOptions, writePdfFile } from "../pdf";
+  import { editPDF, getOutputFile, getOutputPath, getSiblingOutputFile, makePrintOptions, writePdfFile } from "../pdf";
   import Switch from "./Switch.svelte";
   import { Mutex } from "../utils/mutex";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
@@ -233,13 +233,19 @@
 
     const files = [];
     if (modal.multiplePdf) {
-      const outputPath = await getOutputPath(title);
-      if (!outputPath) {
-        return false;
+      if (settings.saveNextToNote) {
+        files.push(...docs.map((item) => getSiblingOutputFile(modal.app, item.file, settings.isTimestamp)));
+      } else {
+        const outputPath = await getOutputPath(title);
+        if (!outputPath) {
+          return false;
+        }
+        files.push(...docs.map((item) => `${outputPath}/${item.file.basename}.pdf`));
       }
-      files.push(...docs.map((item) => `${outputPath}/${item.file.basename}.pdf`));
     } else {
-      const outputFile = await getOutputFile(title, settings.isTimestamp);
+      const outputFile = settings.saveNextToNote
+        ? getSiblingOutputFile(modal.app, modal.file as TFile, settings.isTimestamp)
+        : await getOutputFile(title, settings.isTimestamp);
       if (!outputFile) {
         return false;
       }

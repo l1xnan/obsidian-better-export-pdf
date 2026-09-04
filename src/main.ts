@@ -25,6 +25,7 @@ export interface BetterExportPdfPluginSettings {
   displayMetadata: boolean;
 
   isTimestamp: boolean;
+  saveNextToNote: boolean;
   debug: boolean;
   enabledCss: boolean;
   concurrency: string;
@@ -46,6 +47,7 @@ const DEFAULT_SETTINGS: BetterExportPdfPluginSettings = {
   displayMetadata: false,
   debug: false,
   isTimestamp: false,
+  saveNextToNote: false,
   enabledCss: false,
   concurrency: "5",
   version: "2",

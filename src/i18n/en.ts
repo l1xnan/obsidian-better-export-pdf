@@ -22,6 +22,7 @@ export default {
     headerTemplate: "Header Template",
     footerTemplate: "Footer Template",
     isTimestamp: "Add timestamp",
+    saveNextToNote: "Save next to the note",
     enabledCss: "Enable select css snippets",
     concurrency: "Limit concurrency",
     debugMode: "Debug Mode",

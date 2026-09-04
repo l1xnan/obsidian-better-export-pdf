@@ -7,7 +7,7 @@
   import * as electron from "electron";
   import { px2mm, safeParseInt } from "../utils";
   import { fixDoc } from "../render";
-  import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
+  import { exportToPDF, getOutputFile, getOutputPath, getSiblingOutputFile } from "../pdf";
   import { icon } from "../actions";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
   import { PageSizeCalculator } from "../utils/pageSize";
@@ -127,16 +127,27 @@
     const title = (modal.file as TFile)?.basename ?? modal.file?.name;
 
     if (modal.multiplePdf) {
-      const outputPath = await getOutputPath(title);
-      if (outputPath) {
+      let outputFiles: string[] | undefined;
+      if (settings.saveNextToNote) {
+        outputFiles = docs.map((item) => getSiblingOutputFile(modal.app, item.file, settings.isTimestamp));
+      } else {
+        const outputPath = await getOutputPath(title);
+        if (outputPath) {
+          outputFiles = docs.map((item) => `${outputPath}/${item.file.basename}.pdf`);
+        }
+      }
+      if (outputFiles) {
+        const files = outputFiles;
         await Promise.all(
           webviews.map(async (wb, i) => {
-            await exportToPDF(`${outputPath}/${docs[i].file.basename}.pdf`, { ...settings, ...config }, wb, docs[i]);
+            await exportToPDF(files[i], { ...settings, ...config }, wb, docs[i]);
           }),
         );
       }
     } else {
-      const outputFile = await getOutputFile(title, settings.isTimestamp);
+      const outputFile = settings.saveNextToNote
+        ? getSiblingOutputFile(modal.app, modal.file as TFile, settings.isTimestamp)
+        : await getOutputFile(title, settings.isTimestamp);
       if (outputFile) {
         await exportToPDF(outputFile, { ...settings, ...config }, webviews[0], docs[0]);
       }
