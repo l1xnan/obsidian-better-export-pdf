@@ -113,49 +113,8 @@ export const TOC_CSS = `
 `;
 
 export const HEADING_NUMBERING_CSS = `
-.auto-number-headings .markdown-preview-view {
-  counter-reset: h1c 0 h2c 0 h3c 0 h4c 0 h5c 0 h6c 0;
-}
-.auto-number-headings .markdown-preview-view h1:not(.__title__) {
-  counter-increment: h1c;
-  counter-reset: h2c h3c h4c h5c h6c;
-}
-.auto-number-headings .markdown-preview-view h1:not(.__title__)::before {
-  content: counter(h1c) ". ";
-}
-.auto-number-headings .markdown-preview-view h2 {
-  counter-increment: h2c;
-  counter-reset: h3c h4c h5c h6c;
-}
-.auto-number-headings .markdown-preview-view h2::before {
-  content: counter(h1c) "." counter(h2c) ". ";
-}
-.auto-number-headings .markdown-preview-view h3 {
-  counter-increment: h3c;
-  counter-reset: h4c h5c h6c;
-}
-.auto-number-headings .markdown-preview-view h3::before {
-  content: counter(h1c) "." counter(h2c) "." counter(h3c) ". ";
-}
-.auto-number-headings .markdown-preview-view h4 {
-  counter-increment: h4c;
-  counter-reset: h5c h6c;
-}
-.auto-number-headings .markdown-preview-view h4::before {
-  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) ". ";
-}
-.auto-number-headings .markdown-preview-view h5 {
-  counter-increment: h5c;
-  counter-reset: h6c;
-}
-.auto-number-headings .markdown-preview-view h5::before {
-  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) ". ";
-}
-.auto-number-headings .markdown-preview-view h6 {
-  counter-increment: h6c;
-}
-.auto-number-headings .markdown-preview-view h6::before {
-  content: counter(h1c) "." counter(h2c) "." counter(h3c) "." counter(h4c) "." counter(h5c) "." counter(h6c) ". ";
+.heading-number {
+  margin-right: 0.4em;
 }
 `;
 
@@ -600,20 +559,38 @@ function computeHeadingNumbers(headings: HTMLElement[]): string[] {
   });
 }
 
-export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = false) {
-  const placeholder = doc.querySelector(".__toc_placeholder__");
-  if (!placeholder) return;
-
+export function applyHeadingNumbers(doc: Document | HTMLDivElement, autoNumberHeadings: boolean) {
   const headings = Array.from(
     doc.querySelectorAll("h1:not(.__title__), h2, h3, h4, h5, h6"),
   ) as HTMLElement[];
+
+  doc.querySelectorAll("span.heading-number").forEach((el) => el.remove());
+
+  const headingTexts = headings.map((heading) => heading.textContent?.replace(/\s+/g, " ").trim() ?? "");
+  const numberPrefixes = autoNumberHeadings ? computeHeadingNumbers(headings) : [];
+
+  if (autoNumberHeadings) {
+    headings.forEach((heading, idx) => {
+      const span = document.createElement("span");
+      span.className = "heading-number";
+      span.textContent = numberPrefixes[idx];
+      heading.insertBefore(span, heading.firstChild);
+    });
+  }
+
+  return { headings, headingTexts, numberPrefixes };
+}
+
+export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = false) {
+  const { headings, headingTexts, numberPrefixes } = applyHeadingNumbers(doc, autoNumberHeadings);
+
+  const placeholder = doc.querySelector(".__toc_placeholder__");
+  if (!placeholder) return;
 
   if (headings.length === 0) {
     placeholder.remove();
     return;
   }
-
-  const numberPrefixes = autoNumberHeadings ? computeHeadingNumbers(headings) : [];
 
   const nav = document.createElement("nav");
   nav.className = "pdf-toc";
@@ -628,7 +605,7 @@ export function injectTOC(doc: Document | HTMLDivElement, autoNumberHeadings = f
   headings.forEach((heading, idx) => {
     const level = parseInt(heading.tagName[1]);
     const flag = heading.querySelector("a.md-print-anchor")?.getAttribute("href")?.replace("af://", "");
-    const text = heading.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const text = headingTexts[idx] ?? "";
     const prefix = numberPrefixes[idx] ?? "";
 
     const li = document.createElement("li");

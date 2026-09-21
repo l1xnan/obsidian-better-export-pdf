@@ -3,7 +3,7 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { TFile } from "obsidian";
-  import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
+  import { applyHeadingNumbers, fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
   import { getHeadingTree, safeParseInt } from "../utils";
   import pLimit from "p-limit";
@@ -95,7 +95,7 @@
 
   export function toggleAutoNumberHeadings(value: boolean) {
     docs = docs.map(({ doc, ...rest }) => {
-      (doc as HTMLElement).classList.toggle("auto-number-headings", value);
+      applyHeadingNumbers(doc, value);
       return { doc, ...rest };
     });
   }
