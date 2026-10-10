@@ -1,4 +1,4 @@
-import { TFile, TFolder } from "obsidian";
+import { Platform, TFile, TFolder } from "obsidian";
 
 export class TreeNode {
   // h2-1, h3-2, etc
@@ -370,4 +370,48 @@ export function removeLightVarsPatch() {
   } else {
     console.log(`[Theme Patch] 未找到活跃的样式补丁 (#${patchId})。`);
   }
+}
+
+/**
+ * macOS 上 Electron 43 (Chromium 150) 打印 PDF 时，从 system-ui / BlinkMacSystemFont
+ * 系统级回退得到的中文字形会被丢弃（只留下空白占位）。
+ * 在 .print 作用域内给 --font-default 末尾追加显式的 CJK 字体，让中文在系统回退之前命中。
+ */
+const CJK_FONT_PATCH_ID = "print-cjk-font-patch";
+
+function getCjkFallbackFonts() {
+  const lang = navigator.language.toLowerCase();
+  const fonts = ['"PingFang SC"', '"PingFang TC"', '"Hiragino Sans"', '"Apple SD Gothic Neo"'];
+  // 按界面语言把对应字形风格的字体排到最前
+  const preferred = lang.startsWith("ja")
+    ? '"Hiragino Sans"'
+    : lang.startsWith("ko")
+      ? '"Apple SD Gothic Neo"'
+      : /^zh-(tw|hk|mo|hant)/.test(lang)
+        ? '"PingFang TC"'
+        : '"PingFang SC"';
+  return [preferred, ...fonts.filter((f) => f !== preferred)];
+}
+
+export function injectCjkFontPatch() {
+  removeCjkFontPatch();
+  if (!Platform.isMacOS) {
+    return;
+  }
+  const fontDefault = getComputedStyle(document.body).getPropertyValue("--font-default").trim();
+  if (!fontDefault) {
+    return;
+  }
+  const styleTag = document.createElement("style");
+  styleTag.id = CJK_FONT_PATCH_ID;
+  styleTag.textContent = `
+    .print {
+      --font-default: ${fontDefault}, ${getCjkFallbackFonts().join(", ")};
+    }
+  `;
+  document.head.appendChild(styleTag);
+}
+
+export function removeCjkFontPatch() {
+  document.getElementById(CJK_FONT_PATCH_ID)?.remove();
 }
