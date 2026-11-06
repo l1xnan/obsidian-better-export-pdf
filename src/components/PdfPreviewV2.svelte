@@ -43,7 +43,6 @@
   let pdfCaches = $state<Record<string, string[]>>({});
   let preConfig = $state.snapshot(config);
 
-  const printOptions = $derived(makePrintOptions({ ...settings, ...config }));
   const pageSizeCalc = new PageSizeCalculator(config);
 
   export function calcPageSize() {
@@ -71,7 +70,7 @@
     );
     let _docs = [...(await Promise.all(inputs))] as DocV2Type[];
 
-    console.debug(_docs, modal.multiplePdf);
+    console.debug("calcPageSize; ",_docs, modal.multiplePdf);
 
     if (!modal.multiplePdf && _docs.length > 1) {
       _docs = modal.mergeDocV2(_docs);
@@ -144,13 +143,16 @@
     el,
     outputFile,
     title,
+    frontMatter,
     onlyPreview = false,
   }: {
     el: HTMLDivElement;
     outputFile: string;
     title: string;
+    frontMatter?: DocType["frontMatter"];
     onlyPreview?: boolean;
   }) {
+    const printOptions = makePrintOptions({ ...settings, ...config }, frontMatter);
     console.debug("printOptions:", printOptions);
     const pdfOptions = {
       ...printOptions,
@@ -181,7 +183,7 @@
 
     data = await editPDF(data, {
       headings: getHeadingTree(el as unknown as Document),
-      frontMatter: docs[0].frontMatter,
+      frontMatter,
       displayMetadata: settings?.displayMetadata,
       maxLevel: safeParseInt(settings?.maxLevel, 6),
     });
@@ -214,12 +216,12 @@
     });
 
     for (const [i, outfile] of outfiles.entries()) {
-      const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
+      const { doc, file, frontMatter } = docs[i] as DocType & { doc: HTMLDivElement };
       const title = file.basename;
       doc.style.display = "block";
       await sleep(200);
 
-      await exportToPDF({ el: doc, outputFile: outfile, title, onlyPreview });
+      await exportToPDF({ el: doc, outputFile: outfile, title, frontMatter, onlyPreview });
       doc.style.display = "none";
       if (cb) {
         await cb(outfile);
@@ -310,7 +312,7 @@
 
       pdfCaches[key] = tempFiles;
     } else {
-      console.debug(key, pdfCaches[key]);
+      console.debug("renderCanvas; ", key, pdfCaches[key]);
       for (const file of pdfCaches[key]) {
         await renderCanvas(file);
       }
