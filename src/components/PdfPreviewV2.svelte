@@ -70,7 +70,7 @@
     );
     let _docs = [...(await Promise.all(inputs))] as DocV2Type[];
 
-    console.debug("aaa",_docs, modal.multiplePdf);
+    console.debug("calcPageSize; ",_docs, modal.multiplePdf);
 
     if (!modal.multiplePdf && _docs.length > 1) {
       _docs = modal.mergeDocV2(_docs);
@@ -312,7 +312,7 @@
 
       pdfCaches[key] = tempFiles;
     } else {
-      console.debug("bbb", key, pdfCaches[key]);
+      console.debug("renderCanvas; ", key, pdfCaches[key]);
       for (const file of pdfCaches[key]) {
         await renderCanvas(file);
       }
