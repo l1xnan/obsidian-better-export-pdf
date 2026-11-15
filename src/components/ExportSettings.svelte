@@ -28,7 +28,9 @@
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
-  const pageSizeOptions = Object.fromEntries(pageSizes.map((s) => [s, s]));
+  const pageSizeOptions = Object.fromEntries(
+    pageSizes.map((s) => [s, s === "Custom" ? i18n.exportDialog.customPageSize : s]),
+  );
 
   const marginOptions: Record<string, string> = {
     "0": i18n.exportDialog.marginNone,

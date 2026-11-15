@@ -13,6 +13,7 @@ export default {
     marginDefault: "默认",
     marginSmall: "小",
     marginCustom: "自定义",
+    customPageSize: "自定义",
     widthHeight: "宽/高",
     width: "宽度",
     height: "高度",

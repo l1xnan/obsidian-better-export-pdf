@@ -10,6 +10,7 @@ export default {
     marginDefault: "Default",
     marginSmall: "Small",
     marginCustom: "Custom",
+    customPageSize: "Custom",
     widthHeight: "Width/Height",
     width: "width",
     height: "height",
