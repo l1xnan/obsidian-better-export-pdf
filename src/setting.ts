@@ -15,7 +15,7 @@ export const renderBuyMeACoffeeBadge = (contentEl: HTMLElement | DocumentFragmen
   const imgEl = linkEl.createEl("img");
   imgEl.src =
     "https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=nathangeorge&button_colour=6a8696&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00";
-  imgEl.alt = "Buy me a coffee";
+  imgEl.alt = i18n.current.settings.buyMeACoffee;
   imgEl.width = width;
 };
 

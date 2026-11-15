@@ -43,6 +43,7 @@ export default {
 
   settings: {
     support: "支持本插件的持续开发。",
+    buyMeACoffee: "请我喝杯咖啡",
     showTitle: "将笔记名作为标题",
     displayHeader: "显示页眉",
     displayFooter: "显示页脚",

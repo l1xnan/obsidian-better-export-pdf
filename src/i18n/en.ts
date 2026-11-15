@@ -39,6 +39,7 @@ export default {
   },
   settings: {
     support: "Support the continued development of this plugin.",
+    buyMeACoffee: "Buy me a coffee",
     showTitle: "Add file name as title",
     displayHeader: "Display headers",
     displayFooter: "Display footer",

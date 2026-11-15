@@ -287,7 +287,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
 
   const data = await app.vault.cachedRead(file);
   if (!data) {
-    new Notice(i18n.current.notice.contentEmpty.replace("{{file}}", file));
+    new Notice(i18n.current.notice.contentEmpty.replace("{{file}}", file.path));
   }
 
   const comp = new Component();
