@@ -61,7 +61,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     );
     new Setting(containerEl).setName(this.i18n.settings.displayHeader).addToggle((toggle) =>
       toggle
-        .setTooltip(this.i18n.settings.displayHeader)
+        .setTooltip(this.i18n.exportDialog.headerTooltip)
         .setValue(this.plugin.settings.displayHeader)
         .onChange(async (value) => {
           this.plugin.settings.displayHeader = value;

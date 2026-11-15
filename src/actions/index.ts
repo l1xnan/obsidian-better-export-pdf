@@ -1,4 +1,4 @@
-import { setIcon, Setting, debounce } from "obsidian";
+import { setIcon, Setting, debounce, type DropdownComponent } from "obsidian";
 import type { Action } from "svelte/action";
 import type { DocType } from "../modal";
 
@@ -83,12 +83,19 @@ export const settingDropdown: Action<
   const setting = new Setting(node).setName(params.name);
   if (params.desc) setting.setDesc(params.desc);
 
+  let component: DropdownComponent;
   setting.addDropdown((dropdown) => {
+    component = dropdown;
     dropdown.addOptions(params.options).setValue(params.value).onChange(params.onChange);
   });
 
   promote(node, setting);
   return {
+    update(next) {
+      setting.setName(next.name).setDesc(next.desc ?? "");
+      component.selectEl.empty();
+      component.addOptions(next.options).setValue(next.value).onChange(next.onChange);
+    },
     destroy() {
       node.empty();
     },

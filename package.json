@@ -8,6 +8,7 @@
     "dev:vite": "vite build --watch --mode development",
     "build:vite": "vite build",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test:i18n": "node scripts/test-i18n.mjs",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],

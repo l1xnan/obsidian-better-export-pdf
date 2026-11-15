@@ -28,16 +28,16 @@
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
-  const pageSizeOptions = Object.fromEntries(
+  const pageSizeOptions = $derived(Object.fromEntries(
     pageSizes.map((s) => [s, s === "Custom" ? i18n.exportDialog.customPageSize : s]),
-  );
+  ));
 
-  const marginOptions: Record<string, string> = {
+  const marginOptions: Record<string, string> = $derived({
     "0": i18n.exportDialog.marginNone,
     "1": i18n.exportDialog.marginDefault,
     "2": i18n.exportDialog.marginSmall,
     "3": i18n.exportDialog.marginCustom,
-  };
+  });
 
   // ── CSS Snippets ───────────────────────────────────────
   const snippets = $derived(modal.cssSnippets());
