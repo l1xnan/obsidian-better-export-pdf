@@ -37,7 +37,7 @@
 
     if (config["pageSize"] == "Custom") {
       if (!isNumber(config["pageWidth"] ?? "") || !isNumber(config["pageHeight"] ?? "")) {
-        alert("When the page size is Custom, the Width/Height cannot be empty.");
+        alert(plugin.i18n.exportDialog.customPageSizeAlert);
         return;
       }
     }

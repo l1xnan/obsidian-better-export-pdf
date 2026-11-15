@@ -167,9 +167,9 @@
       console.error(error);
       const code = error?.code as string | undefined;
       if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
-        new Notice("无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。");
+        new Notice(plugin.i18n.notice.cannotOverwrite);
       } else {
-        new Notice(`导出 PDF 失败：${error?.message ?? error}`);
+        new Notice(plugin.i18n.notice.exportFailed.replace("{{error}}", `${error?.message ?? error}`));
       }
       return;
     }
@@ -382,7 +382,7 @@
 <div class="print-preview">
   <div class="progress">
     {#if renderStates.length > 0 && !renderStates.every((item) => item.status)}
-      <div>Rendering...</div>
+      <div>{plugin.i18n.exportDialog.rendering}</div>
       {#each renderStates as item}
         <div>
           {#if item.status}
@@ -398,7 +398,7 @@
   {#if rendering}
     <div class="rendering">
       <span use:icon={"loader"} style="animation: spin 1s linear infinite;max-width:18px;max-height:18px;"></span>
-      <span>Rendering</span>
+      <span>{plugin.i18n.exportDialog.renderingShort}</span>
     </div>
   {/if}
   <Switch initialMode="html" onChange={toggleModel}></Switch>

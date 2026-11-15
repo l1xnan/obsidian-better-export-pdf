@@ -31,16 +31,16 @@
   const pageSizeOptions = Object.fromEntries(pageSizes.map((s) => [s, s]));
 
   const marginOptions: Record<string, string> = {
-    "0": "None",
-    "1": "Default",
-    "2": "Small",
-    "3": "Custom",
+    "0": i18n.exportDialog.marginNone,
+    "1": i18n.exportDialog.marginDefault,
+    "2": i18n.exportDialog.marginSmall,
+    "3": i18n.exportDialog.marginCustom,
   };
 
   // ── CSS Snippets ───────────────────────────────────────
   const snippets = $derived(modal.cssSnippets());
   const hasSnippets = $derived(Object.keys(snippets).length > 0 && settings.enabledCss);
-  const snippetOptions = $derived({ "0": "Not select", ...snippets });
+  const snippetOptions = $derived({ "0": i18n.exportDialog.cssNone, ...snippets });
 
   function handleKeyup(event: KeyboardEvent) {
     if (event.key === "Enter") {
@@ -55,7 +55,7 @@
   <div
     use:settingToggle={{
       name: i18n.exportDialog.filenameAsTitle,
-      tooltip: "Include file name as title",
+      tooltip: i18n.exportDialog.filenameAsTitle,
       value: config.showTitle,
       onChange: (value) => {
         config.showTitle = value;
@@ -81,9 +81,9 @@
   {#if showCustomSize}
     <div
       use:settingDoubleText={{
-        name: "Width/Height",
+        name: i18n.exportDialog.widthHeight,
         input1: {
-          placeholder: "width",
+          placeholder: i18n.exportDialog.width,
           value: config.pageWidth ?? "",
           isDebounce: true,
           onChange: async (value) => {
@@ -92,7 +92,7 @@
           },
         },
         input2: {
-          placeholder: "height",
+          placeholder: i18n.exportDialog.height,
           value: config.pageHeight ?? "",
           onChange: (value) => {
             config.pageHeight = value;
@@ -106,7 +106,7 @@
   <div
     use:settingDropdown={{
       name: i18n.exportDialog.margin,
-      desc: "The unit is millimeters.",
+      desc: i18n.exportDialog.marginDescription,
       options: marginOptions,
       value: config.marginType,
       onChange: (value) => {
@@ -119,16 +119,16 @@
   {#if showCustomMargin}
     <div
       use:settingDoubleText={{
-        name: "Top/Bottom",
+        name: i18n.exportDialog.topBottom,
         input1: {
-          placeholder: "margin top",
+          placeholder: i18n.exportDialog.marginTop,
           value: config.marginTop ?? "",
           onChange: (value) => {
             config.marginTop = value;
           },
         },
         input2: {
-          placeholder: "margin bottom",
+          placeholder: i18n.exportDialog.marginBottom,
           value: config.marginBottom ?? "",
           onChange: (value) => {
             config.marginBottom = value;
@@ -140,16 +140,16 @@
     <!-- Custom Margin Left/Right -->
     <div
       use:settingDoubleText={{
-        name: "Left/Right",
+        name: i18n.exportDialog.leftRight,
         input1: {
-          placeholder: "margin left",
+          placeholder: i18n.exportDialog.marginLeft,
           value: config.marginLeft ?? "",
           onChange: (value) => {
             config.marginLeft = value;
           },
         },
         input2: {
-          placeholder: "margin right",
+          placeholder: i18n.exportDialog.marginRight,
           value: config.marginRight ?? "",
           onChange: (value) => {
             config.marginRight = value;
@@ -175,7 +175,7 @@
   <div
     use:settingToggle={{
       name: i18n.exportDialog.landscape,
-      tooltip: "landscape",
+      tooltip: i18n.exportDialog.landscapeTooltip,
       value: config.landscape,
       onChange: (value) => {
         config.landscape = value;
@@ -187,7 +187,7 @@
   <div
     use:settingToggle={{
       name: i18n.exportDialog.displayHeader,
-      tooltip: "Display header",
+      tooltip: i18n.exportDialog.headerTooltip,
       value: config.displayHeader,
       onChange: (value) => {
         config.displayHeader = value;
@@ -199,7 +199,7 @@
   <div
     use:settingToggle={{
       name: i18n.exportDialog.displayFooter,
-      tooltip: "Display footer",
+      tooltip: i18n.exportDialog.footerTooltip,
       value: config.displayFooter,
       onChange: (value) => {
         config.displayFooter = value;
@@ -211,7 +211,7 @@
   <div
     use:settingToggle={{
       name: i18n.exportDialog.openAfterExport,
-      tooltip: "Open the exported file after exporting.",
+      tooltip: i18n.exportDialog.openAfterExportTooltip,
       value: config.open,
       onChange: (value) => {
         config.open = value;
@@ -237,7 +237,7 @@
   <!-- Export Button -->
   <div
     use:settingButton={{
-      text: "Export",
+      text: i18n.exportDialog.exportButton,
       cta: true,
       onClick: () => handleExport(),
     }}
@@ -247,7 +247,7 @@
   {#if settings.version == "1"}
     <div
       use:settingButton={{
-        text: "Refresh",
+        text: i18n.exportDialog.refreshButton,
         onClick: () => refreshPreview(),
       }}
     ></div>
@@ -256,7 +256,7 @@
   <!-- Debug Button -->
   <div
     use:settingButton={{
-      text: "Debug",
+      text: i18n.exportDialog.debugButton,
       hidden: !settings?.debug,
       onClick: () => pdfPreview?.handleOpenDevTools(),
     }}

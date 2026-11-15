@@ -2,6 +2,7 @@ import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, 
 import type { PageSizeType, ExportConfigType } from "./modal";
 import { copyAttributes, fixAnchors, modifyDest } from "./utils";
 import * as electron from "electron";
+import i18n from "./i18n";
 
 export function getAllStyles() {
   const cssTexts: string[] = [];
@@ -141,7 +142,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const view = leaf.view as MarkdownView;
   const data = await app.vault.cachedRead(file);
   if (!data) {
-    new Notice("data is empty!");
+    new Notice(i18n.current.notice.dataEmpty);
   }
 
   const frontMatter = getFrontMatter(app, file);
@@ -286,7 +287,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
 
   const data = await app.vault.cachedRead(file);
   if (!data) {
-    new Notice(`${file} content is empty!`);
+    new Notice(i18n.current.notice.contentEmpty.replace("{{file}}", file));
   }
 
   const comp = new Component();

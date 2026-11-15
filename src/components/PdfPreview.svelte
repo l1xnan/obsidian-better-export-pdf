@@ -199,7 +199,7 @@
 <div class="print-preview">
   <div class="progress">
     {#if renderStates.length > 0 && !renderStates.every((item) => item.status)}
-      <div>Rendering...</div>
+      <div>{plugin.i18n.exportDialog.rendering}</div>
       {#each renderStates as item}
         <div>
           {#if item.status}

@@ -36,7 +36,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     const supportDesc = new DocumentFragment();
     supportDesc.createDiv({
-      text: "Support the continued development of this plugin.",
+      text: this.i18n.settings.support,
     });
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
@@ -61,7 +61,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     );
     new Setting(containerEl).setName(this.i18n.settings.displayHeader).addToggle((toggle) =>
       toggle
-        .setTooltip("Display header")
+        .setTooltip(this.i18n.settings.displayHeader)
         .setValue(this.plugin.settings.displayHeader)
         .onChange(async (value) => {
           this.plugin.settings.displayHeader = value;
@@ -70,7 +70,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     );
     new Setting(containerEl).setName(this.i18n.settings.displayFooter).addToggle((toggle) =>
       toggle
-        .setTooltip("Display footer")
+        .setTooltip(this.i18n.settings.displayFooter)
         .setValue(this.plugin.settings.displayFooter)
         .onChange(async (value) => {
           this.plugin.settings.displayFooter = value;
@@ -80,7 +80,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName(this.i18n.settings.printBackground)
-      .setDesc("Whether to print background graphics")
+      .setDesc(this.i18n.settings.printBackgroundDescription)
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.printBackground).onChange(async (value) => {
           this.plugin.settings.printBackground = value;
@@ -89,10 +89,8 @@ export default class ConfigSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Generate tagged PDF")
-      .setDesc(
-        "Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.",
-      )
+      .setName(this.i18n.settings.generateTaggedPDF)
+      .setDesc(this.i18n.settings.generateTaggedPDFDescription)
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.generateTaggedPDF).onChange(async (value) => {
           this.plugin.settings.generateTaggedPDF = value;
@@ -112,7 +110,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName(this.i18n.settings.displayMetadata)
-      .setDesc("Add frontMatter(title, author, keywords, subject creator, etc) to pdf metadata")
+      .setDesc(this.i18n.settings.displayMetadataDescription)
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.displayMetadata).onChange(async (value) => {
           this.plugin.settings.displayMetadata = value;
@@ -120,17 +118,13 @@ export default class ConfigSettingTab extends PluginSettingTab {
         }),
       );
 
-    new Setting(containerEl).setName("Advanced").setHeading();
+    new Setting(containerEl).setName(this.i18n.settings.advanced).setHeading();
 
     const headerContentAreaSetting = new Setting(containerEl);
     headerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
     headerContentAreaSetting
       .setName(this.i18n.settings.headerTemplate)
-      .setDesc(
-        "HTML template for the print header. " +
-          "Should be valid HTML markup with following classes used to inject printing values into them: " +
-          'date (formatted print date), title (document title), url (document location), pageNumber (current page number) and totalPages (total pages in the document). For example, <span class="title"></span> would generate span containing the title.',
-      );
+      .setDesc(this.i18n.settings.headerTemplateDescription);
     const hederContentArea = new TextAreaComponent(headerContentAreaSetting.controlEl);
 
     setAttributes(hederContentArea.inputEl, {
@@ -145,7 +139,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     footerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
     footerContentAreaSetting
       .setName(this.i18n.settings.footerTemplate)
-      .setDesc("HTML template for the print footer. Should use the same format as the headerTemplate.");
+      .setDesc(this.i18n.settings.footerTemplateDescription);
     const footerContentArea = new TextAreaComponent(footerContentAreaSetting.controlEl);
 
     setAttributes(footerContentArea.inputEl, {
@@ -158,7 +152,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName(this.i18n.settings.isTimestamp)
-      .setDesc("Add timestamp to output file name")
+      .setDesc(this.i18n.settings.isTimestampDescription)
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.isTimestamp).onChange(async (value) => {
           this.plugin.settings.isTimestamp = value;
@@ -167,7 +161,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
       });
     const enabledCssSetting = new Setting(containerEl)
       .setName(this.i18n.settings.enabledCss)
-      .setDesc("Select the css snippet that are not enabled")
+      .setDesc(this.i18n.settings.enabledCssDescription)
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.enabledCss).onChange(async (value) => {
           this.plugin.settings.enabledCss = value;
@@ -181,7 +175,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     updateVersionVisibility(this.plugin.settings.version);
     new Setting(containerEl)
       .setName(this.i18n.settings.concurrency)
-      .setDesc("Limit the number of concurrent renders")
+      .setDesc(this.i18n.settings.concurrencyDescription)
       .addText((cb) => {
         const concurrency = this.plugin.settings?.concurrency;
         cb.setValue(concurrency?.length > 0 ? concurrency : "5").onChange(async (value) => {
@@ -190,10 +184,10 @@ export default class ConfigSettingTab extends PluginSettingTab {
         });
       });
 
-    new Setting(containerEl).setName("Debug").setHeading();
+    new Setting(containerEl).setName(this.i18n.settings.debug).setHeading();
     new Setting(containerEl)
       .setName(this.i18n.settings.debugMode)
-      .setDesc("This is useful for troubleshooting.")
+      .setDesc(this.i18n.settings.debugModeDescription)
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.debug).onChange(async (value) => {
           this.plugin.settings.debug = value;
