@@ -86,15 +86,16 @@ export const settingDropdown: Action<
   let component: DropdownComponent;
   setting.addDropdown((dropdown) => {
     component = dropdown;
-    dropdown.addOptions(params.options).setValue(params.value).onChange(params.onChange);
+    dropdown.addOptions(params.options).setValue(params.value).onChange((value) => params.onChange(value));
   });
 
   promote(node, setting);
   return {
     update(next) {
+      params = next;
       setting.setName(next.name).setDesc(next.desc ?? "");
       component.selectEl.empty();
-      component.addOptions(next.options).setValue(next.value).onChange(next.onChange);
+      component.addOptions(next.options).setValue(next.value);
     },
     destroy() {
       node.empty();

@@ -90,10 +90,11 @@ test("dropdown action applies new labels, selected value, description and callba
     addDropdown(callback) {
       const dropdown = this.dropdown = {
         options: {},
+        listeners: [],
         selectEl: { empty() { dropdown.options = {}; } },
         addOptions(options) { Object.assign(this.options, options); return this; },
         setValue(value) { this.value = value; return this; },
-        onChange(callback) { this.callback = callback; return this; },
+        onChange(callback) { this.listeners.push(callback); return this; },
       };
       callback(dropdown);
       return this;
@@ -123,7 +124,8 @@ test("dropdown action applies new labels, selected value, description and callba
     assert.equal(setting.dropdown.value, value);
     assert.deepEqual(setting.dropdown.options, chinese);
     assert.equal(changes, 0, "Updating labels must not persist settings");
-    setting.dropdown.callback(value);
+    assert.equal(setting.dropdown.listeners.length, 1, "Updating labels must not register duplicate listeners");
+    setting.dropdown.listeners[0](value);
     assert.equal(changes, 10);
     action.destroy();
     assert.equal(cleared, true);
