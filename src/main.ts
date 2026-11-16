@@ -114,7 +114,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     // Register the Export As HTML button in the file menu
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
-        let title = file instanceof TFolder ? "Export folder to PDF" : "Better Export PDF";
+        let title = file instanceof TFolder ? this.i18n.menu.exportFolder : this.i18n.menu.pluginName;
         if (isDev) {
           title = `${title} (dev)`;
         }
@@ -133,7 +133,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file: TFile | TFolder) => {
         if (file instanceof TFolder) {
-          let title = "Export to PDF...";
+          let title = this.i18n.menu.exportToPdf;
           if (isDev) {
             title = `${title} (dev)`;
           }
@@ -143,7 +143,7 @@ export default class BetterExportPdfPlugin extends Plugin {
             const subMenu: Menu = item.setSubmenu();
             subMenu.addItem((item) =>
               item
-                .setTitle("Export each file to PDF")
+                .setTitle(this.i18n.menu.exportEachFile)
                 .setIcon("lucide-file-stack")
                 .onClick(async () => {
                   new ExportConfigModal(this, file, true).open();
@@ -151,7 +151,7 @@ export default class BetterExportPdfPlugin extends Plugin {
             );
             subMenu.addItem((item) =>
               item
-                .setTitle("Generate TOC.md file")
+                .setTitle(this.i18n.menu.generateToc)
                 .setIcon("lucide-file-text")
                 .onClick(async () => {
                   await this.generateToc(file);

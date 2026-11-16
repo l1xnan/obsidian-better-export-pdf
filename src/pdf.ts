@@ -4,6 +4,7 @@ import { Notice, type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
 import type { BetterExportPdfPluginSettings } from "./main";
+import i18n from "./i18n";
 import type { DocType, PageSizeType, ExportConfigType } from "./modal";
 import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
 
@@ -458,9 +459,9 @@ export async function writePdfFile(outputFile: string, data: Buffer | Uint8Array
     console.error(error);
     const code = error?.code as string | undefined;
     if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
-      new Notice("无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。");
+      new Notice(i18n.current.notice.cannotOverwrite);
     } else {
-      new Notice(`保存 PDF 失败：${error?.message ?? error}`);
+      new Notice(i18n.current.notice.saveFailed.replace("{{error}}", `${error?.message ?? error}`));
     }
     return false;
   }
@@ -497,17 +498,17 @@ export async function exportToPDF(
     }
   } catch (error) {
     console.error(error);
-    new Notice(`导出 PDF 失败：${(error as Error)?.message ?? error}`);
+    new Notice(i18n.current.notice.exportFailed.replace("{{error}}", `${(error as Error)?.message ?? error}`));
   }
 }
 
 export async function getOutputFile(filename: string, isTimestamp?: boolean) {
   // @ts-ignore
   const result = await electron.remote.dialog.showSaveDialog({
-    title: "Export to PDF",
+    title: i18n.current.notice.exportDialogTitle,
     defaultPath: filename + (isTimestamp ? "-" + Date.now() : "") + ".pdf",
     filters: [
-      { name: "All Files", extensions: ["*"] },
+      { name: i18n.current.notice.saveDialogFilterAll, extensions: ["*"] },
       { name: "PDF", extensions: ["pdf"] },
     ],
     properties: ["showOverwriteConfirmation", "createDirectory"],
@@ -522,7 +523,7 @@ export async function getOutputFile(filename: string, isTimestamp?: boolean) {
 export async function getOutputPath(filename: string, isTimestamp?: boolean) {
   // @ts-ignore
   const result = await electron.remote.dialog.showOpenDialog({
-    title: "Export to PDF",
+    title: i18n.current.notice.exportDialogTitle,
     defaultPath: filename,
     properties: ["openDirectory"],
   });
