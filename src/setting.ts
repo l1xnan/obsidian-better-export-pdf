@@ -70,7 +70,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
     );
     new Setting(containerEl).setName(this.i18n.settings.displayFooter).addToggle((toggle) =>
       toggle
-        .setTooltip(this.i18n.settings.displayFooter)
+        .setTooltip(this.i18n.exportDialog.footerTooltip)
         .setValue(this.plugin.settings.displayFooter)
         .onChange(async (value) => {
           this.plugin.settings.displayFooter = value;
