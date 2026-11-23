@@ -450,19 +450,23 @@ export function makePrintOptions(
   return printOptions;
 }
 
-export async function writePdfFile(outputFile: string, data: Buffer | Uint8Array): Promise<boolean> {
+export function pdfWriteError(error: any): string {
+  const code = error?.code as string | undefined;
+  if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
+    return "无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。";
+  }
+  return `保存 PDF 失败：${error?.message ?? error}`;
+}
+
+export async function writePdfFile(outputFile: string, data: Buffer | Uint8Array): Promise<string | null> {
   try {
     await fs.writeFile(outputFile, data);
-    return true;
+    return null;
   } catch (error: any) {
     console.error(error);
-    const code = error?.code as string | undefined;
-    if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
-      new Notice("无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。");
-    } else {
-      new Notice(`保存 PDF 失败：${error?.message ?? error}`);
-    }
-    return false;
+    const message = pdfWriteError(error);
+    new Notice(message);
+    return message;
   }
 }
 
@@ -486,8 +490,8 @@ export async function exportToPDF(
       maxLevel: safeParseInt(config?.maxLevel, 6),
     });
 
-    const saved = await writePdfFile(outputFile, data);
-    if (!saved) {
+    const writeError = await writePdfFile(outputFile, data);
+    if (writeError) {
       return;
     }
 

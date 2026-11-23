@@ -2,6 +2,7 @@ import { App, MarkdownView, Menu, Plugin, type PluginManifest, TFile, TFolder } 
 import i18n, { type Lang } from "./i18n";
 import { ExportConfigModal, type ExportConfigType } from "./modal";
 import ConfigSettingTab from "./setting";
+import { registerExportCli } from "./cli";
 import { traverseFolder } from "./utils";
 const fs = require("fs").promises;
 import path from "path";
@@ -66,6 +67,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     this.registerCommand();
     this.registerSetting();
     this.registerEvents();
+    registerExportCli(this);
   }
 
   registerCommand() {

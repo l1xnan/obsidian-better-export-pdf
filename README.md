@@ -130,6 +130,22 @@ This allows the plugin to export the notes in the order of the internal links. T
 
 Select the folder in the sidebar, right-click the menu `Export each file to PDF`, you can batch export each file of the entire folder to PDF file.
 
+### Export from the Obsidian CLI
+
+Requires the Obsidian 1.12 installer and **Settings → General → Command line interface**. The command uses the v2 print pipeline and your saved export settings. It does not open the preview or a save dialog.
+
+```shell
+obsidian better-export-pdf file="folder/note.md" path="D:/out/note.pdf"
+obsidian better-export-pdf file="folder/note.md"
+obsidian better-export-pdf open
+```
+
+- `file`: vault path. Defaults to the active note.
+- `path`: PDF path. An absolute path is used as-is. A relative path is resolved from the vault root. Defaults to a `.pdf` beside the note.
+- `open`: open the PDF when the export finishes.
+
+The CLI exports one note at a time. `file` is the vault path of that note. To merge a folder into one PDF, or to export each file in a folder separately, right-click the folder in the file explorer: `Export folder to PDF` for one PDF, or `Export to PDF...` → `Export each file to PDF` for one PDF per note.
+
 ### Export as One Page
 
 In the export dialog, select `Custom` for **Page Size** and set **Margin** to `None`. Set the page size according to the document's requirements.

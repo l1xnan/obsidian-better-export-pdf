@@ -186,8 +186,8 @@
       maxLevel: safeParseInt(settings?.maxLevel, 6),
     });
 
-    const saved = await writePdfFile(outputFile, data);
-    if (!saved) {
+    const writeError = await writePdfFile(outputFile, data);
+    if (writeError) {
       return;
     }
     if (config.open) {

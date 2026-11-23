@@ -168,6 +168,22 @@ toc: true
 
 侧边栏选择文件夹，右键选择菜单 `Export each file to PDF`，即可将整个文件夹每一个文件批量导出为 PDF 文件
 
+### 用 Obsidian CLI 导出
+
+需要 Obsidian 1.12 安装包，并在 **设置 → 通用 → Command line interface** 中打开命令行。这条命令使用 v2 打印，并沿用已保存的导出设置。不会打开预览，也不会弹出保存窗口。
+
+```shell
+obsidian better-export-pdf file="文件夹/笔记.md" path="D:/out/note.pdf"
+obsidian better-export-pdf file="文件夹/笔记.md"
+obsidian better-export-pdf open
+```
+
+- `file`：库内路径。不传时使用当前打开的笔记。
+- `path`：PDF 路径。绝对路径直接使用，相对路径相对库根目录。不传时写到笔记旁边，扩展名换成 `.pdf`。
+- `open`：导出完成后打开 PDF。
+
+命令行每次只导出一篇笔记。`file` 只能是这篇笔记的库内路径。把整个目录合成一个 PDF，或把目录里每个文件分别导出，请在文件列表中右键该文件夹：合成一份用 `Export folder to PDF`，逐个导出用 `Export to PDF...` → `Export each file to PDF`。
+
 ### 导出为一页
 
 导出对话框， **Page Size** 选择 `Custom`，**Margin** 设置为 `None`，根据文档情况自行设置页面尺寸。

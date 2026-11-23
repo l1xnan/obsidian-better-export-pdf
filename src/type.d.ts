@@ -31,6 +31,25 @@ export type SelectionType = {
 
 // Extend the existing type definition for MarkdownView
 declare module "obsidian" {
+  interface CliData {
+    [key: string]: string;
+  }
+
+  interface CliFlag {
+    value?: string;
+    description: string;
+    required?: boolean;
+  }
+
+  interface Plugin {
+    registerCliHandler(
+      command: string,
+      description: string,
+      flags: Record<string, CliFlag> | null,
+      handler: (params: CliData) => string | Promise<string>,
+    ): void;
+  }
+
   interface MarkdownPreviewView {
     renderer: {
       queueRender: () => void; // Typing for queueRender() method
