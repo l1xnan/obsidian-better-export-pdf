@@ -3,7 +3,7 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { Notice, TFile } from "obsidian";
-  import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
+  import { fixDocV2, printFilesInHiddenWindow, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
   import { getHeadingTree, safeParseInt } from "../utils";
   import pLimit from "p-limit";
@@ -38,6 +38,7 @@
   let scale = $state(0.75);
   let previewEl = $state<HTMLDivElement>();
   let docs = $state<DocType[]>([]);
+  let renderedFiles = $state<TFile[]>([]);
   let previewSizes = $state<{ width: number; height: number }[]>([]);
   let canvasDocs = $state<HTMLCanvasElement[]>([]);
   let pdfCaches = $state<Record<string, string[]>>({});
@@ -84,6 +85,7 @@
   export async function renderPreview(render = true) {
     if (render) {
       const { data } = await modal.getAllFilesV2();
+      renderedFiles = data.map((item) => item.file);
       renderStates = initRenderStates(data);
       docs = await renderFiles(data, (i) => {
         renderStates = completeRenderState(renderStates, i);
@@ -141,27 +143,24 @@
   const mutex = new Mutex();
 
   export async function exportToPDF({
-    el,
+    files,
     outputFile,
-    title,
     onlyPreview = false,
   }: {
-    el: HTMLDivElement;
+    files: TFile[];
     outputFile: string;
-    title: string;
     onlyPreview?: boolean;
   }) {
     console.debug("printOptions:", printOptions);
-    const pdfOptions = {
-      ...printOptions,
-      filepath: outputFile,
-    };
-
+    let printed: { headings: ReturnType<typeof getHeadingTree>; frontMatter: DocType["frontMatter"] } | undefined;
     try {
       await mutex.run(async () => {
-        // 防止标题污染, 同一时间只有一个PDF被渲染
-        document.title = title;
-        await printToPdf(el, pdfOptions);
+        printed = await printFilesInHiddenWindow({
+          app: modal.app,
+          files,
+          config,
+          options: { ...printOptions, filepath: outputFile },
+        });
       });
     } catch (error: any) {
       console.error(error);
@@ -173,15 +172,15 @@
       }
       return;
     }
-    if (onlyPreview) {
+    if (onlyPreview || !printed) {
       return;
     }
 
     let data = await fs.readFile(outputFile);
 
     data = await editPDF(data, {
-      headings: getHeadingTree(el as unknown as Document),
-      frontMatter: docs[0].frontMatter,
+      headings: printed.headings,
+      frontMatter: printed.frontMatter,
       displayMetadata: settings?.displayMetadata,
       maxLevel: safeParseInt(settings?.maxLevel, 6),
     });
@@ -207,25 +206,25 @@
     cb?: any;
     onlyPreview?: boolean;
   }) {
-    const currentTitle = document.title;
-
-    docs.forEach(({ doc }) => {
-      (doc as HTMLElement).classList.add("bep-batch-hidden");
-    });
-
-    for (const [i, outfile] of outfiles.entries()) {
-      const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
-      const title = file.basename;
-      doc.classList.remove("bep-batch-hidden");
-      await sleep(200);
-
-      await exportToPDF({ el: doc, outputFile: outfile, title, onlyPreview });
-      doc.classList.add("bep-batch-hidden");
-      if (cb) {
-        await cb(outfile);
+    if (modal.multiplePdf) {
+      for (const [i, outfile] of outfiles.entries()) {
+        const file = docs[i]?.file;
+        if (!file) {
+          continue;
+        }
+        await exportToPDF({ files: [file], outputFile: outfile, onlyPreview });
+        if (cb) {
+          await cb(outfile);
+        }
       }
+      return;
     }
-    document.title = currentTitle;
+
+    const files = renderedFiles.length ? renderedFiles : docs.map((item) => item.file);
+    await exportToPDF({ files, outputFile: outfiles[0], onlyPreview });
+    if (cb && outfiles[0]) {
+      await cb(outfiles[0]);
+    }
   }
 
   export async function handlePrintToPDF() {

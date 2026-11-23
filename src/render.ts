@@ -1,6 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import type { PageSizeType, ExportConfigType } from "./modal";
-import { applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
+import { applyLightVars, copyAttributes, fixAnchors, getHeadingTree, modifyDest, sleep, type TreeNode } from "./utils";
 import * as electron from "electron";
 
 export function getAllStyles() {
@@ -590,6 +590,237 @@ function waitForDomChange(target: HTMLElement, timeout = 2000, interval = 200): 
       reject(new Error(`timeout ${timeout}ms`));
     }, timeout);
   });
+}
+
+function serializeSheet(sheet: CSSStyleSheet): string {
+  try {
+    return Array.from(sheet.cssRules)
+      .map((rule) => rule.cssText)
+      .join("\n");
+  } catch {
+    return "";
+  }
+}
+
+function copyPrintStyles(target: Document) {
+  const head = target.head;
+  for (const node of Array.from(document.head.childNodes)) {
+    const isStyle = node instanceof HTMLStyleElement;
+    const isLink = node instanceof HTMLLinkElement && node.type === "text/css";
+    if (!isStyle && !isLink) {
+      continue;
+    }
+    if (isStyle && node.textContent?.includes("\u037C1")) {
+      continue;
+    }
+    const clone = node.cloneNode(true) as HTMLStyleElement;
+    if (isStyle && node.sheet && (node.id === "MJX-CHTML-styles" || !node.textContent?.trim())) {
+      const text = serializeSheet(node.sheet);
+      if (text) {
+        clone.textContent = text;
+      }
+    }
+    head.appendChild(clone);
+  }
+}
+
+function copyMathJaxStylesheet(target: Document) {
+  const src = document.getElementById("MJX-CHTML-styles");
+  if (!(src instanceof HTMLStyleElement) || !src.sheet) {
+    return;
+  }
+  const text = serializeSheet(src.sheet);
+  if (!text) {
+    return;
+  }
+  let dest = target.getElementById("MJX-CHTML-styles");
+  if (!(dest instanceof HTMLStyleElement)) {
+    dest = target.createElement("style");
+    dest.id = "MJX-CHTML-styles";
+    target.head.appendChild(dest);
+  }
+  dest.textContent = text;
+}
+
+async function openPrintWindow(): Promise<Window> {
+  const ipc = (window as unknown as { require: NodeRequire }).require("electron").ipcRenderer;
+  const token = ipc.sendSync("popup-token");
+  if (!token) {
+    throw new Error("无法打开打印窗口");
+  }
+  const popup = window.open("about:blank", "_blank", `token=${token},hide=true`);
+  if (!popup) {
+    throw new Error("无法打开打印窗口");
+  }
+  const start = Date.now();
+  while (!popup.document?.body) {
+    if (Date.now() - start > 3000) {
+      popup.close();
+      throw new Error("无法打开打印窗口");
+    }
+    await sleep(20);
+  }
+  return popup;
+}
+
+async function popupIpc(popup: Window): Promise<electron.IpcRenderer> {
+  const start = Date.now();
+  while (Date.now() - start < 3000) {
+    const req = (popup as unknown as { require?: NodeRequire }).require;
+    if (typeof req === "function") {
+      (popup as unknown as { electron: typeof electron }).electron = req("electron");
+      return req("electron").ipcRenderer;
+    }
+    await sleep(20);
+  }
+  throw new Error("无法打开打印窗口");
+}
+
+function preparePrintDocument(popup: Window) {
+  const doc = popup.document;
+  const base = doc.createElement("base");
+  base.href = location.href;
+  doc.head.appendChild(base);
+  copyPrintStyles(doc);
+  doc.documentElement.lang = document.documentElement.lang;
+  if (document.body.classList.contains("mod-rtl")) {
+    doc.body.classList.add("mod-rtl");
+  }
+  const fontSize = getComputedStyle(document.body).fontSize;
+  if (fontSize) {
+    doc.documentElement.style.setProperty("font-size", fontSize);
+  }
+}
+
+async function renderOfficialNote({
+  app,
+  file,
+  config,
+  comp,
+  printEl,
+  extra,
+}: {
+  app: App;
+  file: TFile;
+  config?: ExportConfigType;
+  comp: Component;
+  printEl: HTMLElement;
+  extra?: { title?: string; id?: string };
+}) {
+  const frontMatter = getFrontMatter(app, file);
+  const viewEl = document.createElement("div");
+  viewEl.className = "markdown-preview-view markdown-rendered";
+  viewEl.classList.toggle("rtl", !!app.vault.getConfig("rightToLeft"));
+  viewEl.classList.toggle("show-properties", app.vault.getConfig("propertiesInDocument") !== "hidden");
+  for (const name of getCssclasses(frontMatter)) {
+    if (name && !String(name).includes(" ")) {
+      viewEl.classList.add(String(name));
+    }
+  }
+  if (config?.showTitle !== false) {
+    const title = document.createElement("h1");
+    title.className = "__title__";
+    title.textContent = extra?.title ?? file.basename;
+    if (extra?.id) {
+      title.id = extra.id;
+    }
+    viewEl.appendChild(title);
+  }
+  printEl.appendChild(viewEl);
+
+  const data = await app.vault.cachedRead(file);
+  const holder = {
+    children: undefined as HTMLCollection | undefined,
+    appendChild(fragment: DocumentFragment) {
+      this.children = fragment?.children;
+      throw new Error("exit");
+    },
+  };
+  try {
+    await MarkdownRenderer.render(app, data ?? "", holder as unknown as HTMLElement, file.path, comp);
+  } catch (error) {
+    if ((error as Error)?.message !== "exit") {
+      throw error;
+    }
+  }
+
+  for (const node of Array.from(holder.children ?? [])) {
+    if (node.tagName === "HR") {
+      viewEl.appendChild(node);
+    } else {
+      const wrap = document.createElement("div");
+      wrap.appendChild(node);
+      viewEl.appendChild(wrap);
+    }
+  }
+
+  const promises: Promise<unknown>[] = [];
+  // @ts-ignore MarkdownRenderer.postProcess is not in the public type
+  await MarkdownRenderer.postProcess(app, {
+    docId: generateDocId(16),
+    sourcePath: file.path,
+    frontmatter: frontMatter,
+    promises,
+    addChild: (child: Component) => comp.addChild(child),
+    getSectionInfo: () => null,
+    containerEl: viewEl,
+    el: viewEl,
+    displayMode: true,
+  });
+  await Promise.all(promises);
+
+  viewEl.querySelectorAll("a.internal-link").forEach((link) => {
+    link.removeAttribute("href");
+  });
+  return frontMatter;
+}
+
+export async function printFilesInHiddenWindow({
+  app,
+  files,
+  config,
+  options,
+}: {
+  app: App;
+  files: TFile[];
+  config?: ExportConfigType;
+  options: electron.PrintToPDFOptions & { filepath: string };
+}): Promise<{ headings: TreeNode; frontMatter: FrontMatterCache }> {
+  if (!files.length) {
+    throw new Error("没有可导出的笔记");
+  }
+  const popup = await openPrintWindow();
+  const comp = new Component();
+  comp.load();
+  try {
+    preparePrintDocument(popup);
+    await sleep(200);
+    popup.document.body.classList.remove("theme-dark");
+    popup.document.body.classList.add("theme-light");
+    popup.document.title = files[0].basename;
+
+    const printEl = document.createElement("div");
+    printEl.className = "print";
+    popup.document.body.appendChild(printEl);
+
+    for (const file of files) {
+      await renderOfficialNote({ app, file, config, comp, printEl });
+    }
+    const frontMatter = getFrontMatter(app, files[0]);
+    fixDocV2(printEl, files[0].basename);
+    copyMathJaxStylesheet(popup.document);
+    await sleep(200);
+
+    const ipc = await popupIpc(popup);
+    await new Promise((resolve) => {
+      ipc.once("print-to-pdf", () => resolve(null));
+      ipc.send("print-to-pdf", options);
+    });
+    return { headings: getHeadingTree(printEl), frontMatter };
+  } finally {
+    comp.unload();
+    popup.close();
+  }
 }
 
 /**
