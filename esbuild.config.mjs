@@ -1,4 +1,4 @@
-import builtins from "builtin-modules";
+import { builtinModules } from "node:module";
 import * as esbuild from "esbuild";
 import process from "process";
 import esbuildSvelte from "esbuild-svelte";
@@ -39,7 +39,7 @@ const context = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
-    ...builtins,
+    ...builtinModules,
   ],
   format: "cjs",
   target: "es2018",

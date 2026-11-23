@@ -59,7 +59,7 @@ export function getHeadingTree(doc: Document | HTMLDivElement = document) {
 export function modifyDest(doc: Document | HTMLDivElement) {
   const data = new Map();
   doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
-    const link = document.createElement("a") as HTMLAnchorElement;
+    const link = document.createElement("a");
     const flag = `${heading.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
     link.className = "md-print-anchor";
@@ -304,7 +304,7 @@ export function getDerivedLightVars() {
   const missingVars: Record<string, string> = {};
   for (const [prop, rawVal] of Object.entries(derivedDarkVars)) {
     if (!lightVars.has(prop)) {
-      missingVars[prop as string] = rawVal as string;
+      missingVars[prop] = rawVal;
     }
   }
 
@@ -312,62 +312,14 @@ export function getDerivedLightVars() {
 }
 
 /**
- * 动态将变量以“公式字符串”的形式注入到 .theme-light 及其子元素的作用域中
- * @param {Object} vars - 变量键值对对象
- *
- * 说明:
- * 自定义属性（CSS 变量）在向子元素传递（继承）之前，会在声明它的元素上先进行“计算（Compute）”
- * 对于 { "--table-header-color": "var(--text-normal)" }
- * --table-header-color 值在 body.theme-dark 时已由 .theme-dark 的 --text-normal 确定,
- * .theme-light 如果不定义 --table-header-color 无法重置此值
+ * 把暗色主题里才会声明的衍生变量写到打印根节点上，让它们在 `.theme-light` 作用域里重新计算。
+ * 自定义属性在继承前会先在声明它的元素上计算，所以必须写在 `.print.theme-light` 自身，
+ * 不能依赖从 `body.theme-dark` 继承下来的已经算好的值。
  */
-export function injectLightVarsPatch(vars: Record<string, string>) {
-  const patchId = "theme-light-auto-patch";
-
-  // 1. 如果传入的变量对象为空，清理旧补丁并直接返回
-  if (!vars || Object.keys(vars).length === 0) {
-    const oldPatch = document.getElementById(patchId);
-    if (oldPatch) oldPatch.remove();
-    console.log("[Theme Patch] 没有需要修复的衍生变量，未进行注入。");
+export function applyLightVars(el: HTMLElement) {
+  const vars = getDerivedLightVars();
+  if (Object.keys(vars).length === 0) {
     return;
   }
-
-  // 2. 将键值对对象格式化为 CSS 规则行数组
-  const cssLines = [];
-  for (const [prop, value] of Object.entries(vars)) {
-    cssLines.push(`${prop}: ${value};`);
-  }
-
-  // 3. 如果已有旧补丁则先移除，防止重复累积
-  const oldPatch = document.getElementById(patchId);
-  if (oldPatch) {
-    oldPatch.remove();
-  }
-
-  // 4. 动态创建 style 标签并插入
-  const styleTag = document.createElement("style");
-  styleTag.id = patchId;
-  styleTag.textContent = `
-    /* 将这些变量在亮色作用域下强制用原始公式重新解析一次 */
-    .print.theme-light {
-      ${cssLines.join("\n      ")}
-    }
-  `;
-  document.head.appendChild(styleTag);
-  console.log(`[Theme Patch] 成功动态注入了 ${cssLines.length} 个缺失的衍生 CSS 变量。`);
-}
-
-/**
- * 移除动态注入的亮色变量样式补丁，恢复原本的样式表现
- */
-export function removeLightVarsPatch() {
-  const patchId = "theme-light-auto-patch";
-  const patchElement = document.getElementById(patchId);
-
-  if (patchElement) {
-    patchElement.remove();
-    console.log(`[Theme Patch] 已安全移除样式补丁 (#${patchId})，样式已恢复。`);
-  } else {
-    console.log(`[Theme Patch] 未找到活跃的样式补丁 (#${patchId})。`);
-  }
+  el.setCssProps(vars);
 }

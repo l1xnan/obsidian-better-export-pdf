@@ -2,12 +2,6 @@ import { App, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
 import i18n, { type Lang } from "./i18n";
 import BetterExportPdfPlugin from "./main";
 
-function setAttributes(element: HTMLTextAreaElement, attributes: { [x: string]: string }) {
-  for (const key in attributes) {
-    element.setAttribute(key, attributes[key]);
-  }
-}
-
 export const renderBuyMeACoffeeBadge = (contentEl: HTMLElement | DocumentFragment, width = 175) => {
   const linkEl = contentEl.createEl("a", {
     href: "https://www.buymeacoffee.com/l1xnan",
@@ -46,7 +40,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.version)
         .onChange(async (value: string) => {
           this.plugin.settings.version = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
           updateVersionVisibility(value);
         });
     });
@@ -56,7 +50,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.showTitle)
         .onChange(async (value) => {
           this.plugin.settings.showTitle = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
     );
     new Setting(containerEl).setName(this.i18n.settings.displayHeader).addToggle((toggle) =>
@@ -65,7 +59,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.displayHeader)
         .onChange(async (value) => {
           this.plugin.settings.displayHeader = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
     );
     new Setting(containerEl).setName(this.i18n.settings.displayFooter).addToggle((toggle) =>
@@ -74,7 +68,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.displayFooter)
         .onChange(async (value) => {
           this.plugin.settings.displayFooter = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
     );
 
@@ -84,7 +78,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.printBackground).onChange(async (value) => {
           this.plugin.settings.printBackground = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
       );
 
@@ -96,7 +90,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.generateTaggedPDF).onChange(async (value) => {
           this.plugin.settings.generateTaggedPDF = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
       );
 
@@ -106,7 +100,7 @@ export default class ConfigSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.maxLevel)
         .onChange(async (value: string) => {
           this.plugin.settings.maxLevel = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         });
     });
 
@@ -116,14 +110,14 @@ export default class ConfigSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.displayMetadata).onChange(async (value) => {
           this.plugin.settings.displayMetadata = value;
-          this.plugin.saveSettings();
+          await this.plugin.saveSettings();
         }),
       );
 
     new Setting(containerEl).setName("Advanced").setHeading();
 
     const headerContentAreaSetting = new Setting(containerEl);
-    headerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
+    headerContentAreaSetting.settingEl.classList.add("bep-template-setting");
     headerContentAreaSetting
       .setName(this.i18n.settings.headerTemplate)
       .setDesc(
@@ -133,27 +127,23 @@ export default class ConfigSettingTab extends PluginSettingTab {
       );
     const hederContentArea = new TextAreaComponent(headerContentAreaSetting.controlEl);
 
-    setAttributes(hederContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%; height: 6vh;",
-    });
+    hederContentArea.inputEl.classList.add("bep-template-input");
     hederContentArea.setValue(this.plugin.settings.headerTemplate).onChange(async (value) => {
       this.plugin.settings.headerTemplate = value;
-      this.plugin.saveSettings();
+      await this.plugin.saveSettings();
     });
 
     const footerContentAreaSetting = new Setting(containerEl);
-    footerContentAreaSetting.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
+    footerContentAreaSetting.settingEl.classList.add("bep-template-setting");
     footerContentAreaSetting
       .setName(this.i18n.settings.footerTemplate)
       .setDesc("HTML template for the print footer. Should use the same format as the headerTemplate.");
     const footerContentArea = new TextAreaComponent(footerContentAreaSetting.controlEl);
 
-    setAttributes(footerContentArea.inputEl, {
-      style: "margin-top: 12px; width: 100%; height: 6vh;",
-    });
+    footerContentArea.inputEl.classList.add("bep-template-input");
     footerContentArea.setValue(this.plugin.settings.footerTemplate).onChange(async (value) => {
       this.plugin.settings.footerTemplate = value;
-      this.plugin.saveSettings();
+      await this.plugin.saveSettings();
     });
 
     new Setting(containerEl)

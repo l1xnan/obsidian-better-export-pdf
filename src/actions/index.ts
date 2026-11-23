@@ -3,11 +3,11 @@ import type { Action } from "svelte/action";
 import type { DocType } from "../modal";
 
 function setInputWidth(inputEl: HTMLInputElement) {
-  inputEl.setAttribute("style", "width: 100px;");
+  inputEl.classList.add("bep-input-narrow");
 }
 
 function fullWidthButton(buttonEl: HTMLElement) {
-  buttonEl.setAttribute("style", "margin: 0 auto; width: -webkit-fill-available;");
+  buttonEl.classList.add("bep-button-full");
 }
 
 /**
@@ -175,7 +175,7 @@ export const icon: Action<HTMLElement, string> = (node, iconId) => {
   }
   return {
     update(newIconId) {
-      node.innerHTML = ""; // 清空旧图标
+      node.empty();
       setIcon(node, newIconId);
     },
   };
@@ -183,7 +183,7 @@ export const icon: Action<HTMLElement, string> = (node, iconId) => {
 
 export function mountNodes(node: HTMLElement, docs: DocType[]) {
   const update = (newDocs: DocType[]) => {
-    node.innerHTML = "";
+    node.empty();
     newDocs.forEach((item) => node.appendChild(item.doc.cloneNode(true)));
   };
 
@@ -192,18 +192,18 @@ export function mountNodes(node: HTMLElement, docs: DocType[]) {
   return {
     update,
     destroy() {
-      node.innerHTML = "";
+      node.empty();
     },
   };
 }
 
 export function mountNode(node: HTMLElement, doc: any) {
   const update = (newDoc: any) => {
-    node.innerHTML = "";
+    node.empty();
 
     const child = newDoc.cloneNode(true);
     child.removeClass("theme-light");
-    child.style.display = "block";
+    child.classList.add("bep-mount-visible");
     node.appendChild(child);
   };
 
@@ -212,16 +212,16 @@ export function mountNode(node: HTMLElement, doc: any) {
   return {
     update,
     destroy() {
-      node.innerHTML = "";
+      node.empty();
     },
   };
 }
 
 export function mountCanvas(container: HTMLElement, canvas: HTMLCanvasElement) {
   const update = (newCanvas: HTMLCanvasElement) => {
-    container.innerHTML = "";
+    container.empty();
     if (newCanvas) {
-      newCanvas.style.width = "100%"; // 使用更安全的方式设置样式
+      newCanvas.classList.add("bep-preview-canvas");
       container.appendChild(newCanvas);
     }
   };

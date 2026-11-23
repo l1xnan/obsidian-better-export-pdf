@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import builtins from "builtin-modules";
+import { builtinModules } from "node:module";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => ({
         "@lezer/common",
         "@lezer/highlight",
         "@lezer/lr",
-        ...builtins,
+        ...builtinModules,
       ],
       watch: {
         include: "src/**",

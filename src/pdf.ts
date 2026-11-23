@@ -326,11 +326,11 @@ export async function editPDF(
   const pdfDoc = await PDFDocument.load(data);
   const posistions = await getDestPosition(pdfDoc);
 
-  setAnchors(pdfDoc, posistions);
+  await setAnchors(pdfDoc, posistions);
 
   const outlines = generateOutlines(headings, posistions, maxLevel);
 
-  setOutline(pdfDoc, outlines);
+  await setOutline(pdfDoc, outlines);
   if (displayMetadata) {
     setMetadata(pdfDoc, frontMatter ?? {});
   }

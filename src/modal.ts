@@ -6,7 +6,7 @@ import { mount, unmount } from "svelte";
 import i18n, { type Lang } from "./i18n";
 import type BetterExportPdfPlugin from "./main";
 import { renderMarkdown, type ParamType } from "./render";
-import { traverseFolder, getDerivedLightVars, injectLightVarsPatch, removeLightVarsPatch } from "./utils";
+import { traverseFolder } from "./utils";
 import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -89,10 +89,6 @@ export class ExportConfigModal extends Modal {
     this.contentEl.empty();
     this.containerEl.style.setProperty("--dialog-width", "60vw");
     this.titleEl.setText("Export to PDF");
-    const missingVars = getDerivedLightVars();
-    console.debug("检测到以下衍生变量在亮色主题下未重置，即将进行注入：", missingVars);
-    // 步骤 2：注入补丁样式
-    injectLightVarsPatch(missingVars);
     this.component = mount(ModalUI, {
       target: this.contentEl,
       props: {
@@ -104,12 +100,11 @@ export class ExportConfigModal extends Modal {
 
   onClose() {
     if (this.component) {
-      unmount(this.component);
+      void unmount(this.component);
       this.component = undefined;
     }
     this.contentEl.empty();
     document.querySelectorAll(".print").forEach((el) => el.remove());
-    removeLightVarsPatch();
   }
 
   // ── File rendering ──────────────────────────────────────
@@ -196,7 +191,9 @@ export class ExportConfigModal extends Modal {
     }
     const root = doc0.querySelector(".markdown-preview-view");
     if (root) {
-      root.innerHTML = "";
+      while (root.firstChild) {
+        root.removeChild(root.firstChild);
+      }
     }
     sections.forEach((section) => {
       root?.appendChild(section);

@@ -210,17 +210,17 @@
     const currentTitle = document.title;
 
     docs.forEach(({ doc }) => {
-      (doc as HTMLElement).style.display = "none";
+      (doc as HTMLElement).classList.add("bep-batch-hidden");
     });
 
     for (const [i, outfile] of outfiles.entries()) {
       const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
       const title = file.basename;
-      doc.style.display = "block";
+      doc.classList.remove("bep-batch-hidden");
       await sleep(200);
 
       await exportToPDF({ el: doc, outputFile: outfile, title, onlyPreview });
-      doc.style.display = "none";
+      doc.classList.add("bep-batch-hidden");
       if (cb) {
         await cb(outfile);
       }

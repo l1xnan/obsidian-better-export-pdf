@@ -1,6 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import type { PageSizeType, ExportConfigType } from "./modal";
-import { copyAttributes, fixAnchors, modifyDest } from "./utils";
+import { applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
 import * as electron from "electron";
 
 export function getAllStyles() {
@@ -105,7 +105,6 @@ export function generateDocId(n: number) {
   return Array.from({ length: n }, () => ((16 * Math.random()) | 0).toString(16)).join("");
 }
 
-export type AyncFnType = (...args: unknown[]) => Promise<unknown>;
 
 export function getFrontMatter(app: App, file: TFile) {
   const cache = app.metadataCache.getFileCache(file);
@@ -161,6 +160,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   comp.load();
 
   const printEl = document.body.createDiv("print theme-light");
+  applyLightVars(printEl);
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered" + cssclasses.join(" "),
   });
@@ -213,7 +213,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
     },
   } as unknown as HTMLElement;
 
-  const promises: AyncFnType[] = [];
+  const promises: Promise<unknown>[] = [];
   try {
     // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
@@ -298,6 +298,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
       id: file.path,
     },
   });
+  applyLightVars(printEl);
   const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
 
   const markdown = modifyMarkdown({ app, file, data });
@@ -396,7 +397,7 @@ async function renderHtml({
     },
   } as unknown as HTMLElement;
 
-  const promises: AyncFnType[] = [];
+  const promises: Promise<unknown>[] = [];
   try {
     // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
@@ -456,12 +457,48 @@ export function fixDoc(doc: Document, title: string) {
 export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
   const dest = modifyDest(doc);
   fixAnchors(doc, dest, title);
+  fixSvgFragmentUrls(doc);
   return doc;
+}
+
+const SVG_URL_ATTRS = [
+  "marker-end",
+  "marker-start",
+  "marker-mid",
+  "fill",
+  "stroke",
+  "clip-path",
+  "mask",
+  "filter",
+];
+
+/** Rewrite url(#id) so Chromium print doesn't resolve markers against <base href>. */
+export function fixSvgFragmentUrls(root: Document | ParentNode) {
+  const base = (document.baseURI || document.URL || "").split("#")[0];
+  const rewrite = (value: string) =>
+    value.replace(/url\(\s*(['"]?)#([^'")\s]+)\1\s*\)/g, (_m, _q, id) => `url("${base}#${id}")`);
+
+  root.querySelectorAll("svg").forEach((svg) => {
+    svg.querySelectorAll("*").forEach((el) => {
+      for (const attr of SVG_URL_ATTRS) {
+        const val = el.getAttribute(attr);
+        if (val?.includes("#")) {
+          el.setAttribute(attr, rewrite(val));
+        }
+      }
+      const style = el.getAttribute("style");
+      if (style?.includes("url(") && style.includes("#")) {
+        el.setAttribute("style", rewrite(style));
+      }
+    });
+  });
 }
 
 export function encodeEmbeds(doc: Document) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
-  spans.forEach((span: HTMLElement) => (span.innerHTML = encodeURIComponent(span.innerHTML)));
+  spans.forEach((span: HTMLElement) => {
+    span.textContent = encodeURIComponent(span.innerHTML);
+  });
 }
 
 export async function fixWaitRender(data: string, viewEl: HTMLElement) {
@@ -566,6 +603,9 @@ export async function printToPdf(
     filepath: string;
   },
 ) {
+  if (printEl instanceof HTMLElement) {
+    fixSvgFragmentUrls(printEl);
+  }
   const ipc = printEl.win.electron.ipcRenderer as electron.IpcRenderer;
 
   return new Promise((resolve) => {
