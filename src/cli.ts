@@ -4,8 +4,8 @@ import path from "path";
 import type BetterExportPdfPlugin from "./main";
 import type { ExportConfigType } from "./modal";
 import { editPDF, makePrintOptions, writePdfFile } from "./pdf";
-import { fixDocV2, printToPdf, renderMarkdownV2 } from "./render";
-import { getHeadingTree, safeParseInt } from "./utils";
+import { printFilesInHiddenWindow } from "./render";
+import { safeParseInt } from "./utils";
 const fs = require("fs").promises;
 
 function vaultBase(plugin: BetterExportPdfPlugin): string {
@@ -70,25 +70,20 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
 
   const outputFile = resolveOutput(plugin, file, params.path);
   const config = cliConfig(plugin, params.open === "true");
-  let cleanup = () => {};
 
   try {
     await fs.mkdir(path.dirname(outputFile), { recursive: true });
-    const rendered = await renderMarkdownV2({
+    const printed = await printFilesInHiddenWindow({
       app: plugin.app,
-      file,
+      files: [file],
       config,
+      options: { ...makePrintOptions(config, plugin.app.metadataCache.getFileCache(file)?.frontmatter), filepath: outputFile },
     });
-    cleanup = rendered.cleanup;
-    fixDocV2(rendered.doc, rendered.file.basename);
-
-    const printOptions = makePrintOptions(config, rendered.frontMatter);
-    await printToPdf(rendered.doc, { ...printOptions, filepath: outputFile });
 
     let data: Uint8Array = await fs.readFile(outputFile);
     data = await editPDF(data, {
-      headings: getHeadingTree(rendered.doc),
-      frontMatter: rendered.frontMatter,
+      headings: printed.headings,
+      frontMatter: printed.frontMatter,
       displayMetadata: config.displayMetadata,
       maxLevel: safeParseInt(config.maxLevel, 6),
     });
@@ -107,8 +102,6 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
     const message = `导出 PDF 失败：${(error as Error)?.message ?? error}`;
     new Notice(message);
     return `Error: ${message}`;
-  } finally {
-    cleanup();
   }
 }
 
