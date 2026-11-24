@@ -5,7 +5,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, Standard
 
 import type { BetterExportPdfPluginSettings } from "./main";
 import type { DocType, PageSizeType, ExportConfigType } from "./modal";
-import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
+import { TreeNode, getElectronApi, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -496,8 +496,7 @@ export async function exportToPDF(
     }
 
     if (config.open) {
-      // @ts-ignore
-      electron.remote.shell.openPath(outputFile);
+      openExportedFile(outputFile);
     }
   } catch (error) {
     console.error(error);
@@ -505,9 +504,16 @@ export async function exportToPDF(
   }
 }
 
+function electronRemote() {
+  return getElectronApi()?.remote ?? electron.remote;
+}
+
+export function openExportedFile(outputFile: string) {
+  electronRemote()?.shell?.openPath(outputFile);
+}
+
 export async function getOutputFile(filename: string, isTimestamp?: boolean) {
-  // @ts-ignore
-  const result = await electron.remote.dialog.showSaveDialog({
+  const result = await electronRemote().dialog.showSaveDialog({
     title: "Export to PDF",
     defaultPath: filename + (isTimestamp ? "-" + Date.now() : "") + ".pdf",
     filters: [
@@ -524,8 +530,7 @@ export async function getOutputFile(filename: string, isTimestamp?: boolean) {
 }
 
 export async function getOutputPath(filename: string, isTimestamp?: boolean) {
-  // @ts-ignore
-  const result = await electron.remote.dialog.showOpenDialog({
+  const result = await electronRemote().dialog.showOpenDialog({
     title: "Export to PDF",
     defaultPath: filename,
     properties: ["openDirectory"],

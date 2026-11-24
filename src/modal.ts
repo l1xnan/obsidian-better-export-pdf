@@ -6,7 +6,7 @@ import { mount, unmount } from "svelte";
 import i18n, { type Lang } from "./i18n";
 import type BetterExportPdfPlugin from "./main";
 import { renderMarkdown, type ParamType } from "./render";
-import { traverseFolder } from "./utils";
+import { getMainDocument, traverseFolder } from "./utils";
 import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -202,14 +202,14 @@ export class ExportConfigModal extends Modal {
   }
 
   mergeDocV2(docs: DocV2Type[]): DocV2Type[] {
-    const printEl = document.body.createDiv("print");
+    const printEl = getMainDocument().body.createDiv("print");
 
     for (const { doc } of docs) {
       const viewEl = doc.querySelector(".markdown-preview-view");
       if (viewEl) {
         printEl.appendChild(viewEl);
       }
-      document.body.removeChild(doc);
+      doc.remove();
     }
     return [{ ...docs[0], doc: printEl }];
   }

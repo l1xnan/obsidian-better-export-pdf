@@ -192,6 +192,29 @@ export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function getMainWindow(): Window {
+  const container = (window as Window & { app?: { workspace?: { containerEl?: HTMLElement & { win?: Window } } } }).app
+    ?.workspace?.containerEl;
+  return container?.win ?? window;
+}
+
+export function getMainDocument(): Document {
+  return getMainWindow().document;
+}
+
+export function getElectronApi(el?: HTMLElement) {
+  const hosts = [el && (el as HTMLElement & { win?: Window }).win, getMainWindow(), window].filter(
+    (host): host is Window => !!host,
+  );
+  for (const host of hosts) {
+    const api = (host as Window & { electron?: { ipcRenderer?: unknown; remote?: any } }).electron;
+    if (api?.ipcRenderer) {
+      return api;
+    }
+  }
+  return null;
+}
+
 export const px2mm = (px: number) => {
   return Math.round(px * 0.26458333333719);
 };

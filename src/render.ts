@@ -1,6 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import type { PageSizeType, ExportConfigType } from "./modal";
-import { applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
+import { applyLightVars, copyAttributes, fixAnchors, getElectronApi, getMainDocument, modifyDest } from "./utils";
 import * as electron from "electron";
 
 export function getAllStyles() {
@@ -159,7 +159,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const comp = new Component();
   comp.load();
 
-  const printEl = document.body.createDiv("print theme-light");
+  const printEl = getMainDocument().body.createDiv("print theme-light");
   applyLightVars(printEl);
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered" + cssclasses.join(" "),
@@ -292,7 +292,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
   const comp = new Component();
   comp.load();
 
-  const printEl = document.body.createDiv({
+  const printEl = getMainDocument().body.createDiv({
     cls: "print theme-light",
     attr: {
       id: file.path,
@@ -606,7 +606,13 @@ export async function printToPdf(
   if (printEl instanceof HTMLElement) {
     fixSvgFragmentUrls(printEl);
   }
-  const ipc = printEl.win.electron.ipcRenderer as electron.IpcRenderer;
+  const ipc = getElectronApi(printEl instanceof HTMLElement ? printEl : undefined)?.ipcRenderer as
+    | electron.IpcRenderer
+    | undefined;
+  if (!ipc) {
+    new Notice("当前窗口无法导出 PDF，请回到主窗口重试。");
+    throw new Error("electron ipcRenderer is unavailable in this window");
+  }
 
   return new Promise((resolve) => {
     // 1.ipc先设置监听（确保不会错过主进程的回信）

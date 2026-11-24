@@ -1,9 +1,8 @@
-import * as electron from "electron";
 import { MarkdownView, Notice, TFile, requireApiVersion, type CliData } from "obsidian";
 import path from "path";
 import type BetterExportPdfPlugin from "./main";
 import type { ExportConfigType } from "./modal";
-import { editPDF, makePrintOptions, writePdfFile } from "./pdf";
+import { editPDF, makePrintOptions, openExportedFile, writePdfFile } from "./pdf";
 import { fixDocV2, printToPdf, renderMarkdownV2 } from "./render";
 import { getHeadingTree, safeParseInt } from "./utils";
 const fs = require("fs").promises;
@@ -97,8 +96,7 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
       return `Error: ${writeError}`;
     }
     if (config.open) {
-      // @ts-ignore
-      electron.remote.shell.openPath(outputFile);
+      openExportedFile(outputFile);
     }
     new Notice(`Exported ${outputFile}`);
     return outputFile;

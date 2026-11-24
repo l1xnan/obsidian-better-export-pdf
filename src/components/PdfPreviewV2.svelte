@@ -4,15 +4,14 @@
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { Notice, TFile } from "obsidian";
   import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
-  import * as electron from "electron";
-  import { getHeadingTree, safeParseInt } from "../utils";
+  import { getElectronApi, getHeadingTree, safeParseInt } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { editPDF, getOutputFile, getOutputPath, makePrintOptions, writePdfFile } from "../pdf";
+  import { editPDF, getOutputFile, getOutputPath, makePrintOptions, openExportedFile, writePdfFile } from "../pdf";
   import Switch from "./Switch.svelte";
   import { Mutex } from "../utils/mutex";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
@@ -191,8 +190,7 @@
       return;
     }
     if (config.open) {
-      // @ts-ignore
-      electron.remote.shell.openPath(outputFile);
+      openExportedFile(outputFile);
     }
   }
 
@@ -322,9 +320,7 @@
   }
 
   export function handleOpenDevTools() {
-    // @ts-ignore
-    const c = document.win.electron.remote.getCurrentWebContents();
-    c.openDevTools();
+    getElectronApi()?.remote?.getCurrentWebContents?.()?.openDevTools();
   }
 
   async function toggleModel(model: string) {
