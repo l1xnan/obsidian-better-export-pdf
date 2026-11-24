@@ -218,7 +218,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
     // `render` converts Markdown to HTML, and then it undergoes postProcess handling.
     // Here, postProcess handling is not needed.When passed as a fragment, it converts to HTML correctly,
     // but errors occur during recent postProcess handling, thus achieving the goal of avoiding postProcess handling.
-    await MarkdownRenderer.render(app, lines.join("\n"), fragment, file.path, comp);
+    await MarkdownRenderer.render(app, expandEscapedEmbeds(lines.join("\n"), app, file.path), fragment, file.path, comp);
   } catch (error) {
     /* empty */
   }
@@ -350,6 +350,28 @@ export function createViewEl({
   return { viewEl, frontMatter };
 }
 
+function escapeAttr(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+/** Table cells escape the embed width as `\|`, which the markdown parser then misses. */
+export function expandEscapedEmbeds(markdown: string, app: App, sourcePath: string) {
+  return markdown.replace(/!\[\[([^\]\n]+)\]\]/g, (full, inner: string) => {
+    if (!inner.includes("\\|")) return full;
+    const normalized = inner.replace(/\\\|/g, "|");
+    const pipe = normalized.indexOf("|");
+    const link = (pipe === -1 ? normalized : normalized.slice(0, pipe)).trim();
+    const size = pipe === -1 ? "" : normalized.slice(pipe + 1).trim();
+    const file = app.metadataCache.getFirstLinkpathDest(link, sourcePath);
+    if (!(file instanceof TFile)) return full;
+    const match = size.match(/^(\d+)(?:x(\d+))?$/);
+    const width = match ? ` width="${match[1]}"` : "";
+    const height = match?.[2] ? ` height="${match[2]}"` : "";
+    const src = escapeAttr(app.vault.getResourcePath(file));
+    return `<img src="${src}"${width}${height} alt="${escapeAttr(file.basename)}">`;
+  });
+}
+
 // 添加块ID
 export function modifyMarkdown({ app, file, data }: { app: App; file: TFile; data: string }) {
   const cache = app.metadataCache.getFileCache(file);
@@ -373,7 +395,7 @@ export function modifyMarkdown({ app, file, data }: { app: App; file: TFile; dat
     const idx = start.line;
     lines[idx] = `<span id="^${id}" class="blockid"></span>\n\n` + lines[idx];
   });
-  return lines.join("\n");
+  return expandEscapedEmbeds(lines.join("\n"), app, file.path);
 }
 
 async function renderHtml({
