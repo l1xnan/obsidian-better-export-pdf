@@ -3,7 +3,7 @@ import { MarkdownView, Notice, TFile, requireApiVersion, type CliData } from "ob
 import path from "path";
 import type BetterExportPdfPlugin from "./main";
 import type { ExportConfigType } from "./modal";
-import { editPDF, makePrintOptions, writePdfFile } from "./pdf";
+import { assertPdfWritable, editPDF, freshPdfPath, makePrintOptions, writePdfFile } from "./pdf";
 import { fixDocV2, printToPdf, renderMarkdownV2 } from "./render";
 import { getHeadingTree, safeParseInt } from "./utils";
 const fs = require("fs").promises;
@@ -73,6 +73,12 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
   let cleanup = () => {};
 
   try {
+    const locked = await assertPdfWritable(outputFile);
+    if (locked) {
+      new Notice(locked);
+      return `Error: ${locked}`;
+    }
+
     await fs.mkdir(path.dirname(outputFile), { recursive: true });
     const rendered = await renderMarkdownV2({
       app: plugin.app,
@@ -83,9 +89,14 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
     fixDocV2(rendered.doc, rendered.file.basename);
 
     const printOptions = makePrintOptions(config, rendered.frontMatter);
-    await printToPdf(rendered.doc, { ...printOptions, filepath: outputFile });
-
-    let data: Uint8Array = await fs.readFile(outputFile);
+    const printPath = freshPdfPath();
+    let data: Uint8Array;
+    try {
+      await printToPdf(rendered.doc, { ...printOptions, filepath: printPath });
+      data = await fs.readFile(printPath);
+    } finally {
+      await fs.unlink(printPath).catch(() => undefined);
+    }
     data = await editPDF(data, {
       headings: getHeadingTree(rendered.doc),
       frontMatter: rendered.frontMatter,

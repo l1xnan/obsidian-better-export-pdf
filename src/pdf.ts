@@ -1,5 +1,7 @@
 import electron, { type WebviewTag } from "electron";
 const fs = require("fs").promises;
+import os from "os";
+import path from "path";
 import { Notice, type FrontMatterCache } from "obsidian";
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, StandardFonts } from "pdf-lib";
 
@@ -458,11 +460,49 @@ export function pdfWriteError(error: any): string {
   return `保存 PDF 失败：${error?.message ?? error}`;
 }
 
-export async function writePdfFile(outputFile: string, data: Buffer | Uint8Array): Promise<string | null> {
+export function freshPdfPath(): string {
+  return path.join(os.tmpdir(), `better-export-pdf-${Date.now()}-${Math.random().toString(16).slice(2)}.pdf`);
+}
+
+/** Fail fast when the destination is locked, instead of letting the print process block. */
+export async function assertPdfWritable(outputFile: string): Promise<string | null> {
   try {
-    await fs.writeFile(outputFile, data);
+    await fs.access(outputFile);
+  } catch {
+    return null;
+  }
+  let handle: { close: () => Promise<void> } | undefined;
+  try {
+    handle = await fs.open(outputFile, "r+");
+    return null;
+  } catch (error) {
+    return pdfWriteError(error);
+  } finally {
+    await handle?.close();
+  }
+}
+
+async function replaceFile(tempFile: string, outputFile: string) {
+  try {
+    await fs.rename(tempFile, outputFile);
+  } catch (error: any) {
+    if (error?.code !== "EEXIST" && error?.code !== "EPERM") {
+      throw error;
+    }
+    await fs.unlink(outputFile);
+    await fs.rename(tempFile, outputFile);
+  }
+}
+
+export async function writePdfFile(outputFile: string, data: Buffer | Uint8Array): Promise<string | null> {
+  const tempFile = `${outputFile}.${process.pid}.tmp`;
+  try {
+    await fs.mkdir(path.dirname(outputFile), { recursive: true });
+    await fs.writeFile(tempFile, data);
+    await replaceFile(tempFile, outputFile);
     return null;
   } catch (error: any) {
+    await fs.unlink(tempFile).catch(() => undefined);
     console.error(error);
     const message = pdfWriteError(error);
     new Notice(message);

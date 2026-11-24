@@ -12,7 +12,7 @@
   import { loadPdfJs } from "obsidian";
   import * as os from "os";
   import * as path from "path";
-  import { editPDF, getOutputFile, getOutputPath, makePrintOptions, writePdfFile } from "../pdf";
+  import { assertPdfWritable, editPDF, freshPdfPath, getOutputFile, getOutputPath, makePrintOptions, writePdfFile } from "../pdf";
   import Switch from "./Switch.svelte";
   import { Mutex } from "../utils/mutex";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
@@ -152,9 +152,17 @@
     onlyPreview?: boolean;
   }) {
     console.debug("printOptions:", printOptions);
+    if (!onlyPreview) {
+      const locked = await assertPdfWritable(outputFile);
+      if (locked) {
+        new Notice(locked);
+        return;
+      }
+    }
+    const printPath = onlyPreview ? outputFile : freshPdfPath();
     const pdfOptions = {
       ...printOptions,
-      filepath: outputFile,
+      filepath: printPath,
     };
 
     try {
@@ -177,7 +185,12 @@
       return;
     }
 
-    let data = await fs.readFile(outputFile);
+    let data: Uint8Array;
+    try {
+      data = await fs.readFile(printPath);
+    } finally {
+      await fs.unlink(printPath).catch(() => undefined);
+    }
 
     data = await editPDF(data, {
       headings: getHeadingTree(el as unknown as Document),
