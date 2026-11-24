@@ -5,7 +5,7 @@
   import { Notice, TFile } from "obsidian";
   import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
-  import { getHeadingTree, safeParseInt } from "../utils";
+  import { getHeadingTree, safeParseInt, sleep } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
@@ -32,6 +32,7 @@
   const settings = $derived(plugin.settings);
   let isPDF = $state(false);
   let rendering = $state(false);
+  let previewReady = $state(false);
 
   // State
   let renderStates = $state<RenderState[]>([]);
@@ -82,15 +83,28 @@
   }
 
   export async function renderPreview(render = true) {
-    if (render) {
-      const { data } = await modal.getAllFilesV2();
-      renderStates = initRenderStates(data);
-      docs = await renderFiles(data, (i) => {
-        renderStates = completeRenderState(renderStates, i);
-      });
-    }
+    previewReady = false;
+    try {
+      if (render) {
+        const { data } = await modal.getAllFilesV2();
+        renderStates = initRenderStates(data);
+        docs = await renderFiles(data, (i) => {
+          renderStates = completeRenderState(renderStates, i);
+        });
+      }
 
-    calcPageSize();
+      calcPageSize();
+    } finally {
+      previewReady = true;
+    }
+  }
+
+  async function waitUntilPreviewReady() {
+    const started = Date.now();
+    while ((!previewReady || rendering) && Date.now() - started < 20000) {
+      await sleep(50);
+    }
+    await sleep(200);
   }
 
   export async function toggleTitle(value: boolean) {
@@ -229,6 +243,7 @@
   }
 
   export async function handlePrintToPDF() {
+    await waitUntilPreviewReady();
     const title = (modal.file as TFile)?.basename ?? modal.file?.name;
 
     const files = [];

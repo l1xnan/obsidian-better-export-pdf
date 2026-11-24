@@ -5,7 +5,7 @@
   import { TFile } from "obsidian";
   import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
   import * as electron from "electron";
-  import { px2mm, safeParseInt } from "../utils";
+  import { px2mm, safeParseInt, sleep } from "../utils";
   import { fixDoc } from "../render";
   import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { icon } from "../actions";
@@ -28,6 +28,7 @@
 
   // State
   let completed = $state(false);
+  let previewReady = $state(false);
   let docs = $state<DocType[]>([]);
   let webviews = $state<electron.WebviewTag[]>([]);
   let scale = $state(0.75);
@@ -88,24 +89,39 @@
   }
 
   export async function renderPreview(render = true) {
-    if (render) {
-      const { data, docs: allDocs } = await modal.getAllFiles();
-      renderStates = initRenderStates(data);
-      docs = await renderFiles(data, allDocs, (i) => { renderStates = completeRenderState(renderStates, i); });
-    }
+    previewReady = false;
+    try {
+      if (render) {
+        const { data, docs: allDocs } = await modal.getAllFiles();
+        renderStates = initRenderStates(data);
+        docs = await renderFiles(data, allDocs, (i) => {
+          renderStates = completeRenderState(renderStates, i);
+        });
+      }
 
-    webviews = [];
+      webviews = [];
 
-    const promises = docs.map((docItem) => {
-      return new Promise<void>((resolve) => {
-        // @ts-ignore
-        docItem.resolve = resolve;
+      const promises = docs.map((docItem) => {
+        return new Promise<void>((resolve) => {
+          // @ts-ignore
+          docItem.resolve = resolve;
+        });
       });
-    });
 
-    await Promise.all(promises);
-    calcPageSize();
-    await calcWebviewSize();
+      await Promise.all(promises);
+      calcPageSize();
+      await calcWebviewSize();
+    } finally {
+      previewReady = true;
+    }
+  }
+
+  async function waitUntilPreviewReady() {
+    const started = Date.now();
+    while (!previewReady && Date.now() - started < 20000) {
+      await sleep(50);
+    }
+    await sleep(200);
   }
 
   export function toggleTitle(value: boolean) {
@@ -124,6 +140,7 @@
   }
 
   export async function handlePrintToPDF() {
+    await waitUntilPreviewReady();
     const title = (modal.file as TFile)?.basename ?? modal.file?.name;
 
     if (modal.multiplePdf) {
