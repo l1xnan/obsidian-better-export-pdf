@@ -1,4 +1,4 @@
-import { TFile, TFolder } from "obsidian";
+import { type App, TFile, TFolder, type TAbstractFile } from "obsidian";
 
 export class TreeNode {
   // h2-1, h3-2, etc
@@ -199,20 +199,73 @@ export const mm2px = (mm: number) => {
   return Math.round(mm * 3.779527559);
 };
 
-export function traverseFolder(path: TFolder | TFile): TFile[] {
+function compareName(a: string, b: string) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
+
+function customChildOrder(app: App | undefined, folder: TFolder): string[] | null {
+  const plugins = (app as App & { plugins?: { plugins?: Record<string, { settings?: { customFileOrder?: Record<string, string[]> } }> } })
+    ?.plugins?.plugins;
+  if (!plugins) return null;
+  for (const id of ["flexplorer", "manual-sorting"]) {
+    const order = plugins[id]?.settings?.customFileOrder?.[folder.path];
+    if (Array.isArray(order) && order.length > 0) return order;
+  }
+  return null;
+}
+
+function sortChildren(folder: TFolder, app?: App): TAbstractFile[] {
+  const children = [...folder.children];
+  const custom = customChildOrder(app, folder);
+  if (!custom) {
+    return children.sort((a, b) => compareName(a.name, b.name));
+  }
+  const rank = new Map<string, number>();
+  custom.forEach((name, index) => {
+    rank.set(name, index);
+    const base = name.split("/").pop();
+    if (base && !rank.has(base)) rank.set(base, index);
+  });
+  return children.sort((a, b) => {
+    const ra = rank.get(a.path) ?? rank.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+    const rb = rank.get(b.path) ?? rank.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+    if (ra !== rb) return ra - rb;
+    return compareName(a.name, b.name);
+  });
+}
+
+export function traverseFolder(path: TFolder | TFile, app?: App): TFile[] {
   if (path instanceof TFile) {
-    if (path.extension == "md") {
-      return [path];
-    } else {
-      return [];
-    }
+    return path.extension == "md" ? [path] : [];
   }
   const arr: TFile[] = [];
-  for (const item of path.children) {
-    arr.push(...traverseFolder(item as TFolder));
+  for (const item of sortChildren(path, app)) {
+    arr.push(...traverseFolder(item as TFolder, app));
   }
-  arr.sort((a, b) => a.name.localeCompare(b.name));
   return arr;
+}
+
+/** Depth-first numeric order, with a `toc: true` note and its links moved to the front. */
+export function listFolderMarkdown(folder: TFolder, app: App): TFile[] {
+  const files = traverseFolder(folder, app);
+  const toc = files.find((file) => app.metadataCache.getFileCache(file)?.frontmatter?.toc);
+  if (!toc) return files;
+
+  const included = new Set(files.map((file) => file.path));
+  const ordered: TFile[] = [];
+  const seen = new Set<string>();
+  const push = (file: TFile | null | undefined) => {
+    if (!(file instanceof TFile) || file.extension !== "md" || !included.has(file.path) || seen.has(file.path)) return;
+    seen.add(file.path);
+    ordered.push(file);
+  };
+  push(toc);
+  for (const link of app.metadataCache.getFileCache(toc)?.links ?? []) {
+    const dest = app.metadataCache.getFirstLinkpathDest(link.link, toc.path);
+    if (dest instanceof TFile) push(dest);
+  }
+  for (const file of files) push(file);
+  return ordered;
 }
 
 // copy element attributes

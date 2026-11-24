@@ -6,7 +6,7 @@ import { mount, unmount } from "svelte";
 import i18n, { type Lang } from "./i18n";
 import type BetterExportPdfPlugin from "./main";
 import { renderMarkdown, type ParamType } from "./render";
-import { traverseFolder } from "./utils";
+import { listFolderMarkdown } from "./utils";
 import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -117,7 +117,7 @@ export class ExportConfigModal extends Modal {
     const data: ParamType[] = [];
     const docs: DocType[] = [];
     if (this.file instanceof TFolder) {
-      const files = traverseFolder(this.file);
+      const files = listFolderMarkdown(this.file, app);
       for (const file of files) {
         data.push({ app, file });
       }
@@ -137,7 +137,7 @@ export class ExportConfigModal extends Modal {
   async getAllFilesV2() {
     const data: FileListType = [];
     if (this.file instanceof TFolder) {
-      const files = traverseFolder(this.file);
+      const files = listFolderMarkdown(this.file, this.app);
       for (const file of files) {
         data.push({ file });
       }

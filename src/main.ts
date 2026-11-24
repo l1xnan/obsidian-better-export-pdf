@@ -172,7 +172,7 @@ export default class BetterExportPdfPlugin extends Plugin {
     const content = `---\ntoc: true\ntitle: ${root.name}\n---\n`;
     await fs.writeFile(toc, content);
     if (root instanceof TFolder) {
-      const files = traverseFolder(root);
+      const files = traverseFolder(root, this.app);
       for (const file of files) {
         if (file.name == "_TOC_.md") {
           continue;
