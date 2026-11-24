@@ -1,6 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import type { PageSizeType, ExportConfigType } from "./modal";
-import { applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
+import { applyLightVars, copyAttributes, fixAnchors, modifyDest, setFilenameTitleVisible } from "./utils";
 import * as electron from "electron";
 
 export function getAllStyles() {
@@ -173,7 +173,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   const title = extra?.title ?? frontMatter?.title ?? file.basename;
   viewEl.createEl("h1", { text: title }, (e) => {
     e.addClass("__title__");
-    e.style.display = config?.showTitle ? "block" : "none";
+    setFilenameTitleVisible(e, config?.showTitle !== false);
     e.id = extra?.id ?? "";
   });
 
@@ -344,7 +344,7 @@ export function createViewEl({
   const title = extra?.title ?? frontMatter?.title ?? file.basename;
   viewEl.createEl("h1", { text: title }, (e) => {
     e.addClass("__title__");
-    e.style.display = config?.showTitle ? "block" : "none";
+    setFilenameTitleVisible(e, config?.showTitle !== false);
     e.id = extra?.id ?? "";
   });
   return { viewEl, frontMatter };

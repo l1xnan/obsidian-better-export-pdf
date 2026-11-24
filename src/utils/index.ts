@@ -30,7 +30,7 @@ export function getHeadingTree(doc: Document | HTMLDivElement = document) {
   let prev = root;
 
   headings.forEach((heading: HTMLElement) => {
-    if (heading.style.display == "none") {
+    if (heading.style.display == "none" || heading.classList.contains("bep-title-hidden")) {
       return;
     }
     const level = parseInt(heading.tagName.slice(1));
@@ -191,6 +191,10 @@ export function waitFor(cond: (...args: unknown[]) => boolean, timeout = 0) {
 }
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function setFilenameTitleVisible(el: HTMLElement, visible: boolean) {
+  el.classList.toggle("bep-title-hidden", !visible);
+}
 
 export const px2mm = (px: number) => {
   return Math.round(px * 0.26458333333719);

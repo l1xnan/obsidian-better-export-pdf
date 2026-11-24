@@ -5,7 +5,7 @@
   import { Notice, TFile } from "obsidian";
   import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
-  import { getHeadingTree, safeParseInt } from "../utils";
+  import { getHeadingTree, safeParseInt, setFilenameTitleVisible } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
@@ -97,13 +97,13 @@
     docs = docs.map(({ doc, ...rest }) => {
       const _title = doc?.querySelector("h1.__title__") as HTMLHeadingElement;
       if (_title) {
-        _title.style.display = value ? "block" : "none";
+        setFilenameTitleVisible(_title, value);
       }
       return { doc, ...rest };
     });
 
-    previewEl?.querySelectorAll("h1.__title__").forEach((el: HTMLHeadElement) => {
-      el.style.display = value ? "block" : "none";
+    previewEl?.querySelectorAll("h1.__title__").forEach((el: HTMLElement) => {
+      setFilenameTitleVisible(el, value);
     });
   }
 

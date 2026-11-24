@@ -5,7 +5,7 @@
   import { TFile } from "obsidian";
   import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
   import * as electron from "electron";
-  import { px2mm, safeParseInt } from "../utils";
+  import { px2mm, safeParseInt, setFilenameTitleVisible } from "../utils";
   import { fixDoc } from "../render";
   import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { icon } from "../actions";
@@ -113,12 +113,14 @@
       wv.executeJavaScript(`
         var _title = document.querySelector("h1.__title__");
         if (_title) {
-          _title.style.display = "${value ? "block" : "none"}";
+          _title.classList.toggle("bep-title-hidden", ${value ? "false" : "true"});
+          if (${value ? "true" : "false"}) _title.style.removeProperty("display");
+          else _title.style.setProperty("display", "none", "important");
         }
       `);
       const _title = docs[i]?.doc?.querySelector("h1.__title__") as HTMLHeadingElement;
       if (_title) {
-        _title.style.display = value ? "block" : "none";
+        setFilenameTitleVisible(_title, value);
       }
     });
   }
