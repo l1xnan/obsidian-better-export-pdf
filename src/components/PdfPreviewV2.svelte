@@ -3,9 +3,9 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { Notice, TFile } from "obsidian";
-  import { fixDocV2, printToPdf, renderMarkdownV2 } from "../render";
+  import { fixSvgFragmentUrls, prepareDocLinks, printToPdf, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
-  import { getHeadingTree, safeParseInt } from "../utils";
+  import { getHeadingTree, linkBatchNotes, safeParseInt } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
@@ -73,12 +73,22 @@
 
     console.debug(_docs, modal.multiplePdf);
 
-    if (!modal.multiplePdf && _docs.length > 1) {
-      _docs = modal.mergeDocV2(_docs);
-    }
-    return _docs.map(({ doc, ...rest }) => {
-      return { ...rest, doc: fixDocV2(doc, doc.title) as HTMLDivElement };
+    const batch = !modal.multiplePdf && _docs.length > 1;
+    const prepared = _docs.map((item, i) => {
+      const dest = prepareDocLinks(item.doc, item.file.basename, batch ? `${i}-` : "");
+      fixSvgFragmentUrls(item.doc);
+      return { ...item, dest };
     });
+
+    if (batch) {
+      const merged = modal.mergeDocV2(prepared);
+      linkBatchNotes(merged[0].doc, prepared, (linkpath, sourcePath) => {
+        const target = modal.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+        return target instanceof TFile ? target : null;
+      });
+      return merged;
+    }
+    return prepared.map(({ dest: _dest, ...rest }) => rest);
   }
 
   export async function renderPreview(render = true) {

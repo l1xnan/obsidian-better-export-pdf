@@ -268,6 +268,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
   }
 
   fixCanvasToImage(viewEl);
+  tagSourcePath(viewEl, file.path);
 
   const doc = document.implementation.createHTMLDocument("document");
   doc.body.appendChild(printEl.cloneNode(true));
@@ -304,6 +305,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
   const markdown = modifyMarkdown({ app, file, data });
 
   await renderHtml({ app, markdown, file, comp, viewEl });
+  tagSourcePath(viewEl, file.path);
 
   const cleanup = () => {
     printEl.detach();
@@ -331,6 +333,7 @@ export function createViewEl({
   const frontMatter = getFrontMatter(app, file);
 
   const viewEl = printEl.createDiv({ cls: "markdown-preview-view markdown-rendered" });
+  viewEl.dataset.path = file.path;
 
   const cssclasses = getCssclasses(frontMatter);
   viewEl.addClasses(cssclasses);
@@ -447,16 +450,29 @@ async function renderHtml({
   });
 }
 
+function tagSourcePath(viewEl: HTMLElement, filePath: string) {
+  viewEl.dataset.path = filePath;
+  Array.from(viewEl.children).forEach((child) => {
+    if (child instanceof HTMLElement) {
+      child.dataset.path = filePath;
+    }
+  });
+}
+
 export function fixDoc(doc: Document, title: string) {
-  const dest = modifyDest(doc);
-  fixAnchors(doc, dest, title);
+  prepareDocLinks(doc, title);
   encodeEmbeds(doc);
   return doc;
 }
 
-export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
-  const dest = modifyDest(doc);
+export function prepareDocLinks(doc: Document | HTMLDivElement, title: string, prefix = "") {
+  const dest = modifyDest(doc, prefix);
   fixAnchors(doc, dest, title);
+  return dest;
+}
+
+export function fixDocV2(doc: Document | HTMLDivElement, title: string) {
+  prepareDocLinks(doc, title);
   fixSvgFragmentUrls(doc);
   return doc;
 }
@@ -494,7 +510,7 @@ export function fixSvgFragmentUrls(root: Document | ParentNode) {
   });
 }
 
-export function encodeEmbeds(doc: Document) {
+export function encodeEmbeds(doc: ParentNode) {
   const spans = Array.from(doc.querySelectorAll("span.markdown-embed")).reverse();
   spans.forEach((span: HTMLElement) => {
     span.textContent = encodeURIComponent(span.innerHTML);

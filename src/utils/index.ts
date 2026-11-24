@@ -56,11 +56,11 @@ export function getHeadingTree(doc: Document | HTMLDivElement = document) {
 
 // modify heading/block, and get heading/block flag
 // Enhanced to support both Obsidian wikilinks and standard markdown anchor links
-export function modifyDest(doc: Document | HTMLDivElement) {
+export function modifyDest(doc: Document | HTMLDivElement, prefix = "") {
   const data = new Map();
   doc.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((heading: HTMLElement, i) => {
     const link = document.createElement("a");
-    const flag = `${heading.tagName.toLowerCase()}-${i}`;
+    const flag = `${prefix}${heading.tagName.toLowerCase()}-${i}`;
     link.href = `af://${flag}`;
     link.className = "md-print-anchor";
     heading.appendChild(link);
@@ -100,6 +100,67 @@ export function modifyDest(doc: Document | HTMLDivElement) {
 
 function convertMapKeysToLowercase(map: Map<string, string>) {
   return new Map(Array.from(map).map(([key, value]) => [key?.toLowerCase(), value]));
+}
+
+function safeDecode(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function lookupHeadingFlag(dest: Map<string, string>, anchor: string) {
+  const lowerDest = convertMapKeysToLowercase(dest);
+  const decoded = safeDecode(anchor);
+  const variations = [anchor, decoded, anchor.replace(/-/g, " "), decoded.replace(/-/g, " ")];
+  for (const variation of variations) {
+    const flag = dest.get(variation) || lowerDest.get(variation.toLowerCase());
+    if (flag) return flag;
+  }
+  return undefined;
+}
+
+function cssAttrEscape(value: string) {
+  return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/**
+ * Rewrite wiki links that point at another note in the same merged PDF.
+ * Same-file links are already handled by fixAnchors.
+ */
+export function linkBatchNotes(
+  root: ParentNode,
+  entries: { file: TFile; dest: Map<string, string> }[],
+  resolve: (linkpath: string, sourcePath: string) => TFile | null,
+) {
+  const byPath = new Map(entries.map((entry) => [entry.file.path, entry]));
+  root.querySelectorAll("a.internal-link").forEach((el: HTMLAnchorElement) => {
+    const raw = el.dataset.href?.trim();
+    if (!raw) return;
+    const hash = raw.indexOf("#");
+    const linkpath = (hash === -1 ? raw : raw.slice(0, hash)).trim();
+    const anchor = hash === -1 ? "" : raw.slice(hash + 1);
+    if (!linkpath || anchor.startsWith("^")) return;
+
+    const source = el.closest("[data-path]")?.dataset.path ?? "";
+    const target = resolve(linkpath, source);
+    if (!target) return;
+    const entry = byPath.get(target.path);
+    if (!entry) return;
+
+    let flag: string | undefined;
+    if (anchor) {
+      flag = lookupHeadingFlag(entry.dest, anchor);
+    } else {
+      const view = root.querySelector(`[data-path="${cssAttrEscape(target.path)}"]`);
+      const href = view?.querySelector("h1.__title__ a.md-print-anchor")?.getAttribute("href") ?? "";
+      flag = href.startsWith("af://") ? href.slice("af://".length) : lookupHeadingFlag(entry.dest, target.basename);
+    }
+    if (flag) {
+      el.href = `an://${flag}`;
+    }
+  });
 }
 
 export function fixAnchors(doc: Document | HTMLDivElement, dest: Map<string, string>, basename: string) {

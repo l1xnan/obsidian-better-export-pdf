@@ -3,10 +3,9 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType } from "../modal";
   import { TFile } from "obsidian";
-  import { getAllStyles, getPatchStyle, makeWebviewJs, renderMarkdown, type ParamType } from "../render";
+  import { encodeEmbeds, getAllStyles, getPatchStyle, makeWebviewJs, prepareDocLinks, renderMarkdown, type ParamType } from "../render";
   import * as electron from "electron";
-  import { px2mm, safeParseInt } from "../utils";
-  import { fixDoc } from "../render";
+  import { linkBatchNotes, px2mm, safeParseInt } from "../utils";
   import { exportToPDF, getOutputFile, getOutputPath } from "../pdf";
   import { icon } from "../actions";
   import { initRenderStates, completeRenderState, type RenderState } from "../utils/renderStates";
@@ -79,12 +78,21 @@
       await leaf.openFile(modal.file);
     }
 
-    if (!modal.multiplePdf) {
-      _docs = modal.mergeDoc(_docs);
-    }
-    return _docs.map(({ doc, ...rest }) => {
-      return { ...rest, doc: fixDoc(doc, doc.title) };
+    const batch = !modal.multiplePdf && _docs.length > 1;
+    const prepared = _docs.map((item, i) => {
+      const dest = prepareDocLinks(item.doc, item.file.basename, batch ? `${i}-` : "");
+      encodeEmbeds(item.doc);
+      return { ...item, dest };
     });
+    if (batch) {
+      const merged = modal.mergeDoc(prepared);
+      linkBatchNotes(merged[0].doc, prepared, (linkpath, sourcePath) => {
+        const target = modal.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+        return target instanceof TFile ? target : null;
+      });
+      return merged;
+    }
+    return prepared.map(({ dest: _dest, ...rest }) => rest);
   }
 
   export async function renderPreview(render = true) {
