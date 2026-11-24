@@ -5,7 +5,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, Standard
 
 import type { BetterExportPdfPluginSettings } from "./main";
 import type { DocType, PageSizeType, ExportConfigType } from "./modal";
-import { TreeNode, getHeadingTree, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
+import { TreeNode, getHeadingTree, normalizeMarginType, safeParseFloat, safeParseInt, renderTemplate } from "./utils";
 
 interface TPosition {
   [key: string]: number[];
@@ -417,7 +417,8 @@ export function makePrintOptions(
     // generateDocumentOutline: true,
   };
 
-  if (config.marginType == "0") {
+  const marginType = normalizeMarginType(config.marginType);
+  if (marginType == "0") {
     printOptions["margins"] = {
       marginType: "custom",
       top: 0,
@@ -425,11 +426,11 @@ export function makePrintOptions(
       left: 0,
       right: 0,
     };
-  } else if (config.marginType == "1") {
+  } else if (marginType == "1") {
     printOptions["margins"] = {
       marginType: "default",
     };
-  } else if (config.marginType == "2") {
+  } else if (marginType == "2") {
     printOptions["margins"] = {
       marginType: "custom",
       top: 0.1,
@@ -437,7 +438,7 @@ export function makePrintOptions(
       left: 0.1,
       right: 0.1,
     };
-  } else if (config.marginType == "3") {
+  } else if (marginType == "3") {
     // Custom Margin
     printOptions["margins"] = {
       marginType: "custom",

@@ -2,6 +2,7 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal } from "../modal";
   import { settingToggle, settingDropdown, settingSlider, settingButton, settingDoubleText } from "../actions";
+  import { normalizeMarginType } from "../utils";
 
   let {
     modal,
@@ -10,6 +11,7 @@
     pdfPreview,
     handleExport,
     refreshPreview,
+    rememberConfig,
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
@@ -17,6 +19,7 @@
     pdfPreview: any;
     handleExport: () => void;
     refreshPreview: () => Promise<void>;
+    rememberConfig: (patch?: Partial<ExportConfigType>) => void;
   } = $props();
 
   const i18n = $derived(plugin.i18n);
@@ -24,7 +27,7 @@
 
   // ── Derived visibility states ──────────────────────────
   let showCustomSize = $derived(config.pageSize === "Custom");
-  let showCustomMargin = $derived(config.marginType === "3");
+  let showCustomMargin = $derived(normalizeMarginType(config.marginType) === "3");
 
   // ── Page sizes ─────────────────────────────────────────
   const pageSizes = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "Legal", "Letter", "Tabloid", "Ledger", "Custom"];
@@ -60,6 +63,7 @@
       onChange: (value) => {
         config.showTitle = value;
         pdfPreview?.toggleTitle(value);
+        rememberConfig({ showTitle: value });
       },
     }}
   ></div>
@@ -72,6 +76,7 @@
       value: config.pageSize as string,
       onChange: async (value) => {
         config.pageSize = value as ExportConfigType["pageSize"];
+        rememberConfig({ pageSize: value as ExportConfigType["pageSize"] });
         await pdfPreview?.handleChangeSize?.();
       },
     }}
@@ -88,6 +93,7 @@
           isDebounce: true,
           onChange: async (value) => {
             config.pageWidth = value;
+            rememberConfig({ pageWidth: value });
             await pdfPreview?.handleChangeSize?.();
           },
         },
@@ -96,6 +102,7 @@
           value: config.pageHeight ?? "",
           onChange: (value) => {
             config.pageHeight = value;
+            rememberConfig({ pageHeight: value });
           },
         },
       }}
@@ -108,9 +115,11 @@
       name: i18n.exportDialog.margin,
       desc: "The unit is millimeters.",
       options: marginOptions,
-      value: config.marginType,
+      value: normalizeMarginType(config.marginType),
       onChange: (value) => {
-        config.marginType = value;
+        const marginType = normalizeMarginType(value);
+        config.marginType = marginType;
+        rememberConfig({ marginType });
       },
     }}
   ></div>
@@ -125,6 +134,7 @@
           value: config.marginTop ?? "",
           onChange: (value) => {
             config.marginTop = value;
+            rememberConfig({ marginTop: value });
           },
         },
         input2: {
@@ -132,6 +142,7 @@
           value: config.marginBottom ?? "",
           onChange: (value) => {
             config.marginBottom = value;
+            rememberConfig({ marginBottom: value });
           },
         },
       }}
@@ -146,6 +157,7 @@
           value: config.marginLeft ?? "",
           onChange: (value) => {
             config.marginLeft = value;
+            rememberConfig({ marginLeft: value });
           },
         },
         input2: {
@@ -153,6 +165,7 @@
           value: config.marginRight ?? "",
           onChange: (value) => {
             config.marginRight = value;
+            rememberConfig({ marginRight: value });
           },
         },
       }}
@@ -167,6 +180,7 @@
       value: config.scale,
       onChange: (value) => {
         config.scale = value;
+        rememberConfig({ scale: value });
       },
     }}
   ></div>
@@ -179,6 +193,7 @@
       value: config.landscape,
       onChange: (value) => {
         config.landscape = value;
+        rememberConfig({ landscape: value });
       },
     }}
   ></div>
@@ -191,6 +206,7 @@
       value: config.displayHeader,
       onChange: (value) => {
         config.displayHeader = value;
+        rememberConfig({ displayHeader: value });
       },
     }}
   ></div>
@@ -203,6 +219,7 @@
       value: config.displayFooter,
       onChange: (value) => {
         config.displayFooter = value;
+        rememberConfig({ displayFooter: value });
       },
     }}
   ></div>
@@ -215,6 +232,7 @@
       value: config.open,
       onChange: (value) => {
         config.open = value;
+        rememberConfig({ open: value });
       },
     }}
   ></div>
@@ -228,6 +246,7 @@
         value: config.cssSnippet ?? "0",
         onChange: async (value) => {
           config.cssSnippet = value;
+          rememberConfig({ cssSnippet: value });
           await pdfPreview?.renderPreview(false);
         },
       }}

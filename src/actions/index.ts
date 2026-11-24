@@ -1,4 +1,4 @@
-import { setIcon, Setting, debounce } from "obsidian";
+import { setIcon, Setting, debounce, type DropdownComponent } from "obsidian";
 import type { Action } from "svelte/action";
 import type { DocType } from "../modal";
 
@@ -76,19 +76,36 @@ export const settingToggle: Action<HTMLElement, BaseSetting & { value: boolean; 
 };
 
 // Dropdown Action
+function pinOptionValues(selectEl: HTMLSelectElement, options: Record<string, string>) {
+  const keys = Object.keys(options);
+  for (let i = 0; i < selectEl.options.length && i < keys.length; i++) {
+    selectEl.options[i].value = keys[i];
+  }
+}
+
 export const settingDropdown: Action<
   HTMLElement,
   BaseSetting & { options: Record<string, string>; value: string; onChange: (v: string) => void }
 > = (node, params) => {
+  let current = params;
   const setting = new Setting(node).setName(params.name);
   if (params.desc) setting.setDesc(params.desc);
 
-  setting.addDropdown((dropdown) => {
-    dropdown.addOptions(params.options).setValue(params.value).onChange(params.onChange);
+  let dropdown!: DropdownComponent;
+  setting.addDropdown((component) => {
+    dropdown = component;
+    component.addOptions(current.options);
+    pinOptionValues(component.selectEl, current.options);
+    component.setValue(String(current.value ?? "")).onChange((value) => current.onChange(value));
   });
 
   promote(node, setting);
   return {
+    update(next) {
+      current = next;
+      pinOptionValues(dropdown.selectEl, next.options);
+      dropdown.setValue(String(next.value ?? ""));
+    },
     destroy() {
       node.empty();
     },

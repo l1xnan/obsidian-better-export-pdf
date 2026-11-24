@@ -6,7 +6,7 @@ import { mount, unmount } from "svelte";
 import i18n, { type Lang } from "./i18n";
 import type BetterExportPdfPlugin from "./main";
 import { renderMarkdown, type ParamType } from "./render";
-import { traverseFolder } from "./utils";
+import { normalizeMarginType, traverseFolder } from "./utils";
 import ModalUI from "./components/ModalUI.svelte";
 
 export type PageSizeType = electron.PrintToPDFOptions["pageSize"];
@@ -81,6 +81,7 @@ export class ExportConfigModal extends Modal {
       cssSnippet: "0",
       ...(plugin.settings.prevConfig ?? {}),
     } as ExportConfigType;
+    this.defaultConfig.marginType = normalizeMarginType(this.defaultConfig.marginType);
   }
 
   // ── Lifecycle ───────────────────────────────────────────

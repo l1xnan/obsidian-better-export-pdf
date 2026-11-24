@@ -316,6 +316,23 @@ export function getDerivedLightVars() {
  * 自定义属性在继承前会先在声明它的元素上计算，所以必须写在 `.print.theme-light` 自身，
  * 不能依赖从 `body.theme-dark` 继承下来的已经算好的值。
  */
+/** Dialog margin keys are "0" None, "1" Default, "2" Small, "3" Custom. */
+export function normalizeMarginType(value: unknown): "0" | "1" | "2" | "3" {
+  switch (String(value ?? "1").trim().toLowerCase()) {
+    case "0":
+    case "none":
+      return "0";
+    case "2":
+    case "small":
+      return "2";
+    case "3":
+    case "custom":
+      return "3";
+    default:
+      return "1";
+  }
+}
+
 export function applyLightVars(el: HTMLElement) {
   const vars = getDerivedLightVars();
   if (Object.keys(vars).length === 0) {

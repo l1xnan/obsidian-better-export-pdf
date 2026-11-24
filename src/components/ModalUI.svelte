@@ -1,7 +1,7 @@
 <script lang="ts">
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal } from "../modal";
-  import { isNumber } from "../utils";
+  import { isNumber, normalizeMarginType } from "../utils";
   import ExportSettings from "./ExportSettings.svelte";
   import { untrack } from "svelte";
   import PdfPreview1 from "./PdfPreview.svelte";
@@ -19,6 +19,16 @@
 
   let pdfPreview = $state<PdfPreview1 | PdfPreview2 | null>(null);
 
+  function rememberConfig(patch?: Partial<ExportConfigType>) {
+    if (patch) {
+      Object.assign(config, patch);
+    }
+    const saved = $state.snapshot(config);
+    saved.marginType = normalizeMarginType(saved.marginType);
+    plugin.settings.prevConfig = saved;
+    return plugin.saveSettings();
+  }
+
   export async function onCssSnippetChange() {
     await pdfPreview?.renderPreview(false);
   }
@@ -32,8 +42,7 @@
   }
 
   export async function handleExport() {
-    plugin.settings.prevConfig = config;
-    await plugin.saveSettings();
+    await rememberConfig();
 
     if (config["pageSize"] == "Custom") {
       if (!isNumber(config["pageWidth"] ?? "") || !isNumber(config["pageHeight"] ?? "")) {
@@ -57,5 +66,5 @@
   {/if}
 
   <!-- Settings Sidebar -->
-  <ExportSettings {modal} {plugin} bind:config {pdfPreview} {handleExport} {refreshPreview} />
+  <ExportSettings {modal} {plugin} bind:config {pdfPreview} {handleExport} {refreshPreview} {rememberConfig} />
 </div>
