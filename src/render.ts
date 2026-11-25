@@ -108,7 +108,7 @@ export function generateDocId(n: number) {
 
 export function getFrontMatter(app: App, file: TFile) {
   const cache = app.metadataCache.getFileCache(file);
-  return cache?.frontmatter ?? ({} as FrontMatterCache);
+  return cache?.frontmatter ?? {};
 }
 
 export type ParamType = {

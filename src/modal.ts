@@ -80,7 +80,7 @@ export class ExportConfigModal extends Modal {
       displayFooter: plugin.settings.displayHeader ?? true,
       cssSnippet: "0",
       ...(plugin.settings.prevConfig ?? {}),
-    } as ExportConfigType;
+    };
   }
 
   // ── Lifecycle ───────────────────────────────────────────

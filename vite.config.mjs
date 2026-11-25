@@ -8,7 +8,9 @@ const outDir = "";
 export default defineConfig(({ mode }) => ({
   plugins: [
     svelte({
-      css: "injected",
+      compilerOptions: {
+        css: "injected",
+      },
       emitCss: false,
     }),
     writeObsidianAssets(),
