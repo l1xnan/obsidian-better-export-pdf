@@ -1,5 +1,9 @@
 # Questions from issues
 
+## The margin I picked is gone the next time I export
+
+The export dialog is built this way. It saves the options in the dialog only when you export. Click `Export`, or press `Enter`. The next time the dialog opens, it loads the configuration from that export. A change you make only to try, and then leave by closing the dialog, is temporary and is not saved.
+
 ## The preview and the PDF look different
 
 The HTML preview is one continuous page, so it has no page breaks. The PDF does. Version 2 also has a PDF preview. The two can still differ slightly. See [Limits](limits.md).
