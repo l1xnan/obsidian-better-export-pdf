@@ -4,8 +4,8 @@ import path from "path";
 import type BetterExportPdfPlugin from "./main";
 import type { ExportConfigType } from "./modal";
 import { editPDF, makePrintOptions, writePdfFile } from "./pdf";
-import { printFilesInHiddenWindow } from "./render";
-import { safeParseInt } from "./utils";
+import { fixDocV2, printFilesInHiddenWindow, printToPdf, renderMarkdownV2 } from "./render";
+import { getHeadingTree, safeParseInt } from "./utils";
 const fs = require("fs").promises;
 
 function vaultBase(plugin: BetterExportPdfPlugin): string {
@@ -70,15 +70,34 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
 
   const outputFile = resolveOutput(plugin, file, params.path);
   const config = cliConfig(plugin, params.open === "true");
+  if (plugin.settings.version === "1") {
+    return "Error: v1 exports from the dialog. Choose v2 or v3 beta in settings.";
+  }
+  let cleanup = () => {};
 
   try {
     await fs.mkdir(path.dirname(outputFile), { recursive: true });
-    const printed = await printFilesInHiddenWindow({
-      app: plugin.app,
-      files: [file],
-      config,
-      options: { ...makePrintOptions(config, plugin.app.metadataCache.getFileCache(file)?.frontmatter), filepath: outputFile },
-    });
+    const printed =
+      plugin.settings.version === "3"
+        ? await printFilesInHiddenWindow({
+            app: plugin.app,
+            files: [file],
+            config,
+            options: {
+              ...makePrintOptions(config, plugin.app.metadataCache.getFileCache(file)?.frontmatter),
+              filepath: outputFile,
+            },
+          })
+        : await (async () => {
+            const rendered = await renderMarkdownV2({ app: plugin.app, file, config });
+            cleanup = rendered.cleanup ?? (() => {});
+            fixDocV2(rendered.doc, rendered.file.basename);
+            await printToPdf(rendered.doc, {
+              ...makePrintOptions(config, rendered.frontMatter),
+              filepath: outputFile,
+            });
+            return { headings: getHeadingTree(rendered.doc), frontMatter: rendered.frontMatter };
+          })();
 
     let data: Uint8Array = await fs.readFile(outputFile);
     data = await editPDF(data, {
@@ -102,6 +121,8 @@ export async function exportNoteFromCli(plugin: BetterExportPdfPlugin, params: C
     const message = `导出 PDF 失败：${(error as Error)?.message ?? error}`;
     new Notice(message);
     return `Error: ${message}`;
+  } finally {
+    cleanup();
   }
 }
 
@@ -111,7 +132,7 @@ export function registerExportCli(plugin: BetterExportPdfPlugin) {
   }
   plugin.registerCliHandler(
     "better-export-pdf",
-    "Export a note to PDF with the v2 print pipeline and saved settings, without a dialog.",
+    "Export a note to PDF with the engine selected in settings. v3 beta uses the hidden window. v1 is dialog-only.",
     {
       file: {
         description: "Vault-relative note path. Defaults to the active note.",

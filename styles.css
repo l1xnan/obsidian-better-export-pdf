@@ -30,6 +30,12 @@
   display: none;
 }
 
+.bep-engine {
+  margin: 0 0 8px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
 @media print {
   .md-print-anchor,
   .blockid {

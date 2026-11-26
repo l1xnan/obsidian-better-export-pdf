@@ -21,6 +21,13 @@
 
   const i18n = $derived(plugin.i18n);
   const settings = $derived(plugin.settings);
+  const engineLabel = $derived.by(() => {
+    const version = settings.version;
+    if (version === "1" || version === "2" || version === "3") {
+      return i18n.settings.versions[version];
+    }
+    return `v${version}`;
+  });
 
   // ── Derived visibility states ──────────────────────────
   let showCustomSize = $derived(config.pageSize === "Custom");
@@ -51,6 +58,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="setting-wrapper" onkeyup={handleKeyup}>
+  <div class="bep-engine">{engineLabel}</div>
   <!-- Filename as Title -->
   <div
     use:settingToggle={{

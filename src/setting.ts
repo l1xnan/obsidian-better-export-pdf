@@ -34,16 +34,23 @@ export default class ConfigSettingTab extends PluginSettingTab {
     });
     new Setting(containerEl).setDesc(supportDesc);
     renderBuyMeACoffeeBadge(containerEl);
-    new Setting(containerEl).setName(this.i18n.settings.version).addDropdown((dropdown) => {
-      dropdown
-        .addOptions(Object.fromEntries(["1", "2"].map((v) => [v, `v${v}`])))
-        .setValue(this.plugin.settings.version)
-        .onChange(async (value: string) => {
-          this.plugin.settings.version = value;
-          await this.plugin.saveSettings();
-          updateVersionVisibility(value);
-        });
-    });
+    new Setting(containerEl)
+      .setName(this.i18n.settings.version)
+      .setDesc(this.i18n.settings.versionDesc)
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOptions({
+            "1": this.i18n.settings.versions["1"],
+            "2": this.i18n.settings.versions["2"],
+            "3": this.i18n.settings.versions["3"],
+          })
+          .setValue(this.plugin.settings.version)
+          .onChange(async (value: string) => {
+            this.plugin.settings.version = value;
+            await this.plugin.saveSettings();
+            updateVersionVisibility(value);
+          });
+      });
     new Setting(containerEl).setName(this.i18n.settings.showTitle).addToggle((toggle) =>
       toggle
         .setTooltip(this.i18n.settings.showTitle)

@@ -30,5 +30,11 @@ export default {
     concurrency: "限制并发数",
     debugMode: "调试模式",
     version: "引擎版本",
+    versionDesc: "v1 打印网页预览。v2 在主窗口打印预览。v3 公测按官方方式，在隐藏窗口里打印。切换后重新打开导出窗口。",
+    versions: {
+      "1": "v1",
+      "2": "v2",
+      "3": "v3 beta",
+    },
   },
 } satisfies Lang;

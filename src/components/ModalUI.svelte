@@ -52,8 +52,10 @@
   <!-- PDF Preview Area -->
   {#if plugin.settings?.version == "1"}
     <PdfPreview1 {modal} {plugin} {config} bind:this={pdfPreview} />
+  {:else if plugin.settings?.version == "3"}
+    <PdfPreview2 {modal} {plugin} {config} engine="3" bind:this={pdfPreview} />
   {:else}
-    <PdfPreview2 {modal} {plugin} {config} bind:this={pdfPreview} />
+    <PdfPreview2 {modal} {plugin} {config} engine="2" bind:this={pdfPreview} />
   {/if}
 
   <!-- Settings Sidebar -->
