@@ -1,5 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
-import type { PageSizeType, ExportConfigType } from "./modal";
+import { readFile } from "fs/promises";
+import type { ExportConfigType } from "./modal";
 import { applyLightVars, copyAttributes, fixAnchors, getHeadingTree, modifyDest, sleep, type TreeNode } from "./utils";
 import * as electron from "electron";
 
@@ -602,44 +603,24 @@ function serializeSheet(sheet: CSSStyleSheet): string {
   }
 }
 
-function copyPrintStyles(target: Document) {
-  const head = target.head;
-  for (const node of Array.from(document.head.childNodes)) {
-    const isStyle = node instanceof HTMLStyleElement;
-    const isLink = node instanceof HTMLLinkElement && node.type === "text/css";
-    if (!isStyle && !isLink) {
-      continue;
-    }
-    if (isStyle && node.textContent?.includes("\u037C1")) {
-      continue;
-    }
-    const clone = node.cloneNode(true) as HTMLStyleElement;
-    if (isStyle && node.sheet && (node.id === "MJX-CHTML-styles" || !node.textContent?.trim())) {
+function isPrintStyleNode(node: Node): node is HTMLStyleElement | HTMLLinkElement {
+  if (node instanceof HTMLStyleElement) {
+    return !node.textContent?.includes("\u037C1");
+  }
+  return node instanceof HTMLLinkElement && node.type === "text/css";
+}
+
+function clonePrintStyle(node: HTMLStyleElement | HTMLLinkElement) {
+  const clone = node.cloneNode(true);
+  if (node instanceof HTMLStyleElement && clone instanceof HTMLStyleElement && node.sheet) {
+    if (node.id === "MJX-CHTML-styles" || !node.textContent?.trim()) {
       const text = serializeSheet(node.sheet);
       if (text) {
         clone.textContent = text;
       }
     }
-    head.appendChild(clone);
   }
-}
-
-function copyMathJaxStylesheet(target: Document) {
-  const src = document.getElementById("MJX-CHTML-styles");
-  if (!(src instanceof HTMLStyleElement) || !src.sheet) {
-    return;
-  }
-  const text = serializeSheet(src.sheet);
-  if (!text) {
-    return;
-  }
-  let dest = target.getElementById("MJX-CHTML-styles");
-  if (!(dest instanceof HTMLStyleElement)) {
-    dest = target.createElement("style");
-    dest.id = "MJX-CHTML-styles";
-    target.head.appendChild(dest);
-  }
-  dest.textContent = text;
+  return clone;
 }
 
 async function openPrintWindow(): Promise<Window> {
@@ -681,14 +662,178 @@ function preparePrintDocument(popup: Window) {
   const base = doc.createElement("base");
   base.href = location.href;
   doc.head.appendChild(base);
-  copyPrintStyles(doc);
   doc.documentElement.lang = document.documentElement.lang;
-  if (document.body.classList.contains("mod-rtl")) {
-    doc.body.classList.add("mod-rtl");
+}
+
+/** Run Obsidian's DOM helpers inside the print window, same as its p1() step. */
+function enhancePrintWindow(popup: Window) {
+  const enhance = (window as unknown as { globalEnhance?: () => void }).globalEnhance;
+  if (typeof enhance !== "function") {
+    return;
   }
-  const fontSize = getComputedStyle(document.body).fontSize;
-  if (fontSize) {
-    doc.documentElement.style.setProperty("font-size", fontSize);
+  const compile = (popup as unknown as { Function: FunctionConstructor }).Function;
+  const run = compile("return (" + enhance.toString() + ")();");
+  run();
+}
+
+const POPUP_STYLE_SKIP = new Set(["--zoom-factor", "--keyboard-height"]);
+const relayedVars = new WeakMap<HTMLElement, Set<string>>();
+
+/** Match Obsidian's popout style relay: body classes and inline custom properties. */
+function copyBodyState(target: HTMLElement) {
+  target.className = document.body.className;
+  target.classList.remove("theme-dark");
+  target.classList.add("theme-light");
+  const source = document.body.style;
+  const seen = new Set<string>();
+  for (let i = 0; i < source.length; i++) {
+    const name = source.item(i);
+    if (!name.startsWith("--") || POPUP_STYLE_SKIP.has(name)) {
+      continue;
+    }
+    target.style.setProperty(name, source.getPropertyValue(name), source.getPropertyPriority(name));
+    seen.add(name);
+  }
+  const previous = relayedVars.get(target);
+  if (previous) {
+    for (const name of previous) {
+      if (!seen.has(name)) {
+        target.style.removeProperty(name);
+      }
+    }
+  }
+  relayedVars.set(target, seen);
+}
+
+/** Keep cloned styles and font variables in sync until print-to-pdf returns. */
+function startPrintStyleRelay(popup: Window) {
+  const doc = popup.document;
+  const clones = new WeakMap<Node, Node>();
+  const base = doc.head.querySelector("base");
+  const pinned: Node[] = base ? [base] : [];
+  let current: Node[] = [];
+
+  const cloneOf = (node: HTMLStyleElement | HTMLLinkElement, refresh: boolean) => {
+    if (refresh) {
+      clones.delete(node);
+    }
+    let clone = clones.get(node);
+    if (!clone || clone.ownerDocument !== doc) {
+      clone = clonePrintStyle(node);
+      clones.set(node, clone);
+    }
+    return clone;
+  };
+
+  const syncStyles = (refreshMathJax: boolean) => {
+    const next: Node[] = [...pinned];
+    for (const node of Array.from(document.head.childNodes)) {
+      if (!isPrintStyleNode(node)) {
+        continue;
+      }
+      const refresh = refreshMathJax && node instanceof HTMLStyleElement && node.id === "MJX-CHTML-styles";
+      next.push(cloneOf(node, refresh));
+    }
+    for (const prev of current) {
+      if (!next.includes(prev)) {
+        prev.parentNode?.removeChild(prev);
+      }
+    }
+    const head = doc.head;
+    let cursor = head.lastChild;
+    for (let i = next.length - 1; i >= 0; i--) {
+      const node = next[i];
+      if (cursor !== node) {
+        head.insertBefore(node, cursor ? cursor.nextSibling : null);
+      } else {
+        cursor = cursor?.previousSibling ?? null;
+      }
+    }
+    current = next;
+    const snippet = head.querySelector("#bep-export-snippet");
+    if (snippet) {
+      head.appendChild(snippet);
+    }
+  };
+
+  const syncBody = () => {
+    if (!doc.body) {
+      return;
+    }
+    copyBodyState(doc.body);
+    const fontSize = getComputedStyle(document.body).fontSize;
+    if (fontSize) {
+      doc.documentElement.style.setProperty("font-size", fontSize);
+    }
+  };
+
+  const sync = (refreshMathJax = false) => {
+    if (popup.closed || !doc.body) {
+      return;
+    }
+    syncStyles(refreshMathJax);
+    syncBody();
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    let styles = false;
+    let body = false;
+    const mark = (node: Node) => {
+      if (node instanceof HTMLStyleElement || node instanceof HTMLLinkElement) {
+        clones.delete(node);
+        styles = true;
+      }
+    };
+    for (const mutation of mutations) {
+      if (mutation.target === document.body) {
+        body = true;
+        continue;
+      }
+      mark(mutation.target);
+      mutation.addedNodes.forEach(mark);
+      mutation.removedNodes.forEach(mark);
+    }
+    if (popup.closed || !doc.body) {
+      return;
+    }
+    if (styles) {
+      syncStyles(false);
+    }
+    if (body) {
+      syncBody();
+    }
+  });
+  observer.observe(document.head, {
+    attributes: true,
+    attributeFilter: ["data-change"],
+    subtree: true,
+    childList: true,
+    characterData: true,
+  });
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class", "style"],
+  });
+  sync(true);
+
+  return {
+    stop: () => observer.disconnect(),
+    sync: () => sync(true),
+  };
+}
+
+async function appendExportSnippet(target: Document, snippetPath?: string) {
+  if (!snippetPath || snippetPath === "0") {
+    return;
+  }
+  try {
+    const css = await readFile(snippetPath, "utf8");
+    const style = target.createElement("style");
+    style.id = "bep-export-snippet";
+    style.textContent = css;
+    target.head.appendChild(style);
+  } catch (error) {
+    console.warn("读取导出 CSS 片段失败", error);
   }
 }
 
@@ -708,7 +853,8 @@ async function renderOfficialNote({
   extra?: { title?: string; id?: string };
 }) {
   const frontMatter = getFrontMatter(app, file);
-  const viewEl = document.createElement("div");
+  const doc = printEl.ownerDocument;
+  const viewEl = doc.createElement("div");
   viewEl.className = "markdown-preview-view markdown-rendered";
   viewEl.classList.toggle("rtl", !!app.vault.getConfig("rightToLeft"));
   viewEl.classList.toggle("show-properties", app.vault.getConfig("propertiesInDocument") !== "hidden");
@@ -718,7 +864,7 @@ async function renderOfficialNote({
     }
   }
   if (config?.showTitle !== false) {
-    const title = document.createElement("h1");
+    const title = doc.createElement("h1");
     title.className = "__title__";
     title.textContent = extra?.title ?? file.basename;
     if (extra?.id) {
@@ -748,7 +894,7 @@ async function renderOfficialNote({
     if (node.tagName === "HR") {
       viewEl.appendChild(node);
     } else {
-      const wrap = document.createElement("div");
+      const wrap = doc.createElement("div");
       wrap.appendChild(node);
       viewEl.appendChild(wrap);
     }
@@ -763,6 +909,7 @@ async function renderOfficialNote({
     promises,
     addChild: (child: Component) => comp.addChild(child),
     getSectionInfo: () => null,
+    replace: () => null,
     containerEl: viewEl,
     el: viewEl,
     displayMode: true,
@@ -792,14 +939,19 @@ export async function printFilesInHiddenWindow({
   const popup = await openPrintWindow();
   const comp = new Component();
   comp.load();
+  let stopWatch = () => {};
   try {
     preparePrintDocument(popup);
+    enhancePrintWindow(popup);
+    const ipc = await popupIpc(popup);
+    const relay = startPrintStyleRelay(popup);
+    stopWatch = relay.stop;
+    await appendExportSnippet(popup.document, config?.cssSnippet);
     await sleep(200);
-    popup.document.body.classList.remove("theme-dark");
-    popup.document.body.classList.add("theme-light");
+    copyBodyState(popup.document.body);
     popup.document.title = files[0].basename;
 
-    const printEl = document.createElement("div");
+    const printEl = popup.document.createElement("div");
     printEl.className = "print";
     popup.document.body.appendChild(printEl);
 
@@ -808,16 +960,16 @@ export async function printFilesInHiddenWindow({
     }
     const frontMatter = getFrontMatter(app, files[0]);
     fixDocV2(printEl, files[0].basename);
-    copyMathJaxStylesheet(popup.document);
+    relay.sync();
     await sleep(200);
 
-    const ipc = await popupIpc(popup);
     await new Promise((resolve) => {
       ipc.once("print-to-pdf", () => resolve(null));
       ipc.send("print-to-pdf", options);
     });
     return { headings: getHeadingTree(printEl), frontMatter };
   } finally {
+    stopWatch();
     comp.unload();
     popup.close();
   }

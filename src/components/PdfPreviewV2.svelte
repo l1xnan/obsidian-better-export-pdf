@@ -3,9 +3,9 @@
   import type BetterExportPdfPlugin from "../main";
   import type { ExportConfigType, ExportConfigModal, DocType, FileListType, DocV2Type } from "../modal";
   import { Notice, TFile } from "obsidian";
-  import { fixDocV2, printFilesInHiddenWindow, renderMarkdownV2 } from "../render";
+  import { fixDocV2, printFilesInHiddenWindow, printToPdf, renderMarkdownV2 } from "../render";
   import * as electron from "electron";
-  import { getHeadingTree, safeParseInt } from "../utils";
+  import { getHeadingTree, safeParseInt, sleep } from "../utils";
   import pLimit from "p-limit";
   import { icon, mountCanvas, mountNode } from "../actions";
   const fs = require("fs").promises;
@@ -23,10 +23,12 @@
     modal,
     plugin,
     config = $bindable(),
+    engine = "2",
   }: {
     modal: ExportConfigModal;
     plugin: BetterExportPdfPlugin;
     config: ExportConfigType;
+    engine?: "2" | "3";
   } = $props();
 
   const settings = $derived(plugin.settings);
@@ -142,7 +144,67 @@
 
   const mutex = new Mutex();
 
-  export async function exportToPDF({
+  function noticeExportError(error: any) {
+    console.error(error);
+    const code = error?.code as string | undefined;
+    if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
+      new Notice("无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。");
+    } else {
+      new Notice(`导出 PDF 失败：${error?.message ?? error}`);
+    }
+  }
+
+  async function finishPdf(
+    outputFile: string,
+    headings: ReturnType<typeof getHeadingTree>,
+    frontMatter: DocType["frontMatter"],
+    onlyPreview?: boolean,
+  ) {
+    if (onlyPreview) {
+      return;
+    }
+    let data = await fs.readFile(outputFile);
+    data = await editPDF(data, {
+      headings,
+      frontMatter,
+      displayMetadata: settings?.displayMetadata,
+      maxLevel: safeParseInt(settings?.maxLevel, 6),
+    });
+    const writeError = await writePdfFile(outputFile, data);
+    if (writeError) {
+      return;
+    }
+    if (config.open) {
+      // @ts-ignore
+      electron.remote.shell.openPath(outputFile);
+    }
+  }
+
+  async function exportPreviewNode({
+    el,
+    outputFile,
+    title,
+    onlyPreview = false,
+  }: {
+    el: HTMLDivElement;
+    outputFile: string;
+    title: string;
+    onlyPreview?: boolean;
+  }) {
+    console.debug("printOptions:", printOptions);
+    try {
+      await mutex.run(async () => {
+        document.title = title;
+        await printToPdf(el, { ...printOptions, filepath: outputFile });
+      });
+    } catch (error: any) {
+      noticeExportError(error);
+      return;
+    }
+    await finishPdf(outputFile, getHeadingTree(el as unknown as Document), docs[0].frontMatter, onlyPreview);
+  }
+
+  async function exportHiddenWindow({
     files,
     outputFile,
     onlyPreview = false,
@@ -163,36 +225,13 @@
         });
       });
     } catch (error: any) {
-      console.error(error);
-      const code = error?.code as string | undefined;
-      if (code === "EBUSY" || code === "EPERM" || code === "EACCES") {
-        new Notice("无法覆盖 PDF：文件可能正在被其他程序打开，请关闭后重试。");
-      } else {
-        new Notice(`导出 PDF 失败：${error?.message ?? error}`);
-      }
+      noticeExportError(error);
       return;
     }
-    if (onlyPreview || !printed) {
+    if (!printed) {
       return;
     }
-
-    let data = await fs.readFile(outputFile);
-
-    data = await editPDF(data, {
-      headings: printed.headings,
-      frontMatter: printed.frontMatter,
-      displayMetadata: settings?.displayMetadata,
-      maxLevel: safeParseInt(settings?.maxLevel, 6),
-    });
-
-    const writeError = await writePdfFile(outputFile, data);
-    if (writeError) {
-      return;
-    }
-    if (config.open) {
-      // @ts-ignore
-      electron.remote.shell.openPath(outputFile);
-    }
+    await finishPdf(outputFile, printed.headings, printed.frontMatter, onlyPreview);
   }
 
   export async function printDocs({
@@ -206,25 +245,43 @@
     cb?: any;
     onlyPreview?: boolean;
   }) {
-    if (modal.multiplePdf) {
-      for (const [i, outfile] of outfiles.entries()) {
-        const file = docs[i]?.file;
-        if (!file) {
-          continue;
+    if (engine === "3") {
+      if (modal.multiplePdf) {
+        for (const [i, outfile] of outfiles.entries()) {
+          const file = docs[i]?.file;
+          if (!file) {
+            continue;
+          }
+          await exportHiddenWindow({ files: [file], outputFile: outfile, onlyPreview });
+          if (cb) {
+            await cb(outfile);
+          }
         }
-        await exportToPDF({ files: [file], outputFile: outfile, onlyPreview });
-        if (cb) {
-          await cb(outfile);
-        }
+        return;
+      }
+      const files = renderedFiles.length ? renderedFiles : docs.map((item) => item.file);
+      await exportHiddenWindow({ files, outputFile: outfiles[0], onlyPreview });
+      if (cb && outfiles[0]) {
+        await cb(outfiles[0]);
       }
       return;
     }
 
-    const files = renderedFiles.length ? renderedFiles : docs.map((item) => item.file);
-    await exportToPDF({ files, outputFile: outfiles[0], onlyPreview });
-    if (cb && outfiles[0]) {
-      await cb(outfiles[0]);
+    const currentTitle = document.title;
+    docs.forEach(({ doc }) => {
+      (doc as HTMLElement).classList.add("bep-batch-hidden");
+    });
+    for (const [i, outfile] of outfiles.entries()) {
+      const { doc, file } = docs[i] as { doc: HTMLDivElement; file: TFile };
+      doc.classList.remove("bep-batch-hidden");
+      await sleep(200);
+      await exportPreviewNode({ el: doc, outputFile: outfile, title: file.basename, onlyPreview });
+      doc.classList.add("bep-batch-hidden");
+      if (cb) {
+        await cb(outfile);
+      }
     }
+    document.title = currentTitle;
   }
 
   export async function handlePrintToPDF() {

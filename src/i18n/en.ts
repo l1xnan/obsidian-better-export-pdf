@@ -26,5 +26,12 @@ export default {
     concurrency: "Limit concurrency",
     debugMode: "Debug Mode",
     version: "Engine Version",
+    versionDesc:
+      "v1 prints a webview. v2 prints the preview in the main window. v3 beta prints from a hidden window, the same way Obsidian exports.",
+    versions: {
+      "1": "v1",
+      "2": "v2",
+      "3": "v3 beta",
+    },
   },
 };
