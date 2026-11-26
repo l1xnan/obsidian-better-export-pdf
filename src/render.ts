@@ -1,6 +1,6 @@
 import { App, Component, type FrontMatterCache, MarkdownRenderer, MarkdownView, Notice, TFile } from "obsidian";
 import type { PageSizeType, ExportConfigType } from "./modal";
-import { applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
+import { applyCjkFonts, applyLightVars, copyAttributes, fixAnchors, modifyDest } from "./utils";
 import * as electron from "electron";
 
 export function getAllStyles() {
@@ -161,6 +161,7 @@ export async function renderMarkdown({ app, file, config, extra }: ParamType) {
 
   const printEl = document.body.createDiv("print theme-light");
   applyLightVars(printEl);
+  applyCjkFonts(printEl);
   const viewEl = printEl.createDiv({
     cls: "markdown-preview-view markdown-rendered" + cssclasses.join(" "),
   });
@@ -299,6 +300,7 @@ export async function renderMarkdownV2({ app, file, config, extra }: ParamType) 
     },
   });
   applyLightVars(printEl);
+  applyCjkFonts(printEl);
   const { viewEl, frontMatter } = createViewEl({ app, file, extra, config, printEl });
 
   const markdown = modifyMarkdown({ app, file, data });
