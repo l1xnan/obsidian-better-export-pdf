@@ -2,7 +2,7 @@
 
 ## Custom export style
 
-Add print-only CSS under `Appearance > CSS snippets`. Wrap it in `@media print` so the reading view stays unchanged.
+Add CSS that applies only when printing, under `Appearance > CSS snippets`. Wrap it in `@media print` so the reading view is left alone. The example below changes the font:
 
 ```css
 @media print {
@@ -19,15 +19,15 @@ Add print-only CSS under `Appearance > CSS snippets`. Wrap it in `@media print` 
 
 ## Disabled CSS snippets
 
-Enable `Select CSS snippets` in the plugin settings. The export dialog then shows `CSS snippets`, where you can pick snippets that are not enabled globally under `Appearance > CSS snippets`.
+If a snippet should apply only while exporting, turn on `Select CSS snippets` in the plugin settings. The export dialog then shows `CSS snippets`, listing snippets that are not enabled under `Appearance > CSS snippets`.
 
-If the font does not change, a theme rule is probably more specific than `font-family`. Use the variables above. In Obsidian, inspect the preview to see which rule wins.
+When the font does not change, a theme rule is usually more specific than `font-family`. Switch to the variables above, then inspect the preview in Obsidian and see which rule is covering yours.
 
-A background color in this CSS shows up in the PDF only when `Print background` is on. Some themes still paint a page background with their own CSS.
+A background color in this CSS is included in the PDF only when `Print background` is also on. Some themes still paint their own background over it.
 
 ## Background
 
-The export leaves out the theme background color. Turn on `Plugin settings > Print background` to keep it.
+The export drops the theme background color. Turn on `Plugin settings > Print background` when you want to keep it.
 
 ## Page breaks
 
@@ -68,7 +68,7 @@ In a combined PDF, each note is a `.markdown-preview-view`. Start a new page aft
 }
 ```
 
-A horizontal rule can be the page break, so the note stays free of HTML:
+A horizontal rule can be the page break, so the note does not need the HTML above:
 
 ```css
 @media print {
@@ -79,7 +79,7 @@ A horizontal rule can be the page break, so the note stays free of HTML:
 }
 ```
 
-An image wider than the page is clipped. Limit it, or set the size with an `<img>` tag:
+An image wider than the page is clipped. Cap the width, or set the size on an `<img>`:
 
 ```css
 @media print {

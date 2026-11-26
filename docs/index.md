@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Better Export PDF
-  text: A richer PDF export for Obsidian
-  tagline: Preview, outline bookmarks, headers, footers, and merged exports on top of the official PDF export.
+  text: PDF export for Obsidian
+  tagline: Preview, outline bookmarks, and page numbers, plus merging several notes into one PDF.
   actions:
     - theme: brand
       text: Export one note
@@ -14,7 +14,7 @@ hero:
       link: https://github.com/l1xnan/obsidian-better-export-pdf
 ---
 
-Better Export PDF adds export preview, outline bookmarks, and page numbers on top of Obsidian's PDF export.
+Better Export PDF adds a preview, outline bookmarks, and page numbers to Obsidian's PDF export.
 
 ## Features
 

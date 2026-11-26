@@ -1,15 +1,16 @@
 # Export one note
 
-1. Choose what to export:
-   - In the current Markdown view, open More options and select `Better Export PDF`.
-   - Open the command palette and select `Better Export PDF: Export Current File to PDF`.
-2. Change the settings in the dialog.
-3. Click `Export` and choose a path. Press `Enter` to export with the current settings.
+Open the export dialog from either place:
 
-The dialog opens with the settings from the last export. Page size, margins, scale, and the other options in this dialog are kept only when you export: click `Export`, or press `Enter`, which runs the same action. The next time the dialog opens, it loads that saved configuration. If you change something only to try it and then close the dialog, that try stays temporary and is not saved.
+1. In the current note, open More options and choose `Better Export PDF`.
+2. Open the command palette and run `Better Export PDF: Export Current File to PDF`.
 
-Turn on **Landscape** in the same dialog to print sideways.
+Adjust page size, margins, and the other options, click `Export`, then choose where to save the file. If you do not need to change anything, press `Enter` and it exports with the options already in the dialog.
+
+Each time the dialog opens, it shows the options from the last export. Page size, margins, scale, and the other dialog options are written when you click `Export` or press `Enter`. If you change a few values and close the dialog, those changes are dropped.
+
+Turn on **Landscape** to print sideways.
 
 ## Export as one page
 
-In the export dialog, set **Page Size** to `Custom` and **Margin** to `None`. Set the page size to fit the note. The size hint in the preview is an estimate, not the printed height. There is no switch that measures the note and picks the height for you.
+To put the whole note on one page, set **Page Size** to `Custom` and **Margin** to `None`, then fill in the width and height. The size shown beside the preview is only an estimate. The PDF uses the width and height you entered.

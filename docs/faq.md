@@ -1,41 +1,41 @@
-# Questions from issues
+# Questions
 
-## The margin I picked is gone the next time I export
+## The margin is back to the old value
 
-The export dialog is built this way. It saves the options in the dialog only when you export. Click `Export`, or press `Enter`. The next time the dialog opens, it loads the configuration from that export. A change you make only to try, and then leave by closing the dialog, is temporary and is not saved.
+Changing a margin in the dialog does not save it immediately. Click `Export`, or press `Enter`, and finish an export. That margin is what you get the next time the dialog opens. See [Export one note](export.md).
 
-## The preview and the PDF look different
+## The preview and the PDF differ
 
-The HTML preview is one continuous page, so it has no page breaks. The PDF does. Version 2 also has a PDF preview. The two can still differ slightly. See [Limits](limits.md).
+The HTML preview draws the note as one continuous page, so you will not see page breaks there. Pagination is in the PDF. In 2.0 you can switch the dialog to the PDF preview and check the pages before exporting. The two passes are rendered separately, so small differences remain. See [Limits](limits.md).
 
-To change an image size without guessing, use an `<img>` tag. See [Style, background, and page breaks](style.md#page-breaks).
+When an image size is hard to guess, set it with `<img>`. See [Page breaks](style.md#page-breaks).
 
-## Title and author do not appear on the page
+## Title and author are missing from the page
 
-`title` and `author` are PDF document properties. They are not printed in the page body. Put visible text in the header or footer. See [Header, footer, and metadata](header-footer.md#pdf-metadata).
+`title` and `author` in front matter are stored as PDF document properties. A reader shows them under Document Properties. They are not lines in the page body. To print them, put the text in the header or footer. See [Header, footer, and metadata](header-footer.md#pdf-metadata).
 
-## How do I change the font or the background?
+## The font or background did not change
 
-Add a print CSS snippet, and use Obsidian's font variables. A plain `font-family` is often overridden by the theme. A background color in that CSS is printed only when `Print background` is on. See [Style, background, and page breaks](style.md).
+Put the print rules in `@media print`, and set Obsidian's font variables. A single `font-family` is often overridden by a more specific theme rule. A background color is included only when `Print background` is on. See [Style, background, and page breaks](style.md).
 
-The export dialog's snippet list only offers snippets that are not already enabled under `Appearance > CSS snippets`.
+`CSS snippets` in the export dialog lists snippets that are not already enabled under `Appearance > CSS snippets`. Snippets you turned on globally are not in that list.
 
 ## How do I break a page?
 
-Insert `<div class="break-page"></div>`, or turn a horizontal rule into a page break with CSS. In a combined PDF, each note can start on its own page. See [Page breaks](style.md#page-breaks).
+Insert `<div class="break-page"></div>` and tell CSS to break the page there. You can also make `hr` start a new page, and then the note does not need that HTML. In a merged PDF, each note can end with a page break. See [Page breaks](style.md#page-breaks).
 
 ## The folder came out in the wrong order
 
-`Export folder to PDF` sorts by file name. It does not follow the file explorer. For a chosen order, write a note with `toc: true` and export that note, not the folder. See [Folder export](folder.md).
+`Export folder to PDF` sorts by file name. It does not follow the order you arranged in the file explorer. To choose the order, write a note with `toc: true` and export that note. See [Folder export](folder.md).
 
-## Can I export without the dialog?
+## Export without the dialog
 
-Yes. The Obsidian CLI exports one note and does not open the preview or a save window. It does not export a folder. See [Command line](cli.md).
+Use the Obsidian CLI. It exports one note with the options saved last time, without the preview or a save dialog. See [Command line](cli.md).
 
-## How do I fit a note on one long page?
+## One long page
 
-Set **Page Size** to `Custom` and **Margin** to `None`, then set the page size yourself. The hint in the preview is an estimate. See [Export as one page](export.md#export-as-one-page).
+Set **Page Size** to `Custom` and **Margin** to `None`, then enter the width and height yourself. The size hint in the preview is only a guide. See [Export as one page](export.md#export-as-one-page).
 
-## YAML or properties show up in the PDF
+## Properties showed up in the PDF
 
-This plugin does not print the YAML block. If properties appear, check Obsidian's Properties in document setting. Another plugin can also inject that block.
+This plugin does not print the YAML block into the page. If properties still appear, check whether Obsidian's Properties in document is on, and whether another plugin is inserting that block into the preview.

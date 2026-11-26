@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Better Export PDF
   text: Obsidian 的 PDF 导出增强
-  tagline: 在官方导出之外，加上预览、大纲书签、页眉页脚和合并导出。
+  tagline: 在官方导出之外，加上预览、大纲书签、页码，也可以把多篇笔记合成一个 PDF。
   actions:
     - theme: brand
       text: 导出一篇笔记
