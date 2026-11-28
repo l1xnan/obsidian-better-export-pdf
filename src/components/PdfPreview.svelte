@@ -150,6 +150,17 @@
   function initWebviewEvents(preview: electron.WebviewTag, docObj: any) {
     webviews.push(preview);
 
+    // Ensure the doc promise is settled exactly once so a failed load
+    // cannot leave renderPreview's Promise.all waiting forever.
+    let settled = false;
+    const unblock = () => {
+      if (settled) return;
+      settled = true;
+      preview.removeEventListener("dom-ready", handler);
+      preview.removeEventListener("did-fail-load", failHandler);
+      docObj.resolve?.();
+    };
+
     const handler = async () => {
       completed = true;
       getAllStyles().forEach(async (css) => {
@@ -169,16 +180,23 @@
       getPatchStyle().forEach(async (css) => {
         await preview.insertCSS(css);
       });
-      if (docObj.resolve) {
-        docObj.resolve();
-      }
+      unblock();
+    };
+
+    const failHandler = (event: any) => {
+      // -3 is ERR_ABORTED, which fires on benign in-page navigations; ignore it.
+      if (event?.errorCode === -3) return;
+      console.warn(`Webview failed to load: ${event?.errorDescription ?? "unknown error"}`);
+      unblock();
     };
 
     preview.addEventListener("dom-ready", handler);
+    preview.addEventListener("did-fail-load", failHandler);
 
     return {
       destroy() {
         preview.removeEventListener("dom-ready", handler);
+        preview.removeEventListener("did-fail-load", failHandler);
       },
     };
   }
