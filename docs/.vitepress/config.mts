@@ -29,6 +29,23 @@ export default defineConfig({
   base: "/obsidian-better-export-pdf/",
   cleanUrls: true,
   lastUpdated: true,
+  markdown: {
+    config(md) {
+      const fence = md.renderer.rules.fence;
+      md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        if (token.info.trim() === "mermaid") {
+          return `<pre class="mermaid">${md.utils.escapeHtml(token.content)}</pre>`;
+        }
+        return fence ? fence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options);
+      };
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: ["mermaid"],
+    },
+  },
   themeConfig: {
     search: { provider: "local" },
     socialLinks: [
@@ -64,6 +81,11 @@ export default defineConfig({
               { text: "Limits", link: "/limits" },
               { text: "Questions from issues", link: "/faq" },
             ],
+          },
+          {
+            text: "Development",
+            collapsed: true,
+            items: [{ text: "v3 print flow", link: "/dev/print-flow" }],
           },
         ],
         outline: { label: "On this page", level: [2, 3] },
@@ -104,6 +126,11 @@ export default defineConfig({
               { text: "限制", link: "/zh/limits" },
               { text: "来自 Issue 的问题", link: "/zh/faq" },
             ],
+          },
+          {
+            text: "开发指南",
+            collapsed: true,
+            items: [{ text: "v3 打印流程", link: "/zh/dev/print-flow" }],
           },
         ],
         outline: { label: "本页目录", level: [2, 3] },
